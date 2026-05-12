@@ -319,20 +319,26 @@
           brewedAt: new Date().toISOString(),
         };
 
-        const response = await fetch("/dial-in", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            feedback: JSON.stringify(brewData),
-          }),
-        });
+       let recommendation = "";
 
-        const data = await response.json();
+try {
+  const response = await fetch("/api/dial-in", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      feedback: JSON.stringify(brewData),
+    }),
+  });
 
-        const recommendation =
-          data.advice || data.error || "No response received.";
+  const data = await response.json();
+
+  recommendation =
+    data.advice || data.error || "No response received.";
+} catch (error) {
+  recommendation = "Error: " + error.message;
+}
 
         document.getElementById("result").innerText = recommendation;
 
