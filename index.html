@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Coffee Dial-In Assistant</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 760px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #f7f2eb;
+        color: #2b2118;
+      }
+
+      .page {
+        display: none;
+      }
+
+      .page.active {
+        display: block;
+      }
+
+      .card {
+        background: white;
+        padding: 24px;
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      }
+
+      button {
+        padding: 12px 18px;
+        margin: 6px;
+        border: none;
+        border-radius: 20px;
+        background: #d8c3a5;
+        cursor: pointer;
+        font-size: 15px;
+      }
+
+      button.selected {
+        background: #6f4e37;
+        color: white;
+      }
+
+      .next {
+        background: #2b2118;
+        color: white;
+        margin-top: 24px;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0 18px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+        box-sizing: border-box;
+      }
+
+      .recap {
+        background: #f7f2eb;
+        padding: 16px;
+        border-radius: 12px;
+        margin: 16px 0;
+      }
+
+      .small {
+        font-size: 14px;
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h1>Coffee Dial-In Assistant</h1>
+
+      <!-- Page 1 -->
+      <div class="page active" id="page1">
+        <h2>What are we brewing today?</h2>
+
+        <p class="small">
+          Choose a coffee you've brewed before, or start a new one.
+        </p>
+
+        <select id="savedCoffeeSelect">
+          <option value="">Start a new coffee</option>
+        </select>
+
+        <input
+          id="coffeeName"
+          placeholder="Coffee name, roaster, or origin"
+        />
+
+        <div id="lastBrewRecap" class="recap" style="display: none;"></div>
+
+        <button class="next" onclick="chooseCoffee()">Next</button>
+      </div>
+
+      <!-- Page 2 -->
+      <div class="page" id="page2">
+        <h2>What brewing parameters would you like to log?</h2>
+
+        <p class="small">
+          If this is a repeat coffee, you can update the parameters from last time.
+        </p>
+
+        <input id="brewMethod" placeholder="Brew method, e.g. V60, espresso, Aeropress" />
+        <input id="dose" placeholder="Dose, e.g. 18g" />
+        <input id="water" placeholder="Water amount, e.g. 300g" />
+        <input id="grind" placeholder="Grind setting, e.g. 22 clicks" />
+        <input id="time" placeholder="Brew time, e.g. 3:00" />
+
+        <button onclick="nextPage(1)">Back</button>
+        <button class="next" onclick="nextPage(3)">Next</button>
+      </div>
+
+      <!-- Page 3 -->
+      <div class="page" id="page3">
+        <h2>Choose tasting notes</h2>
+
+        <h3>Flavour</h3>
+        <button onclick="toggleNote(this)">Sour</button>
+        <button onclick="toggleNote(this)">Sweet</button>
+        <button onclick="toggleNote(this)">Bitter</button>
+        <button onclick="toggleNote(this)">Salty</button>
+        <button onclick="toggleNote(this)">Metallic</button>
+        <button onclick="toggleNote(this)">Juicy</button>
+        <button onclick="toggleNote(this)">Fruity</button>
+        <button onclick="toggleNote(this)">Floral</button>
+
+        <h3>Body</h3>
+        <button onclick="toggleNote(this)">Watery</button>
+        <button onclick="toggleNote(this)">Thin</button>
+        <button onclick="toggleNote(this)">Tea-like</button>
+        <button onclick="toggleNote(this)">Syrupy</button>
+        <button onclick="toggleNote(this)">Heavy</button>
+        <button onclick="toggleNote(this)">Sludgy</button>
+
+        <h3>Finish</h3>
+        <button onclick="toggleNote(this)">Dry</button>
+        <button onclick="toggleNote(this)">Harsh</button>
+        <button onclick="toggleNote(this)">Clean</button>
+        <button onclick="toggleNote(this)">Balanced</button>
+        <button onclick="toggleNote(this)">Hollow</button>
+
+        <br />
+
+        <button onclick="nextPage(2)">Back</button>
+        <button class="next" onclick="nextPage(4)">Next</button>
+      </div>
+
+      <!-- Page 4 -->
+      <div class="page" id="page4">
+        <h2>Additional taste notes</h2>
+
+        <textarea
+          id="additionalNotes"
+          rows="6"
+          placeholder="Add anything else you noticed about the coffee..."
+        ></textarea>
+
+        <button onclick="nextPage(3)">Back</button>
+        <button class="next" onclick="getRecommendation()">Get Recommendation</button>
+      </div>
+
+      <!-- Page 5 -->
+      <div class="page" id="page5">
+        <h2>Recommendation</h2>
+
+        <p id="result">Thinking...</p>
+
+        <button onclick="restart()">Brew Again</button>
+      </div>
+    </div>
+
+    <script>
+      let selectedNotes = [];
+      let currentCoffeeName = "";
+      let previousBrew = null;
+
+      function getSavedCoffees() {
+        return JSON.parse(localStorage.getItem("coffeeBrews")) || {};
+      }
+
+      function saveCoffeeBrew(coffeeName, brewData) {
+        const savedCoffees = getSavedCoffees();
+
+        if (!savedCoffees[coffeeName]) {
+          savedCoffees[coffeeName] = [];
+        }
+
+        savedCoffees[coffeeName].push(brewData);
+
+        localStorage.setItem("coffeeBrews", JSON.stringify(savedCoffees));
+      }
+
+      function loadSavedCoffeeOptions() {
+        const savedCoffees = getSavedCoffees();
+        const select = document.getElementById("savedCoffeeSelect");
+
+        Object.keys(savedCoffees).forEach((coffeeName) => {
+          const option = document.createElement("option");
+          option.value = coffeeName;
+          option.textContent = coffeeName;
+          select.appendChild(option);
+        });
+      }
+
+      function getLastBrew(coffeeName) {
+        const savedCoffees = getSavedCoffees();
+        const brews = savedCoffees[coffeeName];
+
+        if (!brews || brews.length === 0) {
+          return null;
+        }
+
+        return brews[brews.length - 1];
+      }
+
+      function showLastBrewRecap(coffeeName) {
+        const recapDiv = document.getElementById("lastBrewRecap");
+        const lastBrew = getLastBrew(coffeeName);
+
+        if (!lastBrew) {
+          recapDiv.style.display = "none";
+          recapDiv.innerHTML = "";
+          return;
+        }
+
+        recapDiv.style.display = "block";
+        recapDiv.innerHTML = `
+          <h3>Last brew recap</h3>
+          <p><strong>Method:</strong> ${lastBrew.brewMethod || "Not logged"}</p>
+          <p><strong>Dose:</strong> ${lastBrew.dose || "Not logged"}</p>
+          <p><strong>Water:</strong> ${lastBrew.water || "Not logged"}</p>
+          <p><strong>Grind:</strong> ${lastBrew.grind || "Not logged"}</p>
+          <p><strong>Time:</strong> ${lastBrew.time || "Not logged"}</p>
+          <p><strong>Tasting notes:</strong> ${(lastBrew.tastingNotes || []).join(", ") || "None"}</p>
+          <p><strong>Last suggested adjustment:</strong> ${lastBrew.recommendation || "None yet"}</p>
+        `;
+
+        document.getElementById("brewMethod").value = lastBrew.brewMethod || "";
+        document.getElementById("dose").value = lastBrew.dose || "";
+        document.getElementById("water").value = lastBrew.water || "";
+        document.getElementById("grind").value = lastBrew.grind || "";
+        document.getElementById("time").value = lastBrew.time || "";
+      }
+
+      document
+        .getElementById("savedCoffeeSelect")
+        .addEventListener("change", function () {
+          const selectedCoffee = this.value;
+
+          if (selectedCoffee) {
+            document.getElementById("coffeeName").value = selectedCoffee;
+            showLastBrewRecap(selectedCoffee);
+          } else {
+            document.getElementById("coffeeName").value = "";
+            document.getElementById("lastBrewRecap").style.display = "none";
+          }
+        });
+
+      function chooseCoffee() {
+        const coffeeName = document.getElementById("coffeeName").value.trim();
+
+        if (!coffeeName) {
+          alert("Please enter or select a coffee.");
+          return;
+        }
+
+        currentCoffeeName = coffeeName;
+        previousBrew = getLastBrew(coffeeName);
+
+        if (previousBrew) {
+          showLastBrewRecap(coffeeName);
+        }
+
+        nextPage(2);
+      }
+
+      function nextPage(pageNumber) {
+        document.querySelectorAll(".page").forEach((page) => {
+          page.classList.remove("active");
+        });
+
+        document.getElementById("page" + pageNumber).classList.add("active");
+      }
+
+      function toggleNote(button) {
+        const note = button.innerText;
+
+        if (selectedNotes.includes(note)) {
+          selectedNotes = selectedNotes.filter((item) => item !== note);
+          button.classList.remove("selected");
+        } else {
+          selectedNotes.push(note);
+          button.classList.add("selected");
+        }
+      }
+
+      async function getRecommendation() {
+        nextPage(5);
+
+        const brewData = {
+          coffeeName: currentCoffeeName,
+          brewMethod: document.getElementById("brewMethod").value,
+          dose: document.getElementById("dose").value,
+          water: document.getElementById("water").value,
+          grind: document.getElementById("grind").value,
+          time: document.getElementById("time").value,
+          tastingNotes: selectedNotes,
+          additionalNotes: document.getElementById("additionalNotes").value,
+          previousBrew: previousBrew,
+          brewedAt: new Date().toISOString(),
+        };
+
+        const response = await fetch("/dial-in", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            feedback: JSON.stringify(brewData),
+          }),
+        });
+
+        const data = await response.json();
+
+        const recommendation =
+          data.advice || data.error || "No response received.";
+
+        document.getElementById("result").innerText = recommendation;
+
+        brewData.recommendation = recommendation;
+
+        saveCoffeeBrew(currentCoffeeName, brewData);
+      }
+
+      function restart() {
+        location.reload();
+      }
+
+      loadSavedCoffeeOptions();
+    </script>
+  </body>
+</html>
