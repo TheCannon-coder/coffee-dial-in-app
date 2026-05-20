@@ -1,357 +1,813 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Coffee Dial-In Assistant</title>
-
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 760px;
-        margin: 40px auto;
-        padding: 20px;
-        background: #f7f2eb;
-        color: #2b2118;
-      }
-
-      .page {
-        display: none;
-      }
-
-      .page.active {
-        display: block;
-      }
-
-      .card {
-        background: white;
-        padding: 24px;
-        border-radius: 18px;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-      }
-
-      button {
-        padding: 12px 18px;
-        margin: 6px;
-        border: none;
-        border-radius: 20px;
-        background: #d8c3a5;
-        cursor: pointer;
-        font-size: 15px;
-      }
-
-      button.selected {
-        background: #6f4e37;
-        color: white;
-      }
-
-      .next {
-        background: #2b2118;
-        color: white;
-        margin-top: 24px;
-      }
-
-      input,
-      textarea,
-      select {
-        width: 100%;
-        padding: 12px;
-        margin: 8px 0 18px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        font-size: 15px;
-        box-sizing: border-box;
-      }
-
-      .recap {
-        background: #f7f2eb;
-        padding: 16px;
-        border-radius: 12px;
-        margin: 16px 0;
-      }
-
-      .small {
-        font-size: 14px;
-        opacity: 0.75;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="card">
-      <h1>Coffee Dial-In Assistant</h1>
-
-      <!-- Page 1 -->
-      <div class="page active" id="page1">
-        <h2>What are we brewing today?</h2>
-
-        <p class="small">
-          Choose a coffee you've brewed before, or start a new one.
-        </p>
-
-        <select id="savedCoffeeSelect">
-          <option value="">Start a new coffee</option>
-        </select>
-
-        <input
-          id="coffeeName"
-          placeholder="Coffee name, roaster, or origin"
-        />
-
-        <div id="lastBrewRecap" class="recap" style="display: none;"></div>
-
-        <button class="next" onclick="chooseCoffee()">Next</button>
-      </div>
-
-      <!-- Page 2 -->
-      <div class="page" id="page2">
-        <h2>What brewing parameters would you like to log?</h2>
-
-        <p class="small">
-          If this is a repeat coffee, you can update the parameters from last time.
-        </p>
-
-        <input id="brewMethod" placeholder="Brew method, e.g. V60, espresso, Aeropress" />
-        <input id="dose" placeholder="Dose, e.g. 18g" />
-        <input id="water" placeholder="Water amount, e.g. 300g" />
-        <input id="grind" placeholder="Grind setting, e.g. 22 clicks" />
-        <input id="time" placeholder="Brew time, e.g. 3:00" />
-
-        <button onclick="nextPage(1)">Back</button>
-        <button class="next" onclick="nextPage(3)">Next</button>
-      </div>
-
-      <!-- Page 3 -->
-      <div class="page" id="page3">
-        <h2>Choose tasting notes</h2>
-
-        <h3>Flavour</h3>
-        <button onclick="toggleNote(this)">Sour</button>
-        <button onclick="toggleNote(this)">Sweet</button>
-        <button onclick="toggleNote(this)">Bitter</button>
-        <button onclick="toggleNote(this)">Salty</button>
-        <button onclick="toggleNote(this)">Metallic</button>
-        <button onclick="toggleNote(this)">Juicy</button>
-        <button onclick="toggleNote(this)">Fruity</button>
-        <button onclick="toggleNote(this)">Floral</button>
-
-        <h3>Body</h3>
-        <button onclick="toggleNote(this)">Watery</button>
-        <button onclick="toggleNote(this)">Thin</button>
-        <button onclick="toggleNote(this)">Tea-like</button>
-        <button onclick="toggleNote(this)">Syrupy</button>
-        <button onclick="toggleNote(this)">Heavy</button>
-        <button onclick="toggleNote(this)">Sludgy</button>
-
-        <h3>Finish</h3>
-        <button onclick="toggleNote(this)">Dry</button>
-        <button onclick="toggleNote(this)">Harsh</button>
-        <button onclick="toggleNote(this)">Clean</button>
-        <button onclick="toggleNote(this)">Balanced</button>
-        <button onclick="toggleNote(this)">Hollow</button>
-
-        <br />
-
-        <button onclick="nextPage(2)">Back</button>
-        <button class="next" onclick="nextPage(4)">Next</button>
-      </div>
-
-      <!-- Page 4 -->
-      <div class="page" id="page4">
-        <h2>Additional taste notes</h2>
-
-        <textarea
-          id="additionalNotes"
-          rows="6"
-          placeholder="Add anything else you noticed about the coffee..."
-        ></textarea>
-
-        <button onclick="nextPage(3)">Back</button>
-        <button class="next" onclick="getRecommendation()">Get Recommendation</button>
-      </div>
-
-      <!-- Page 5 -->
-      <div class="page" id="page5">
-        <h2>Recommendation</h2>
-
-        <p id="result">Thinking...</p>
-
-        <button onclick="restart()">Brew Again</button>
-      </div>
-    </div>
-
-    <script>
-      let selectedNotes = [];
-      let currentCoffeeName = "";
-      let previousBrew = null;
-
-      function getSavedCoffees() {
-        return JSON.parse(localStorage.getItem("coffeeBrews")) || {};
-      }
-
-      function saveCoffeeBrew(coffeeName, brewData) {
-        const savedCoffees = getSavedCoffees();
-
-        if (!savedCoffees[coffeeName]) {
-          savedCoffees[coffeeName] = [];
-        }
-
-        savedCoffees[coffeeName].push(brewData);
-
-        localStorage.setItem("coffeeBrews", JSON.stringify(savedCoffees));
-      }
-
-      function loadSavedCoffeeOptions() {
-        const savedCoffees = getSavedCoffees();
-        const select = document.getElementById("savedCoffeeSelect");
-
-        Object.keys(savedCoffees).forEach((coffeeName) => {
-          const option = document.createElement("option");
-          option.value = coffeeName;
-          option.textContent = coffeeName;
-          select.appendChild(option);
-        });
-      }
-
-      function getLastBrew(coffeeName) {
-        const savedCoffees = getSavedCoffees();
-        const brews = savedCoffees[coffeeName];
-
-        if (!brews || brews.length === 0) {
-          return null;
-        }
-
-        return brews[brews.length - 1];
-      }
-
-      function showLastBrewRecap(coffeeName) {
-        const recapDiv = document.getElementById("lastBrewRecap");
-        const lastBrew = getLastBrew(coffeeName);
-
-        if (!lastBrew) {
-          recapDiv.style.display = "none";
-          recapDiv.innerHTML = "";
-          return;
-        }
-
-        recapDiv.style.display = "block";
-        recapDiv.innerHTML = `
-          <h3>Last brew recap</h3>
-          <p><strong>Method:</strong> ${lastBrew.brewMethod || "Not logged"}</p>
-          <p><strong>Dose:</strong> ${lastBrew.dose || "Not logged"}</p>
-          <p><strong>Water:</strong> ${lastBrew.water || "Not logged"}</p>
-          <p><strong>Grind:</strong> ${lastBrew.grind || "Not logged"}</p>
-          <p><strong>Time:</strong> ${lastBrew.time || "Not logged"}</p>
-          <p><strong>Tasting notes:</strong> ${(lastBrew.tastingNotes || []).join(", ") || "None"}</p>
-          <p><strong>Last suggested adjustment:</strong> ${lastBrew.recommendation || "None yet"}</p>
-        `;
-
-        document.getElementById("brewMethod").value = lastBrew.brewMethod || "";
-        document.getElementById("dose").value = lastBrew.dose || "";
-        document.getElementById("water").value = lastBrew.water || "";
-        document.getElementById("grind").value = lastBrew.grind || "";
-        document.getElementById("time").value = lastBrew.time || "";
-      }
-
-      document
-        .getElementById("savedCoffeeSelect")
-        .addEventListener("change", function () {
-          const selectedCoffee = this.value;
-
-          if (selectedCoffee) {
-            document.getElementById("coffeeName").value = selectedCoffee;
-            showLastBrewRecap(selectedCoffee);
-          } else {
-            document.getElementById("coffeeName").value = "";
-            document.getElementById("lastBrewRecap").style.display = "none";
-          }
-        });
-
-      function chooseCoffee() {
-        const coffeeName = document.getElementById("coffeeName").value.trim();
-
-        if (!coffeeName) {
-          alert("Please enter or select a coffee.");
-          return;
-        }
-
-        currentCoffeeName = coffeeName;
-        previousBrew = getLastBrew(coffeeName);
-
-        if (previousBrew) {
-          showLastBrewRecap(coffeeName);
-        }
-
-        nextPage(2);
-      }
-
-      function nextPage(pageNumber) {
-        document.querySelectorAll(".page").forEach((page) => {
-          page.classList.remove("active");
-        });
-
-        document.getElementById("page" + pageNumber).classList.add("active");
-      }
-
-      function toggleNote(button) {
-        const note = button.innerText;
-
-        if (selectedNotes.includes(note)) {
-          selectedNotes = selectedNotes.filter((item) => item !== note);
-          button.classList.remove("selected");
-        } else {
-          selectedNotes.push(note);
-          button.classList.add("selected");
-        }
-      }
-
-      async function getRecommendation() {
-        nextPage(5);
-
-        const brewData = {
-          coffeeName: currentCoffeeName,
-          brewMethod: document.getElementById("brewMethod").value,
-          dose: document.getElementById("dose").value,
-          water: document.getElementById("water").value,
-          grind: document.getElementById("grind").value,
-          time: document.getElementById("time").value,
-          tastingNotes: selectedNotes,
-          additionalNotes: document.getElementById("additionalNotes").value,
-          previousBrew: previousBrew,
-          brewedAt: new Date().toISOString(),
-        };
-
-      let recommendation = "";
-
-try {
-  const response = await fetch("https://project-tiypv.vercel.app/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      feedback: JSON.stringify(brewData),
-    }),
-  });
-
-  const data = await response.json();
-
-  recommendation =
-    data.advice || data.error || "No response received.";
-} catch (error) {
-  recommendation = "Error: " + error.message;
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dial In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #F5F0E8;
+  --cream-dark: #EDE7D9;
+  --espresso: #2A1A0E;
+  --roast: #5C3A1E;
+  --caramel: #C07A30;
+  --caramel-light: #E8A84A;
+  --sage: #6A8060;
+  --muted: #8A7A6A;
+  --border: rgba(42,26,14,0.11);
+  --text-main: #2A1A0E;
+  --text-soft: #7A6A5A;
 }
 
-        document.getElementById("result").innerText = recommendation;
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-        brewData.recommendation = recommendation;
+header {
+  width: 100%;
+  background: var(--espresso);
+  padding: 1.1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.logo span { color: var(--caramel-light); }
+.header-right {
+  font-size: 0.72rem;
+  color: rgba(245,240,232,0.4);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
 
-        saveCoffeeBrew(currentCoffeeName, brewData);
-      }
+.screen {
+  display: none;
+  width: 100%;
+  max-width: 520px;
+  padding: 1.75rem 1.25rem 5rem;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeUp 0.35s ease;
+}
+.screen.active { display: flex; }
 
-      function restart() {
-        location.reload();
-      }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-      loadSavedCoffeeOptions();
-    </script>
-  </body>
+.screen-heading {
+  font-family: 'Fraunces', serif;
+  font-size: 1.55rem;
+  font-weight: 300;
+  color: var(--espresso);
+  line-height: 1.3;
+}
+.screen-sub {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+  margin-top: 0.3rem;
+  line-height: 1.55;
+}
+
+/* HOME SCREEN */
+.home-greeting {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--espresso);
+  line-height: 1.25;
+}
+.home-sub {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  line-height: 1.6;
+  margin-top: 0.4rem;
+}
+
+.home-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.home-card:hover {
+  border-color: var(--caramel);
+  transform: translateY(-1px);
+}
+.home-card.prev-brew {
+  background: var(--espresso);
+  border-color: var(--espresso);
+}
+.home-card.prev-brew:hover {
+  background: var(--roast);
+  border-color: var(--roast);
+}
+.home-card .card-eyebrow {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  color: var(--muted);
+}
+.home-card.prev-brew .card-eyebrow { color: var(--caramel-light); }
+.home-card .card-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.15rem;
+  font-weight: 300;
+  color: var(--espresso);
+  line-height: 1.35;
+}
+.home-card.prev-brew .card-title { color: var(--cream); }
+.home-card .card-detail {
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  line-height: 1.5;
+  margin-top: 0.15rem;
+}
+.home-card.prev-brew .card-detail { color: rgba(245,240,232,0.55); }
+
+.home-card .card-arrow {
+  font-size: 1rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  align-self: flex-end;
+}
+.home-card.prev-brew .card-arrow { color: rgba(245,240,232,0.4); }
+
+/* REPEAT BREW REMINDER */
+.reminder-card {
+  background: var(--espresso);
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.reminder-card .rc-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--caramel-light);
+  font-weight: 500;
+}
+.reminder-card .rc-brew {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.5;
+}
+.reminder-card .rc-tip {
+  font-size: 0.82rem;
+  color: rgba(245,240,232,0.65);
+  line-height: 1.6;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(245,240,232,0.1);
+  margin-top: 0.15rem;
+}
+.reminder-card .rc-tip strong {
+  color: var(--caramel-light);
+  font-weight: 500;
+}
+
+/* INPUT STYLES */
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+.ig-full { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 0.35rem; }
+.field label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.field input, .field select {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.65rem 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  color: var(--espresso);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s;
+}
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%238A7A6A' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  padding-right: 2.2rem;
+  cursor: pointer;
+}
+.field input:focus, .field select:focus { border-color: var(--caramel); }
+
+/* CHIPS */
+.chip-group { display: flex; flex-direction: column; gap: 0.6rem; }
+.chip-group-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 500;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.chip {
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 0.84rem;
+  color: var(--text-soft);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.13s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+.chip:hover { border-color: var(--caramel); color: var(--roast); }
+.chip.on { color: #fff; border-color: transparent; }
+.chip.on.good   { background: var(--sage); }
+.chip.on.sour   { background: #A08820; }
+.chip.on.bitter { background: var(--roast); }
+.chip.on.light  { background: #5B8FA8; }
+.chip.on.heavy  { background: #7A6A5A; }
+.chip.on.origin { background: var(--sage); }
+
+.div { height: 1px; background: var(--border); }
+
+/* NOTES */
+.notes-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.notes-field label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.notes-field textarea {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.7rem 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--espresso);
+  outline: none;
+  resize: none;
+  min-height: 72px;
+  line-height: 1.55;
+  transition: border-color 0.15s;
+}
+.notes-field textarea::placeholder { color: var(--muted); }
+.notes-field textarea:focus { border-color: var(--caramel); }
+
+/* BUTTONS */
+.btn-primary {
+  background: var(--espresso);
+  color: var(--cream);
+  border: none;
+  border-radius: 100px;
+  padding: 0.95rem 1.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.93rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+}
+.btn-primary:hover:not(:disabled) { background: var(--roast); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 0.75rem 1.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.84rem;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: var(--cream-dark); color: var(--roast); }
+
+/* RESULT */
+.result {
+  background: var(--espresso);
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeUp 0.4s ease;
+}
+.result .r-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--caramel-light);
+  font-weight: 500;
+}
+.result .r-text {
+  font-family: 'Fraunces', serif;
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.65;
+}
+.result .r-remaining {
+  font-size: 0.72rem;
+  color: rgba(245,240,232,0.35);
+  letter-spacing: 0.03em;
+}
+.result .r-actions { display: flex; gap: 0.6rem; margin-top: 0.25rem; }
+.r-btn {
+  flex: 1;
+  background: rgba(245,240,232,0.08);
+  color: rgba(245,240,232,0.7);
+  border: 1px solid rgba(245,240,232,0.15);
+  border-radius: 100px;
+  padding: 0.6rem 0.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.r-btn:hover { background: rgba(245,240,232,0.15); }
+.r-btn.saved { background: rgba(106,128,96,0.3); border-color: var(--sage); color: #B4D4A0; }
+
+.dots { display: flex; gap: 5px; align-items: center; justify-content: center; height: 20px; }
+.dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--cream); animation: dp 1.2s ease-in-out infinite; }
+.dots span:nth-child(2) { animation-delay: .2s; }
+.dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes dp { 0%,100%{opacity:.3;transform:scale(.9)} 50%{opacity:1;transform:scale(1.1)} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goHome()">dial <span>in</span></div>
+  <div class="header-right">Coffee Coach</div>
+</header>
+
+<!-- SCREEN: Email collection (first visit only) -->
+<div class="screen" id="se">
+  <div>
+    <div class="screen-heading">Let's get started.</div>
+    <div class="screen-sub">Enter your email to unlock your coaching. You'll get 10 free dial-ins every month, no password needed.</div>
+  </div>
+  <div class="field">
+    <label>Your email</label>
+    <input type="email" id="emailInput" placeholder="you@example.com" onkeydown="if(event.key==='Enter')submitEmail()">
+  </div>
+  <button class="btn-primary" onclick="submitEmail()">Start brewing →</button>
+</div>
+
+<!-- SCREEN 0: Home -->
+<div class="screen" id="s0">
+
+  <div id="homeGreeting">
+    <div class="home-greeting">Good morning.</div>
+    <div class="home-sub">Ready to brew?</div>
+  </div>
+
+  <div id="newBrewCard" class="home-card" onclick="startNewBrew()">
+    <div class="card-eyebrow">Start fresh</div>
+    <div class="card-title">Brew a new coffee</div>
+    <div class="card-detail">Set up your brew and we'll coach you after you taste it.</div>
+    <div class="card-arrow">→</div>
+  </div>
+
+  <div id="repeatBrewCard" class="home-card prev-brew" onclick="startRepeatBrew()" style="display:none">
+    <div class="card-eyebrow">Pick up where you left off</div>
+    <div class="card-title" id="repeatBrewTitle">Brew this again</div>
+    <div class="card-detail" id="repeatBrewDetail"></div>
+    <div class="card-arrow">→</div>
+  </div>
+
+</div>
+
+<!-- SCREEN 0b: Repeat brew reminder -->
+<div class="screen" id="s0b">
+
+  <div>
+    <div class="screen-heading">Here's where you left off.</div>
+    <div class="screen-sub">Keep everything the same — just make this one change.</div>
+  </div>
+
+  <div class="reminder-card" id="reminderCard"></div>
+
+  <button class="btn-primary" onclick="continueRepeatBrew()">Let's brew it →</button>
+  <button class="btn-ghost" onclick="goHome()">← Back</button>
+
+</div>
+
+<!-- SCREEN 1: Brew setup -->
+<div class="screen" id="s1">
+
+  <div>
+    <div class="screen-heading">What are you brewing?</div>
+    <div class="screen-sub">Fill in what you know — skip anything you don't.</div>
+  </div>
+
+  <div class="input-grid">
+    <div class="field">
+      <label>How you're brewing</label>
+      <select id="brewMethod">
+        <option value="">Select…</option>
+        <option>Pour over</option>
+        <option>French press</option>
+        <option>AeroPress</option>
+        <option>Espresso</option>
+        <option>Moka pot</option>
+        <option>Cold brew</option>
+        <option>Drip machine</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Coffee (grams)</label>
+      <input type="number" id="coffeeDose" placeholder="e.g. 18" min="1" max="100">
+    </div>
+    <div class="field">
+      <label>Water (ml)</label>
+      <input type="number" id="waterAmount" placeholder="e.g. 300" min="1" max="2000">
+    </div>
+    <div class="field ig-full">
+      <label>Coffee name or origin (optional)</label>
+      <input type="text" id="coffeeName" placeholder="e.g. Ethiopian Yirgacheffe">
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="goToTasting()">How did it taste? →</button>
+  <button class="btn-ghost" onclick="goHome()">← Back</button>
+
+</div>
+
+<!-- SCREEN 2: Tasting -->
+<div class="screen" id="s2">
+
+  <div>
+    <div class="screen-heading">How did it taste?</div>
+    <div class="screen-sub">Tap everything that fits. There are no wrong answers.</div>
+  </div>
+
+  <div class="chip-group">
+    <div class="chip-group-label">Tasted good</div>
+    <div class="chips">
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Sweet</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Bright</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Juicy</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Balanced</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Clean</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Smooth</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Silky</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Syrupy</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Crisp</div>
+      <div class="chip" data-cat="good" onclick="toggleChip(this)">Tangy</div>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <div class="chip-group">
+    <div class="chip-group-label">Too sharp or sour</div>
+    <div class="chips">
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Sour</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Sharp</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Salty</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Metallic</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Tart</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Green / grassy</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">Short finish</div>
+      <div class="chip" data-cat="sour" onclick="toggleChip(this)">No sweetness</div>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <div class="chip-group">
+    <div class="chip-group-label">Too bitter or harsh</div>
+    <div class="chips">
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Bitter</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Harsh</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Dry</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Astringent</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Flat</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Burnt</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Chalky</div>
+      <div class="chip" data-cat="bitter" onclick="toggleChip(this)">Lingers too long</div>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <div class="chip-group">
+    <div class="chip-group-label">Strength &amp; body</div>
+    <div class="chips">
+      <div class="chip" data-cat="light" onclick="toggleChip(this)">Watery</div>
+      <div class="chip" data-cat="light" onclick="toggleChip(this)">Weak</div>
+      <div class="chip" data-cat="light" onclick="toggleChip(this)">Thin</div>
+      <div class="chip" data-cat="light" onclick="toggleChip(this)">Tea-like</div>
+      <div class="chip" data-cat="heavy" onclick="toggleChip(this)">Heavy</div>
+      <div class="chip" data-cat="heavy" onclick="toggleChip(this)">Thick</div>
+      <div class="chip" data-cat="heavy" onclick="toggleChip(this)">Muddy</div>
+      <div class="chip" data-cat="heavy" onclick="toggleChip(this)">Sludgy</div>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <div class="chip-group">
+    <div class="chip-group-label">Flavour character (these are usually normal)</div>
+    <div class="chips">
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Fruity</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Floral</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Chocolate</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Nutty</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Caramel</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Honey</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Tropical</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Funky</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Winey</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Earthy</div>
+      <div class="chip" data-cat="origin" onclick="toggleChip(this)">Spicy</div>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <div class="notes-field">
+    <label>Anything else you noticed (optional)</label>
+    <textarea id="freeNotes" placeholder="e.g. looked really dark, smelled smoky, felt rough on my tongue..."></textarea>
+  </div>
+
+  <button class="btn-primary" id="analyseBtn" onclick="analyse()" disabled>
+    Get my next brew tip →
+  </button>
+
+  <button class="btn-ghost" onclick="goToSetup()">← Back</button>
+
+  <div id="resultArea" style="display:none"></div>
+
+</div>
+
+<script>
+let chips = [];
+let userEmail = localStorage.getItem('dialin_email') || '';
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goHome() {
+  show('s0');
+}
+
+function init() {
+  if (!userEmail) {
+    show('se');
+    return;
+  }
+  setGreeting();
+  loadHomeState();
+  show('s0');
+}
+
+function submitEmail() {
+  const v = document.getElementById('emailInput').value.trim().toLowerCase();
+  if (!v || !v.includes('@') || !v.includes('.')) {
+    document.getElementById('emailInput').focus();
+    return;
+  }
+  userEmail = v;
+  localStorage.setItem('dialin_email', v);
+  setGreeting();
+  loadHomeState();
+  show('s0');
+}
+
+function setGreeting() {
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning.' : h < 17 ? 'Good afternoon.' : 'Good evening.';
+  document.querySelector('.home-greeting').textContent = greet;
+}
+
+function loadHomeState() {
+  const raw = localStorage.getItem('dialin_last_brew');
+  if (!raw) return;
+  const d = JSON.parse(raw);
+  const repeatCard = document.getElementById('repeatBrewCard');
+  const repeatTitle = document.getElementById('repeatBrewTitle');
+  const repeatDetail = document.getElementById('repeatBrewDetail');
+
+  const parts = [d.method, d.coffee ? d.coffee + 'g' : null, d.water ? d.water + 'ml' : null].filter(Boolean).join(' · ');
+
+  repeatTitle.textContent = d.coffeeName ? d.coffeeName : 'Brew this again';
+  repeatDetail.textContent = parts;
+  repeatCard.style.display = 'flex';
+}
+
+function startNewBrew() {
+  clearSetup();
+  show('s1');
+}
+
+function startRepeatBrew() {
+  const raw = localStorage.getItem('dialin_last_brew');
+  if (!raw) return;
+  const d = JSON.parse(raw);
+  const date = new Date(d.timestamp).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
+  const parts = [d.method, d.coffee ? d.coffee + 'g coffee' : null, d.water ? d.water + 'ml water' : null, d.coffeeName].filter(Boolean).join(' · ');
+
+  document.getElementById('reminderCard').innerHTML = `
+    <div class="rc-label">Last brewed · ${date}</div>
+    <div class="rc-brew">${parts || 'Your last brew'}</div>
+    ${d.advice ? `<div class="rc-tip"><strong>Tip for this brew:</strong> ${d.advice}</div>` : ''}
+  `;
+
+  show('s0b');
+}
+
+function continueRepeatBrew() {
+  const raw = localStorage.getItem('dialin_last_brew');
+  if (!raw) { show('s1'); return; }
+  const d = JSON.parse(raw);
+  if (d.method)     document.getElementById('brewMethod').value = d.method;
+  if (d.coffee)     document.getElementById('coffeeDose').value = d.coffee;
+  if (d.water)      document.getElementById('waterAmount').value = d.water;
+  if (d.coffeeName) document.getElementById('coffeeName').value = d.coffeeName;
+  show('s1');
+}
+
+function clearSetup() {
+  document.getElementById('brewMethod').value = '';
+  document.getElementById('coffeeDose').value = '';
+  document.getElementById('waterAmount').value = '';
+  document.getElementById('coffeeName').value = '';
+}
+
+function goToTasting() {
+  show('s2');
+}
+
+function goToSetup() {
+  show('s1');
+}
+
+function toggleChip(el) {
+  const cat = el.dataset.cat;
+  const txt = el.textContent;
+  if (el.classList.contains('on')) {
+    el.classList.remove('on', cat);
+    chips = chips.filter(c => c.text !== txt);
+  } else {
+    el.classList.add('on', cat);
+    chips.push({ text: txt, cat });
+  }
+  document.getElementById('analyseBtn').disabled = chips.length === 0;
+}
+
+async function analyse() {
+  const method     = document.getElementById('brewMethod').value;
+  const coffee     = document.getElementById('coffeeDose').value;
+  const water      = document.getElementById('waterAmount').value;
+  const coffeeName = document.getElementById('coffeeName').value;
+  const freeNotes  = document.getElementById('freeNotes').value.trim();
+  const selected   = chips.map(c => c.text).join(', ');
+
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+
+  const resultArea = document.getElementById('resultArea');
+  resultArea.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/dialin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: userEmail,
+        method,
+        coffee,
+        water,
+        coffeeName,
+        tastingNotes: selected,
+        freeNotes
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error === 'limit_reached') {
+      const resetDate = new Date(data.resetsOn).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+      resultArea.innerHTML = `
+        <div class="result">
+          <div class="r-label">Monthly limit reached</div>
+          <div class="r-text">You've used all 10 of your free dial-ins this month. You can brew again on ${resetDate}.</div>
+          <div class="r-actions">
+            <button class="r-btn" onclick="finishAndGoHome()">Got it</button>
+          </div>
+        </div>`;
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      btn.disabled = false;
+      btn.innerHTML = 'Get my next brew tip →';
+      return;
+    }
+
+    if (!data.advice) throw new Error(data.error || 'No response received.');
+
+    const advice = data.advice;
+    const usesRemaining = data.usesRemaining;
+
+    localStorage.setItem('dialin_last_brew', JSON.stringify({
+      timestamp: Date.now(), method, coffee, water, coffeeName, notes: selected, advice
+    }));
+
+    loadHomeState();
+
+    const remainingLine = (usesRemaining !== undefined && usesRemaining !== null)
+      ? `<div class="r-remaining">${usesRemaining} dial-in${usesRemaining !== 1 ? 's' : ''} remaining this month</div>`
+      : '';
+
+    resultArea.innerHTML = `
+      <div class="result">
+        <div class="r-label">Your next brew tip</div>
+        <div class="r-text">${advice}</div>
+        ${remainingLine}
+        <div class="r-actions">
+          <button class="r-btn saved">✓ Saved</button>
+          <button class="r-btn" onclick="finishAndGoHome()">Done</button>
+        </div>
+      </div>`;
+    resultArea.style.display = 'block';
+    resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  } catch (err) {
+    const msg = err.message || 'Unknown error';
+    resultArea.innerHTML = `
+      <div class="result" style="background:#5A1A1A">
+        <div class="r-label" style="color:#F4A261">Something went wrong</div>
+        <div class="r-text" style="font-size:0.85rem; line-height:1.5">${msg}</div>
+        <div class="r-actions">
+          <button class="r-btn" onclick="document.getElementById('resultArea').style.display='none'">Dismiss</button>
+        </div>
+      </div>`;
+    resultArea.style.display = 'block';
+    resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Get my next brew tip →';
+}
+
+function finishAndGoHome() {
+  chips = [];
+  document.querySelectorAll('.chip.on').forEach(el => {
+    el.classList.remove('on', el.dataset.cat);
+  });
+  document.getElementById('freeNotes').value = '';
+  document.getElementById('analyseBtn').disabled = true;
+  document.getElementById('resultArea').style.display = 'none';
+  loadHomeState();
+  show('s0');
+}
+
+init();
+</script>
+</body>
 </html>
