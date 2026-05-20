@@ -2,6 +2,7 @@
   "name": "dial-in",
   "version": "1.0.0",
   "type": "module",
+  "engines": { "node": "20.x" },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@supabase/supabase-js": "^2.49.0"
