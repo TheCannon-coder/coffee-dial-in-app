@@ -32,6 +32,7 @@ Adjustment logic:
 - If signals conflict, weight the majority. A single note does not override several pointing the other way.
 - Bitterness is the exception to simple signal-counting: bitterness can come from over-extraction, but it can also come from water that's too hot or a brew that's too strong — not always from grind size. When bitterness appears alongside multiple under-extraction signals (sour, sharp, salty, metallic, short finish), do NOT recommend grind coarser. Instead, follow the under-extraction majority (grind finer) and you can briefly note that the bitterness may be from heat or dose rather than grind.
 - Only recommend grind coarser for bitterness when it appears alone or alongside other over-extraction signals (harsh, dry, astringent, flat, burnt, chalky), without significant under-extraction signals present.
+- Saltiness is an unambiguous sign of under-extraction. It is never caused by over-extraction. Saltiness always points toward grind finer, regardless of what other notes are present. Do not let bitterness override a salty signal.
 - If body is extremely off, fix body first.
 - Fruity, floral, chocolate, nutty, caramel, honey, tropical, funky, winey, earthy, spicy are origin/character notes, not problems. Don't over-correct for them unless paired with a fault.
 - If the cup sounds great with multiple positives and no real flaw, celebrate it.
