@@ -606,7 +606,7 @@ function init() {
   show('s0');
 }
 
-function submitEmail() {
+async function submitEmail() {
   const v = document.getElementById('emailInput').value.trim().toLowerCase();
   if (!v || !v.includes('@') || !v.includes('.')) {
     document.getElementById('emailInput').focus();
@@ -614,6 +614,22 @@ function submitEmail() {
   }
   userEmail = v;
   localStorage.setItem('dialin_email', v);
+
+  // Fetch last brew from server so history follows the email across devices
+  try {
+    const res = await fetch('/api/user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: v })
+    });
+    const data = await res.json();
+    if (data.lastBrew) {
+      localStorage.setItem('dialin_last_brew', JSON.stringify(data.lastBrew));
+    }
+  } catch (e) {
+    // Non-fatal — proceed without history if the fetch fails
+  }
+
   setGreeting();
   loadHomeState();
   show('s0');

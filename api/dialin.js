@@ -179,6 +179,25 @@ export default async function handler(req, res) {
     console.error('Usage increment failed:', updateError);
   }
 
+  // Save brew to history
+  const { error: brewError } = await supabase
+    .from('brews')
+    .insert({
+      user_email: cleanEmail,
+      method:        method      || null,
+      coffee:        coffee      || null,
+      water:         water       || null,
+      coffee_name:   coffeeName  || null,
+      tasting_notes: tastingNotes || null,
+      free_notes:    freeNotes   || null,
+      advice,
+    });
+
+  if (brewError) {
+    // Non-fatal: usage was counted, tip was returned
+    console.error('Brew history save failed:', brewError);
+  }
+
   return res.status(200).json({
     advice,
     usesRemaining: 10 - (user.uses_this_month + 1),
