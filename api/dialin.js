@@ -183,7 +183,7 @@ export default async function handler(req, res) {
   // Add new users to Klaviyo list
   if (isNewUser && process.env.KLAVIYO_API_KEY) {
     try {
-      await fetch('https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/', {
+      const klaviyoRes = await fetch('https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/', {
         method: 'POST',
         headers: {
           'Authorization': `Klaviyo-API-Key ${process.env.KLAVIYO_API_KEY}`,
@@ -214,6 +214,12 @@ export default async function handler(req, res) {
           },
         }),
       });
+      if (!klaviyoRes.ok) {
+        const errBody = await klaviyoRes.text();
+        console.error('Klaviyo error:', klaviyoRes.status, errBody);
+      } else {
+        console.log('Klaviyo subscribe success for:', cleanEmail, 'status:', klaviyoRes.status);
+      }
     } catch (err) {
       // Non-fatal — user still gets their tip
       console.error('Klaviyo subscribe failed:', err);
