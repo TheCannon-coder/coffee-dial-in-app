@@ -463,6 +463,10 @@ header {
       <label>Water (ml)</label>
       <input type="number" id="waterAmount" placeholder="e.g. 300" min="1" max="2000">
     </div>
+    <div class="field">
+      <label>Brew time</label>
+      <input type="text" id="brewTime" placeholder="e.g. 3:00" autocomplete="off">
+    </div>
     <div class="field ig-full">
       <label>Coffee name or origin (optional)</label>
       <input type="text" id="coffeeName" placeholder="e.g. Ethiopian Yirgacheffe" autocomplete="off">
@@ -684,6 +688,7 @@ function continueRepeatBrew() {
   if (d.method)     document.getElementById('brewMethod').value = d.method;
   if (d.coffee)     document.getElementById('coffeeDose').value = d.coffee;
   if (d.water)      document.getElementById('waterAmount').value = d.water;
+  if (d.brewTime)   document.getElementById('brewTime').value = d.brewTime;
   if (d.coffeeName) document.getElementById('coffeeName').value = d.coffeeName;
   show('s1');
 }
@@ -720,6 +725,7 @@ async function analyse() {
   const method     = document.getElementById('brewMethod').value;
   const coffee     = document.getElementById('coffeeDose').value;
   const water      = document.getElementById('waterAmount').value;
+  const brewTime   = document.getElementById('brewTime').value.trim();
   const coffeeName = document.getElementById('coffeeName').value;
   const freeNotes  = document.getElementById('freeNotes').value.trim();
   const selected   = chips.map(c => c.text).join(', ');
@@ -740,6 +746,7 @@ async function analyse() {
         method,
         coffee,
         water,
+        brewTime,
         coffeeName,
         tastingNotes: selected,
         freeNotes
@@ -773,7 +780,7 @@ async function analyse() {
     const usesRemaining = data.usesRemaining;
 
     localStorage.setItem('dialin_last_brew', JSON.stringify({
-      timestamp: Date.now(), method, coffee, water, coffeeName, notes: selected, advice
+      timestamp: Date.now(), method, coffee, water, brewTime, coffeeName, notes: selected, advice
     }));
 
     loadHomeState();

@@ -40,6 +40,7 @@ export default async function handler(req, res) {
       method: brew.method,
       coffee: brew.coffee,
       water: brew.water,
+      brewTime: brew.brew_time,
       coffeeName: brew.coffee_name,
       notes: brew.tasting_notes,
       advice: brew.advice,
