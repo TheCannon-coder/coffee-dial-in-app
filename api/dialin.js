@@ -105,6 +105,7 @@ export default async function handler(req, res) {
   }
 
   let user = existing;
+  const isNewUser = !existing;
 
   if (!user) {
     // First-time user — create record
@@ -177,6 +178,46 @@ export default async function handler(req, res) {
   if (updateError) {
     // Non-fatal: user got their tip, log and continue
     console.error('Usage increment failed:', updateError);
+  }
+
+  // Add new users to Klaviyo list
+  if (isNewUser && process.env.KLAVIYO_API_KEY) {
+    try {
+      await fetch('https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Klaviyo-API-Key ${process.env.KLAVIYO_API_KEY}`,
+          'Content-Type': 'application/json',
+          'revision': '2024-10-15',
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'profile-subscription-bulk-create-job',
+            attributes: {
+              profiles: {
+                data: [{
+                  type: 'profile',
+                  attributes: {
+                    email: cleanEmail,
+                    subscriptions: {
+                      email: { marketing: { consent: 'SUBSCRIBED' } },
+                    },
+                  },
+                }],
+              },
+            },
+            relationships: {
+              list: {
+                data: { type: 'list', id: 'UySSKn' },
+              },
+            },
+          },
+        }),
+      });
+    } catch (err) {
+      // Non-fatal — user still gets their tip
+      console.error('Klaviyo subscribe failed:', err);
+    }
   }
 
   // Save brew to history
