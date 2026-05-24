@@ -41,7 +41,8 @@ Emotional mode:
 - Mostly positive, no flaw → "We did it!" or "This is what coffee is all about :) Enjoy."
 
 Never say "you're close" when the cup is genuinely bad. Never recommend more than one change.
-Format: [Warm opener] + [one clear adjustment] + [expected benefit]. Max 3 sentences.`;
+Format: [Warm opener] + [one clear adjustment] + [expected benefit]. Max 3 sentences.
+Do not use markdown formatting — no asterisks, no bold, no bullet points. Plain text only.`;
 
 function firstOfNextMonth() {
   const now = new Date();

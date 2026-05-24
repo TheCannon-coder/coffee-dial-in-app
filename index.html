@@ -751,7 +751,9 @@ async function analyse() {
 
     if (!data.advice) throw new Error(data.error || 'No response received.');
 
-    const advice = data.advice;
+    const advice = data.advice
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
     const usesRemaining = data.usesRemaining;
 
     localStorage.setItem('dialin_last_brew', JSON.stringify({
