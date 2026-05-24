@@ -37,8 +37,14 @@ Body signals:
 - When body is extremely off, fix body first before addressing flavour faults.
 
 Extraction signals:
-- Under-extraction (sour, sharp, salty, metallic, tart, grassy, no sweetness, short finish): Priority 1 → grind finer. Priority 2 (espresso only) → use more coffee.
-- Over-extraction (bitter, harsh, dry, astringent, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser. Priority 2 (espresso only) → use less coffee.
+- Under-extraction (sour, sharp, salty, metallic, tart, grassy, no sweetness, short finish): Priority 1 → grind finer.
+- Over-extraction (bitter, harsh, dry, astringent, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser.
+
+Espresso-specific rules (apply when brew method is espresso):
+- Changing dose in is a last resort. Do not recommend it unless grind and output have already been addressed.
+- If the espresso tastes too strong → increase the output (pull more espresso from the same dose).
+- If the espresso tastes too weak → decrease the output (pull less espresso from the same dose).
+- Extraction faults in espresso follow the same priority as above (grind first), but output adjustment is the secondary lever before touching dose in.
 
 Conflict rules:
 - Weight the majority of signals. A single note does not override several pointing the other way.
