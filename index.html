@@ -591,6 +591,12 @@ header {
 let chips = [];
 let userEmail = localStorage.getItem('dialin_email') || '';
 
+// Silently capture referral code from URL (?ref=CODE)
+(function captureRef() {
+  const ref = new URLSearchParams(window.location.search).get('ref');
+  if (ref) localStorage.setItem('dialin_ref', ref);
+})();
+
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -750,7 +756,8 @@ async function analyse() {
         brewTime,
         coffeeName,
         tastingNotes: selected,
-        freeNotes
+        freeNotes,
+        ref: localStorage.getItem('dialin_ref') || undefined
       })
     });
 

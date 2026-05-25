@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, method, coffee, water, brewTime, coffeeName, tastingNotes, freeNotes } = req.body ?? {};
+  const { email, method, coffee, water, brewTime, coffeeName, tastingNotes, freeNotes, ref } = req.body ?? {};
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Valid email required' });
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     // First-time user — create record
     const { data: created, error: insertError } = await supabase
       .from('users')
-      .insert({ email: cleanEmail, uses_this_month: 0, month_reset_at: today })
+      .insert({ email: cleanEmail, uses_this_month: 0, month_reset_at: today, referred_by: ref || null })
       .select()
       .single();
 

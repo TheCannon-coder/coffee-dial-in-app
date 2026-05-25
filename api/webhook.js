@@ -42,6 +42,8 @@ export default async function handler(req, res) {
     const session = event.data.object;
     const email = session.metadata?.email || session.customer_details?.email;
     if (email) {
+      const cleanEmail = email.toLowerCase().trim();
+
       const { error } = await supabase
         .from('users')
         .update({
@@ -49,9 +51,28 @@ export default async function handler(req, res) {
           subscription_status: 'active',
           stripe_customer_id: session.customer,
         })
-        .eq('email', email.toLowerCase().trim());
+        .eq('email', cleanEmail);
       if (error) console.error('Supabase activate pro error:', error);
       else console.log('Pro activated for:', email);
+
+      // Log referral conversion if this user was referred
+      const { data: user } = await supabase
+        .from('users')
+        .select('referred_by')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (user?.referred_by) {
+        const { error: refError } = await supabase
+          .from('referral_conversions')
+          .insert({
+            affiliate_code: user.referred_by,
+            referred_email: cleanEmail,
+            stripe_customer_id: session.customer,
+          });
+        if (refError) console.error('Referral conversion log error:', refError);
+        else console.log('Referral conversion logged for affiliate:', user.referred_by);
+      }
     }
   }
 
