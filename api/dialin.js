@@ -136,8 +136,8 @@ export default async function handler(req, res) {
     user = reset;
   }
 
-  // Enforce limit
-  if (user.uses_this_month >= 10) {
+  // Enforce limit (pro users are exempt)
+  if (!user.is_pro && user.uses_this_month >= 10) {
     return res.status(200).json({ error: 'limit_reached', resetsOn: firstOfNextMonth() });
   }
 
@@ -248,6 +248,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     advice,
-    usesRemaining: 10 - (user.uses_this_month + 1),
+    usesRemaining: user.is_pro ? null : 10 - (user.uses_this_month + 1),
+    isPro: user.is_pro ?? false,
   });
 }
