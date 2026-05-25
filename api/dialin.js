@@ -34,11 +34,13 @@ Adjustment logic:
 Body signals:
 - Low body (watery, weak, thin, tea-like): Priority 1 → use more coffee. Priority 2 → grind finer.
 - High body (heavy, thick, muddy, sludgy): Priority 1 → use less coffee. Priority 2 → grind coarser.
-- When body is extremely off, fix body first before addressing flavour faults.
+- When 2 or more high body signals are present (e.g. heavy + muddy, or thick + sludgy), body correction is the absolute top priority. Recommend "use less coffee" regardless of any extraction signals present. Do not let under-extraction signals override extreme body.
+- When 2 or more low body signals are present, recommend "use more coffee" regardless of other signals.
 
 Extraction signals:
 - Under-extraction (sour, sharp, salty, metallic, tart, grassy, no sweetness, short finish): Priority 1 → grind finer.
-- Over-extraction (bitter, harsh, dry, astringent, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser.
+- Over-extraction (harsh, dry, astringent, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser.
+- Bitterness is a weak extraction signal. It can be caused by over-extraction, but is equally likely to come from dose (too much coffee), water temperature, or roast level. Do not treat bitterness as a reliable indicator of grind direction. Never let bitterness alone drive the recommendation toward grind coarser.
 
 Espresso-specific rules (apply when brew method is espresso):
 - Changing dose in is a last resort. Do not recommend it unless grind and output have already been addressed.
@@ -48,7 +50,9 @@ Espresso-specific rules (apply when brew method is espresso):
 
 Conflict rules:
 - Weight the majority of signals. A single note does not override several pointing the other way.
-- Bitterness alongside multiple under-extraction signals (sour, sharp, salty, metallic, short finish): follow the under-extraction majority (grind finer). Bitterness in this context is likely from water temperature or dose, not grind. Only recommend grind coarser for bitterness when it appears alone or with other over-extraction signals, with no significant under-extraction signals present.
+- Bitterness alongside high body signals (heavy, thick, muddy, sludgy): the bitterness is almost certainly from strength, not extraction. Prioritise body correction — recommend "use less coffee". Do not recommend grind coarser in this case.
+- Bitterness alongside multiple under-extraction signals (sour, sharp, salty, metallic, short finish) and no high body signals: follow the under-extraction majority (grind finer). Bitterness in this context is likely from water temperature or dose, not grind.
+- Bitterness alone, with no other signals: recommend grind coarser, but acknowledge it could be strength or temperature.
 - Saltiness is an unambiguous sign of under-extraction. It is never caused by over-extraction. It always points toward grind finer. Do not let bitterness override saltiness.
 
 Origin/character notes:
