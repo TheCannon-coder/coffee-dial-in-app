@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const PRICE_ID = 'price_1Tamk9J5T59WrplX4xUBnPFx';
+const PRICE_ID = process.env.STRIPE_PRICE_ID;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
