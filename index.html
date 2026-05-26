@@ -650,6 +650,36 @@ header {
 
 </div>
 
+<!-- SCREEN: Post-brew details (brew-along flow) -->
+<div class="screen" id="s-brew-details">
+  <div>
+    <div class="screen-heading">Nice work.</div>
+    <div class="screen-sub">Add any details before we taste — or just keep going.</div>
+  </div>
+
+  <div class="input-grid">
+    <div class="field ig-full">
+      <label>Coffee name or origin</label>
+      <input type="text" id="bd-coffeeName" placeholder="e.g. Ethiopian Yirgacheffe" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Coffee (g)</label>
+      <input type="number" id="bd-coffee" placeholder="e.g. 15" min="1" max="100">
+    </div>
+    <div class="field">
+      <label>Water (ml)</label>
+      <input type="number" id="bd-water" placeholder="e.g. 250" min="1" max="2000">
+    </div>
+    <div class="field ig-full">
+      <label>Grinder setting or other notes</label>
+      <textarea id="bd-grinderNotes" placeholder="e.g. Setting 14, third notch from fine…" rows="2" autocomplete="off"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="brewDetailsNext()">How did it taste? →</button>
+  <button class="btn-ghost" onclick="brewCancel()">← Start over</button>
+</div>
+
 <!-- SCREEN: Recipe guide (hidden — not linked from nav) -->
 <div class="screen" id="s-recipe">
   <div class="screen-inner">
@@ -1189,11 +1219,7 @@ function brewNext() {
   clearInterval(brewTimer);
   brewIndex++;
   if (brewIndex >= brewSteps.length) {
-    if (brewFromWorkflow) {
-      finishBrewWorkflow();
-    } else {
-      show('s-recipe');
-    }
+    finishBrewWorkflow();
     return;
   }
   renderBrewStep();
@@ -1202,30 +1228,15 @@ function brewNext() {
 function brewCancel() {
   clearInterval(brewTimer);
   clearInterval(workflowBrewInterval);
-  if (brewFromWorkflow) {
-    brewFromWorkflow = false;
-    show('s1');
-  } else {
-    show('s-recipe');
-  }
+  brewFromWorkflow = false;
+  show('s1');
 }
 
 function finishBrewWorkflow() {
   clearInterval(workflowBrewInterval);
-  brewFromWorkflow = false;
 
   const method = document.getElementById('brewMethod').value;
   const recipe = RECIPES[method];
-
-  // Back-populate empty fields from recipe
-  if (recipe) {
-    const dose = document.getElementById('coffeeDose');
-    const water = document.getElementById('waterAmount');
-    const temp = document.getElementById('waterTemp');
-    if (!dose.value && recipe.stats['Coffee'])   dose.value = parseInt(recipe.stats['Coffee']);
-    if (!water.value && recipe.stats['Water'])   water.value = parseInt(recipe.stats['Water']);
-    if (!temp.value && recipe.stats['Temp'])     temp.value = recipe.stats['Temp'];
-  }
 
   // Auto-fill brew time from total elapsed
   if (workflowBrewSeconds > 0) {
@@ -1234,6 +1245,31 @@ function finishBrewWorkflow() {
     document.getElementById('brewTime').value = `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  // Pre-populate details screen from s1 form (or recipe defaults for empty fields)
+  const coffeeDose = document.getElementById('coffeeDose').value || (recipe ? parseInt(recipe.stats['Coffee']) : '');
+  const waterAmt   = document.getElementById('waterAmount').value || (recipe ? parseInt(recipe.stats['Water']) : '');
+
+  document.getElementById('bd-coffeeName').value   = document.getElementById('coffeeName').value || '';
+  document.getElementById('bd-coffee').value        = coffeeDose || '';
+  document.getElementById('bd-water').value         = waterAmt || '';
+  document.getElementById('bd-grinderNotes').value  = document.getElementById('grinderNotes').value || '';
+
+  show('s-brew-details');
+}
+
+function brewDetailsNext() {
+  // Copy details screen values back into s1 form fields
+  const name   = document.getElementById('bd-coffeeName').value;
+  const coffee = document.getElementById('bd-coffee').value;
+  const water  = document.getElementById('bd-water').value;
+  const grind  = document.getElementById('bd-grinderNotes').value;
+
+  if (name)   document.getElementById('coffeeName').value   = name;
+  if (coffee) document.getElementById('coffeeDose').value   = coffee;
+  if (water)  document.getElementById('waterAmount').value  = water;
+  if (grind)  document.getElementById('grinderNotes').value = grind;
+
+  brewFromWorkflow = false;
   show('s2');
 }
 
