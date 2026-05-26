@@ -900,7 +900,6 @@ function finishAndGoHome() {
 }
 
 init();
-loadRecipe();
 
 // ─── BREW GUIDE ───────────────────────────────────────────────
 
@@ -1074,7 +1073,8 @@ function formatTime(s) {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-// Load default recipe on first visit to recipe screen
+// Load default recipe on page load and on method change
+loadRecipe();
 document.getElementById('recipeMethod').addEventListener('change', loadRecipe);
 
 </script>
