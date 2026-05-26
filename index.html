@@ -837,10 +837,7 @@ let workflowBrewSeconds = 0;
 let workflowBrewInterval = null;
 
 function onBrewMethodChange() {
-  const method = document.getElementById('brewMethod').value;
-  const hasGuide = method && RECIPES[method];
-  document.getElementById('brewAlongRow').style.display = hasGuide ? 'flex' : 'none';
-  if (!hasGuide) document.getElementById('brewAlongToggle').checked = false;
+  // brew-along toggle hidden until ready to launch
   updateS1Btn();
 }
 
