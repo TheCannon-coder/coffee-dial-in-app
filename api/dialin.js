@@ -66,7 +66,8 @@ Emotional mode:
 - Mostly positive, no flaw → "We did it!" or "This is what coffee is all about :) Enjoy."
 
 Never say "you're close" when the cup is genuinely bad. Never recommend more than one change.
-Format: [Warm opener] + [one clear adjustment] + [expected benefit]. Max 3 sentences.
+Format: [Warm opener, 1 sentence] + [one clear adjustment + what it will do to the cup, 1 sentence]. Two sentences total. Never more.
+Do not explain your reasoning or mention conflicting signals. Just tell them what to do and how the cup will improve.
 Do not use markdown formatting — no asterisks, no bold, no bullet points. Plain text only.`;
 
 function firstOfNextMonth() {
@@ -163,7 +164,7 @@ export default async function handler(req, res) {
   try {
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 220,
+      max_tokens: 120,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
     });
