@@ -429,8 +429,8 @@ header {
 <div class="screen" id="s0b">
 
   <div>
-    <div class="screen-heading">Here's where you left off.</div>
-    <div class="screen-sub">Keep everything the same — just make this one change.</div>
+    <div class="screen-heading">Here's where we left off.</div>
+    <div class="screen-sub">Keep everything the same — let's just try this one change.</div>
   </div>
 
   <div class="reminder-card" id="reminderCard"></div>
@@ -444,7 +444,7 @@ header {
 <div class="screen" id="s1">
 
   <div>
-    <div class="screen-heading">What are you brewing?</div>
+    <div class="screen-heading">What are we brewing today?</div>
     <div class="screen-sub">Fill in what you know — skip anything you don't.</div>
   </div>
 
@@ -509,7 +509,7 @@ header {
 
   <div>
     <div class="screen-heading">How did it taste?</div>
-    <div class="screen-sub">Tap everything that fits. There are no wrong answers.</div>
+    <div class="screen-sub">Tap everything that fits. There are no wrong answers — we're just exploring.</div>
   </div>
 
   <div class="chip-group">
@@ -603,7 +603,7 @@ header {
   </div>
 
   <button class="btn-primary" id="analyseBtn" onclick="analyse()" disabled>
-    Get my next brew tip →
+    Let's dial it in →
   </button>
 
   <button class="btn-ghost" onclick="goToSetup()">← Back</button>
@@ -615,8 +615,8 @@ header {
 <!-- SCREEN: Recipe guide (hidden — not linked from nav) -->
 <div class="screen" id="s-recipe">
   <div class="screen-inner">
-    <div class="screen-heading">Your starter recipe</div>
-    <div class="screen-sub">A simple starting point. You can dial it in from here.</div>
+    <div class="screen-heading">Let's start here.</div>
+    <div class="screen-sub">A simple starting point. We can dial it in from here.</div>
 
     <div style="margin-bottom:1.5rem">
       <label style="display:block;font-size:0.75rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Brew method</label>
@@ -857,7 +857,7 @@ async function analyse() {
       resultArea.style.display = 'block';
       resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       btn.disabled = false;
-      btn.innerHTML = 'Get my next brew tip →';
+      btn.innerHTML = 'Let\'s dial it in →';
       return;
     }
 
@@ -880,7 +880,7 @@ async function analyse() {
 
     resultArea.innerHTML = `
       <div class="result">
-        <div class="r-label">Your next brew tip</div>
+        <div class="r-label">Our next brew tip</div>
         <div class="r-text">${advice}</div>
         ${remainingLine}
         <div class="r-actions">
@@ -906,7 +906,7 @@ async function analyse() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = 'Get my next brew tip →';
+  btn.innerHTML = 'Let\'s dial it in →';
 }
 
 function finishAndGoHome() {
