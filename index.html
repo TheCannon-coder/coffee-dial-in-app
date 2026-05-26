@@ -487,6 +487,20 @@ header {
       <label>Water temp</label>
       <input type="text" id="waterTemp" placeholder="e.g. 93°C" autocomplete="off">
     </div>
+    <div class="ig-full" id="brewTimerWidget" style="border:1.5px solid var(--border);border-radius:16px;overflow:hidden;background:white">
+      <button onclick="toggleTimerWidget()" style="width:100%;padding:0.85rem 1.1rem;background:none;border:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--text-soft);font-size:0.9rem">
+        <span style="display:flex;align-items:center;gap:0.5rem">⏱ <span id="timerWidgetLabel">Brew timer</span></span>
+        <span id="timerChevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
+      </button>
+      <div id="timerBody" style="display:none;padding:0 1.1rem 1.1rem;text-align:center">
+        <div id="timerDisplay" style="font-family:'Fraunces',serif;font-size:3rem;font-weight:300;color:var(--espresso);line-height:1;margin-bottom:1rem">0:00</div>
+        <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap">
+          <button id="timerStartBtn" onclick="timerStartPause()" style="flex:1;padding:0.7rem;border-radius:10px;border:none;background:var(--espresso);color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Start</button>
+          <button onclick="timerReset()" style="flex:1;padding:0.7rem;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-soft);font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Reset</button>
+          <button id="timerUseBtn" onclick="timerUse()" style="display:none;flex:1;padding:0.7rem;border-radius:10px;border:none;background:var(--sage);color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Use time</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div style="border-top:1px solid var(--border);margin:0.75rem 0 0.25rem"></div>
@@ -496,22 +510,6 @@ header {
     <div class="field ig-full">
       <label>Grinder setting or other notes</label>
       <textarea id="grinderNotes" placeholder="e.g. Setting 14, third notch from fine…" rows="2" autocomplete="off"></textarea>
-    </div>
-  </div>
-
-  <!-- Brew timer -->
-  <div id="brewTimerWidget" style="border:1.5px solid var(--border);border-radius:16px;overflow:hidden;background:white">
-    <button onclick="toggleTimerWidget()" style="width:100%;padding:0.85rem 1.1rem;background:none;border:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--text-soft);font-size:0.9rem">
-      <span style="display:flex;align-items:center;gap:0.5rem">⏱ <span id="timerWidgetLabel">Brew timer</span></span>
-      <span id="timerChevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
-    </button>
-    <div id="timerBody" style="display:none;padding:0 1.1rem 1.1rem;text-align:center">
-      <div id="timerDisplay" style="font-family:'Fraunces',serif;font-size:3rem;font-weight:300;color:var(--espresso);line-height:1;margin-bottom:1rem">0:00</div>
-      <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap">
-        <button id="timerStartBtn" onclick="timerStartPause()" style="flex:1;padding:0.7rem;border-radius:10px;border:none;background:var(--espresso);color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Start</button>
-        <button onclick="timerReset()" style="flex:1;padding:0.7rem;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-soft);font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Reset</button>
-        <button id="timerUseBtn" onclick="timerUse()" style="display:none;flex:1;padding:0.7rem;border-radius:10px;border:none;background:var(--sage);color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Use time</button>
-      </div>
     </div>
   </div>
 
