@@ -208,6 +208,28 @@ header {
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
 }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+}
+.toggle-label { font-size: 0.9rem; color: var(--text-soft); }
+.toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: #ccc; border-radius: 26px; transition: 0.2s;
+}
+.toggle-slider:before {
+  content: ''; position: absolute;
+  height: 20px; width: 20px; left: 3px; bottom: 3px;
+  background: white; border-radius: 50%; transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--espresso); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
 .ig-full { grid-column: 1 / -1; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; }
 .field label {
@@ -455,7 +477,7 @@ header {
     </div>
     <div class="field ig-full">
       <label>How you're brewing</label>
-      <select id="brewMethod">
+      <select id="brewMethod" onchange="onBrewMethodChange()">
         <option value="">Select…</option>
         <option>Pour over</option>
         <option>V60</option>
@@ -469,6 +491,13 @@ header {
         <option>Drip machine</option>
         <option>Other</option>
       </select>
+      <div class="toggle-row" id="brewAlongRow" style="display:none">
+        <span class="toggle-label">Brew along with me</span>
+        <label class="toggle">
+          <input type="checkbox" id="brewAlongToggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
     </div>
 
     <div class="field">
@@ -513,7 +542,7 @@ header {
     </div>
   </div>
 
-  <button class="btn-primary" onclick="goToTasting()">How did it taste? →</button>
+  <button class="btn-primary" id="s1NextBtn" onclick="s1Next()">How did it taste? →</button>
   <button class="btn-ghost" onclick="goHome()">← Back</button>
 
 </div>
@@ -802,6 +831,51 @@ function goToTasting() {
   show('s2');
 }
 
+let brewFromWorkflow = false;
+let workflowBrewStart = null;
+let workflowBrewSeconds = 0;
+let workflowBrewInterval = null;
+
+function onBrewMethodChange() {
+  const method = document.getElementById('brewMethod').value;
+  const hasGuide = method && RECIPES[method];
+  document.getElementById('brewAlongRow').style.display = hasGuide ? 'flex' : 'none';
+  if (!hasGuide) document.getElementById('brewAlongToggle').checked = false;
+  updateS1Btn();
+}
+
+function updateS1Btn() {
+  const on = document.getElementById('brewAlongToggle')?.checked;
+  document.getElementById('s1NextBtn').textContent = on ? 'Start brewing →' : 'How did it taste? →';
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'brewAlongToggle') updateS1Btn();
+});
+
+function s1Next() {
+  const on = document.getElementById('brewAlongToggle').checked;
+  const method = document.getElementById('brewMethod').value;
+  if (on && method && RECIPES[method]) {
+    startBrewWorkflow(method);
+  } else {
+    show('s2');
+  }
+}
+
+function startBrewWorkflow(method) {
+  // Sync recipe selector so startBrew() picks up the right method
+  document.getElementById('recipeMethod').value = method;
+  loadRecipe();
+  brewFromWorkflow = true;
+  workflowBrewSeconds = 0;
+  workflowBrewStart = Date.now();
+  // Track total elapsed time for brew time field
+  clearInterval(workflowBrewInterval);
+  workflowBrewInterval = setInterval(() => { workflowBrewSeconds++; }, 1000);
+  startBrew();
+}
+
 function goToSetup() {
   show('s1');
 }
@@ -1088,7 +1162,11 @@ function brewNext() {
   clearInterval(brewTimer);
   brewIndex++;
   if (brewIndex >= brewSteps.length) {
-    show('s-recipe');
+    if (brewFromWorkflow) {
+      finishBrewWorkflow();
+    } else {
+      show('s-recipe');
+    }
     return;
   }
   renderBrewStep();
@@ -1096,7 +1174,40 @@ function brewNext() {
 
 function brewCancel() {
   clearInterval(brewTimer);
-  show('s-recipe');
+  clearInterval(workflowBrewInterval);
+  if (brewFromWorkflow) {
+    brewFromWorkflow = false;
+    show('s1');
+  } else {
+    show('s-recipe');
+  }
+}
+
+function finishBrewWorkflow() {
+  clearInterval(workflowBrewInterval);
+  brewFromWorkflow = false;
+
+  const method = document.getElementById('brewMethod').value;
+  const recipe = RECIPES[method];
+
+  // Back-populate empty fields from recipe
+  if (recipe) {
+    const dose = document.getElementById('coffeeDose');
+    const water = document.getElementById('waterAmount');
+    const temp = document.getElementById('waterTemp');
+    if (!dose.value && recipe.stats['Coffee'])   dose.value = parseInt(recipe.stats['Coffee']);
+    if (!water.value && recipe.stats['Water'])   water.value = parseInt(recipe.stats['Water']);
+    if (!temp.value && recipe.stats['Temp'])     temp.value = recipe.stats['Temp'];
+  }
+
+  // Auto-fill brew time from total elapsed
+  if (workflowBrewSeconds > 0) {
+    const m = Math.floor(workflowBrewSeconds / 60);
+    const s = workflowBrewSeconds % 60;
+    document.getElementById('brewTime').value = `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  show('s2');
 }
 
 function formatTime(s) {
