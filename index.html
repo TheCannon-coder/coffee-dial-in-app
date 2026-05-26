@@ -449,7 +449,7 @@ header {
   </div>
 
   <div class="input-grid">
-    <div class="field">
+    <div class="field ig-full">
       <label>How you're brewing</label>
       <select id="brewMethod">
         <option value="">Select…</option>
@@ -468,7 +468,7 @@ header {
     </div>
 
     <div class="field">
-      <label>Coffee (grams)</label>
+      <label>Coffee (g)</label>
       <input type="number" id="coffeeDose" placeholder="e.g. 18" min="1" max="100">
     </div>
     <div class="field">
@@ -480,16 +480,22 @@ header {
       <input type="text" id="brewTime" placeholder="e.g. 3:00" autocomplete="off">
     </div>
     <div class="field">
-      <label>Water temp (optional)</label>
+      <label>Water temp</label>
       <input type="text" id="waterTemp" placeholder="e.g. 93°C" autocomplete="off">
     </div>
+  </div>
+
+  <div style="border-top:1px solid var(--border);margin:0.75rem 0 0.25rem"></div>
+  <div style="font-size:0.75rem;color:var(--text-soft);margin-bottom:0.75rem">Optional details</div>
+
+  <div class="input-grid">
     <div class="field ig-full">
-      <label>Coffee name or origin (optional)</label>
+      <label>Coffee name or origin</label>
       <input type="text" id="coffeeName" placeholder="e.g. Ethiopian Yirgacheffe" autocomplete="off">
     </div>
     <div class="field ig-full">
-      <label>Grinder setting or other notes (optional)</label>
-      <textarea id="grinderNotes" placeholder="e.g. Grind setting 14, third notch from fine…" rows="2" autocomplete="off"></textarea>
+      <label>Grinder setting or other notes</label>
+      <textarea id="grinderNotes" placeholder="e.g. Setting 14, third notch from fine…" rows="2" autocomplete="off"></textarea>
     </div>
   </div>
 
