@@ -499,6 +499,22 @@ header {
     </div>
   </div>
 
+  <!-- Brew timer -->
+  <div id="brewTimerWidget" style="border:1.5px solid var(--border);border-radius:16px;overflow:hidden;background:white">
+    <button onclick="toggleTimerWidget()" style="width:100%;padding:0.85rem 1.1rem;background:none;border:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--text-soft);font-size:0.9rem">
+      <span style="display:flex;align-items:center;gap:0.5rem">⏱ <span id="timerWidgetLabel">Brew timer</span></span>
+      <span id="timerChevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
+    </button>
+    <div id="timerBody" style="display:none;padding:0 1.1rem 1.1rem;text-align:center">
+      <div id="timerDisplay" style="font-family:'Fraunces',serif;font-size:3rem;font-weight:300;color:var(--espresso);line-height:1;margin-bottom:1rem">0:00</div>
+      <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap">
+        <button id="timerStartBtn" onclick="timerStartPause()" style="flex:1;padding:0.7rem;border-radius:10px;border:none;background:var(--espresso);color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Start</button>
+        <button onclick="timerReset()" style="flex:1;padding:0.7rem;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-soft);font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Reset</button>
+        <button id="timerUseBtn" onclick="timerUse()" style="display:none;flex:1;padding:0.7rem;border-radius:10px;border:none;background:var(--sage);color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer">Use time</button>
+      </div>
+    </div>
+  </div>
+
   <button class="btn-primary" onclick="goToTasting()">How did it taste? →</button>
   <button class="btn-ghost" onclick="goHome()">← Back</button>
 
@@ -1089,6 +1105,62 @@ function formatTime(s) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// ─── BREW FORM TIMER ──────────────────────────────────────────
+
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+let timerOpen = false;
+
+function toggleTimerWidget() {
+  timerOpen = !timerOpen;
+  document.getElementById('timerBody').style.display = timerOpen ? 'block' : 'none';
+  document.getElementById('timerChevron').textContent = timerOpen ? '▲' : '▼';
+}
+
+function timerStartPause() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerStartBtn').textContent = 'Resume';
+    document.getElementById('timerUseBtn').style.display = 'flex';
+  } else {
+    timerRunning = true;
+    document.getElementById('timerStartBtn').textContent = 'Pause';
+    document.getElementById('timerUseBtn').style.display = 'none';
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      updateTimerDisplay();
+    }, 1000);
+  }
+}
+
+function timerReset() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 0;
+  updateTimerDisplay();
+  document.getElementById('timerStartBtn').textContent = 'Start';
+  document.getElementById('timerUseBtn').style.display = 'none';
+  document.getElementById('timerWidgetLabel').textContent = 'Brew timer';
+}
+
+function timerUse() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('brewTime').value = `${m}:${s.toString().padStart(2, '0')}`;
+  timerReset();
+  toggleTimerWidget();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  const display = `${m}:${s.toString().padStart(2, '0')}`;
+  document.getElementById('timerDisplay').textContent = display;
+  document.getElementById('timerWidgetLabel').textContent = timerRunning ? display : 'Brew timer';
 }
 
 // Load default recipe on page load and on method change
