@@ -598,6 +598,54 @@ header {
 
 </div>
 
+<!-- SCREEN: Recipe guide (hidden — not linked from nav) -->
+<div class="screen" id="s-recipe">
+  <div class="screen-inner">
+    <div class="screen-heading">Your starter recipe</div>
+    <div class="screen-sub">A simple starting point. You can dial it in from here.</div>
+
+    <div style="margin-bottom:1.5rem">
+      <label style="display:block;font-size:0.75rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Brew method</label>
+      <select id="recipeMethod" onchange="loadRecipe()" style="width:100%;padding:0.85rem 1rem;border:1.5px solid var(--border);border-radius:12px;background:white;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--espresso);appearance:none;-webkit-appearance:none">
+        <option>V60</option>
+        <option>Chemex</option>
+        <option>Kalita Wave</option>
+        <option>Pour over</option>
+        <option>French press</option>
+        <option>AeroPress</option>
+        <option>Espresso</option>
+      </select>
+    </div>
+
+    <div id="recipeCard" style="background:white;border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;border:1.5px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem" id="recipeStats"></div>
+      <div style="font-size:0.75rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.6rem">Steps</div>
+      <ol id="recipeStepsList" style="padding-left:1.2rem;line-height:1.8;color:var(--espresso);font-size:0.95rem"></ol>
+    </div>
+
+    <button class="btn-primary" onclick="startBrew()">Start brewing →</button>
+    <button class="btn-ghost" onclick="goHome()">← Back</button>
+  </div>
+</div>
+
+<!-- SCREEN: Live brew guide (hidden — not linked from nav) -->
+<div class="screen" id="s-brew">
+  <div class="screen-inner" style="display:flex;flex-direction:column;align-items:center;text-align:center;min-height:70vh;justify-content:center">
+
+    <div id="brewStepCount" style="font-size:0.75rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1.5rem"></div>
+
+    <div id="brewInstruction" style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:300;line-height:1.4;color:var(--espresso);margin-bottom:2rem;max-width:280px"></div>
+
+    <div id="brewTimerWrap" style="margin-bottom:2.5rem">
+      <div id="brewTimer" style="font-family:'Fraunces',serif;font-size:4rem;font-weight:300;color:var(--espresso);line-height:1"></div>
+    </div>
+
+    <button class="btn-primary" id="brewNextBtn" onclick="brewNext()" style="min-width:200px"></button>
+    <button class="btn-ghost" onclick="brewCancel()">Stop brewing</button>
+
+  </div>
+</div>
+
 <script>
 let chips = [];
 let userEmail = localStorage.getItem('dialin_email') || '';
@@ -852,6 +900,183 @@ function finishAndGoHome() {
 }
 
 init();
+loadRecipe();
+
+// ─── BREW GUIDE ───────────────────────────────────────────────
+
+const RECIPES = {
+  'V60': {
+    stats: { Coffee: '15g', Water: '250ml', Grind: 'Medium-fine', Temp: '93°C / 200°F' },
+    intro: ['Rinse the filter and preheat your cup', 'Add 15g of ground coffee'],
+    steps: [
+      { text: 'Pour 30ml of water over the grounds to start the bloom', duration: 30 },
+      { text: 'Pour slowly up to 150ml, moving in gentle circles', duration: 60 },
+      { text: 'Pour up to 250ml to finish', duration: 60 },
+      { text: 'Let it drain through completely', duration: 30 },
+    ]
+  },
+  'Chemex': {
+    stats: { Coffee: '30g', Water: '500ml', Grind: 'Medium-coarse', Temp: '93°C / 200°F' },
+    intro: ['Rinse the filter and preheat your Chemex', 'Add 30g of ground coffee'],
+    steps: [
+      { text: 'Pour 60ml of water over the grounds to start the bloom', duration: 45 },
+      { text: 'Pour slowly up to 250ml, moving in gentle circles', duration: 90 },
+      { text: 'Pour up to 500ml to finish', duration: 90 },
+      { text: 'Let it drain through completely', duration: 45 },
+    ]
+  },
+  'Kalita Wave': {
+    stats: { Coffee: '20g', Water: '300ml', Grind: 'Medium', Temp: '93°C / 200°F' },
+    intro: ['Rinse the filter and preheat your cup', 'Add 20g of ground coffee'],
+    steps: [
+      { text: 'Pour 40ml of water over the grounds to start the bloom', duration: 30 },
+      { text: 'Pour slowly up to 150ml, moving in gentle circles', duration: 60 },
+      { text: 'Pour up to 300ml to finish', duration: 60 },
+      { text: 'Let it drain through completely', duration: 30 },
+    ]
+  },
+  'Pour over': {
+    stats: { Coffee: '20g', Water: '320ml', Grind: 'Medium', Temp: '93°C / 200°F' },
+    intro: ['Rinse the filter and preheat your cup', 'Add 20g of ground coffee'],
+    steps: [
+      { text: 'Pour 40ml of water over the grounds to start the bloom', duration: 30 },
+      { text: 'Pour slowly up to 160ml, moving in gentle circles', duration: 60 },
+      { text: 'Pour up to 320ml to finish', duration: 60 },
+      { text: 'Let it drain through completely', duration: 30 },
+    ]
+  },
+  'French press': {
+    stats: { Coffee: '30g', Water: '500ml', Grind: 'Coarse', Temp: '93°C / 200°F' },
+    intro: ['Add 30g of ground coffee to your press'],
+    steps: [
+      { text: 'Pour in all 500ml of water and give it a gentle stir', duration: 0 },
+      { text: 'Place the lid on with the plunger pulled up. Let it steep.', duration: 240 },
+      { text: 'Press the plunger down slowly and steadily', duration: 0 },
+      { text: 'Pour immediately so it doesn\'t over-steep', duration: 0 },
+    ]
+  },
+  'AeroPress': {
+    stats: { Coffee: '17g', Water: '200ml', Grind: 'Medium-fine', Temp: '88°C / 190°F' },
+    intro: ['Insert the filter and rinse it with hot water', 'Add 17g of ground coffee'],
+    steps: [
+      { text: 'Pour in 200ml of water and stir gently for 10 seconds', duration: 10 },
+      { text: 'Place the cap on and let it steep', duration: 60 },
+      { text: 'Press the plunger down slowly and steadily', duration: 30 },
+    ]
+  },
+  'Espresso': {
+    stats: { 'Dose in': '18g', 'Target out': '36g', Grind: 'Fine', Temp: '93°C / 200°F' },
+    intro: ['Flush your machine with hot water'],
+    steps: [
+      { text: 'Grind 18g of coffee, distribute evenly in the basket', duration: 0 },
+      { text: 'Tamp firmly and level. Lock the portafilter in.', duration: 0 },
+      { text: 'Start your shot — aim for 36g out in about 25–30 seconds', duration: 30 },
+    ]
+  }
+};
+
+let brewSteps = [];
+let brewIndex = 0;
+let brewTimer = null;
+let brewSecondsLeft = 0;
+
+function loadRecipe() {
+  const method = document.getElementById('recipeMethod').value;
+  const r = RECIPES[method];
+  if (!r) return;
+
+  // Stats
+  const statsEl = document.getElementById('recipeStats');
+  statsEl.innerHTML = Object.entries(r.stats).map(([k, v]) => `
+    <div style="background:var(--cream);border-radius:10px;padding:0.75rem;text-align:center">
+      <div style="font-size:0.7rem;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:0.25rem">${k}</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300;color:var(--espresso)">${v}</div>
+    </div>
+  `).join('');
+
+  // Steps
+  const allSteps = [...r.intro.map(t => ({ text: t, duration: 0 })), ...r.steps];
+  const stepsEl = document.getElementById('recipeStepsList');
+  stepsEl.innerHTML = allSteps.map(s => `<li>${s.text}</li>`).join('');
+}
+
+function startBrew() {
+  const method = document.getElementById('recipeMethod').value;
+  const r = RECIPES[method];
+  brewSteps = [...r.intro.map(t => ({ text: t, duration: 0 })), ...r.steps];
+  brewIndex = 0;
+  show('s-brew');
+  renderBrewStep();
+}
+
+function renderBrewStep() {
+  clearInterval(brewTimer);
+  const step = brewSteps[brewIndex];
+  const total = brewSteps.length;
+
+  document.getElementById('brewStepCount').textContent = `Step ${brewIndex + 1} of ${total}`;
+  document.getElementById('brewInstruction').textContent = step.text;
+
+  const timerWrap = document.getElementById('brewTimerWrap');
+  const timerEl = document.getElementById('brewTimer');
+  const nextBtn = document.getElementById('brewNextBtn');
+
+  const isLast = brewIndex === total - 1;
+
+  if (step.duration > 0) {
+    brewSecondsLeft = step.duration;
+    timerEl.textContent = formatTime(brewSecondsLeft);
+    timerWrap.style.display = 'block';
+    nextBtn.textContent = 'Start timer';
+    nextBtn.onclick = function() {
+      nextBtn.textContent = isLast ? 'Done ✓' : 'Next step →';
+      nextBtn.disabled = true;
+      nextBtn.style.opacity = '0.5';
+      brewTimer = setInterval(() => {
+        brewSecondsLeft--;
+        timerEl.textContent = formatTime(brewSecondsLeft);
+        if (brewSecondsLeft <= 0) {
+          clearInterval(brewTimer);
+          timerEl.textContent = '0:00';
+          nextBtn.disabled = false;
+          nextBtn.style.opacity = '1';
+          nextBtn.onclick = brewNext;
+        }
+      }, 1000);
+    };
+  } else {
+    timerWrap.style.display = 'none';
+    nextBtn.textContent = isLast ? 'Done ✓' : 'Ready →';
+    nextBtn.disabled = false;
+    nextBtn.style.opacity = '1';
+    nextBtn.onclick = brewNext;
+  }
+}
+
+function brewNext() {
+  clearInterval(brewTimer);
+  brewIndex++;
+  if (brewIndex >= brewSteps.length) {
+    show('s-recipe');
+    return;
+  }
+  renderBrewStep();
+}
+
+function brewCancel() {
+  clearInterval(brewTimer);
+  show('s-recipe');
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// Load default recipe on first visit to recipe screen
+document.getElementById('recipeMethod').addEventListener('change', loadRecipe);
+
 </script>
 </body>
 </html>
