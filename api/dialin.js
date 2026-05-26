@@ -89,7 +89,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, method, coffee, water, brewTime, coffeeName, tastingNotes, freeNotes, ref } = req.body ?? {};
+  const { email, method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, tastingNotes, freeNotes, ref } = req.body ?? {};
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Valid email required' });
@@ -152,7 +152,9 @@ export default async function handler(req, res) {
     'Brew info:',
     `- Method: ${method || 'not specified'}`,
     `- Coffee: ${coffee || 'not specified'}g / Water: ${water || 'not specified'}ml${brewTime ? ` / Brew time: ${brewTime}` : ''}`,
+    waterTemp ? `- Water temp: ${waterTemp}` : '',
     `- Coffee name: ${coffeeName || 'not specified'}`,
+    grinderNotes ? `- Grinder / other settings: ${grinderNotes}` : '',
     '',
     `Tasting notes: ${tastingNotes || 'none'}`,
     freeNotes ? `Extra notes: ${freeNotes}` : '',

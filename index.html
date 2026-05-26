@@ -479,9 +479,17 @@ header {
       <label>Brew time</label>
       <input type="text" id="brewTime" placeholder="e.g. 3:00" autocomplete="off">
     </div>
+    <div class="field">
+      <label>Water temp (optional)</label>
+      <input type="text" id="waterTemp" placeholder="e.g. 93°C" autocomplete="off">
+    </div>
     <div class="field ig-full">
       <label>Coffee name or origin (optional)</label>
       <input type="text" id="coffeeName" placeholder="e.g. Ethiopian Yirgacheffe" autocomplete="off">
+    </div>
+    <div class="field ig-full">
+      <label>Grinder setting or other notes (optional)</label>
+      <textarea id="grinderNotes" placeholder="e.g. Grind setting 14, third notch from fine…" rows="2" autocomplete="off"></textarea>
     </div>
   </div>
 
@@ -754,8 +762,10 @@ function continueRepeatBrew() {
   if (d.method)     document.getElementById('brewMethod').value = d.method;
   if (d.coffee)     document.getElementById('coffeeDose').value = d.coffee;
   if (d.water)      document.getElementById('waterAmount').value = d.water;
-  if (d.brewTime)   document.getElementById('brewTime').value = d.brewTime;
-  if (d.coffeeName) document.getElementById('coffeeName').value = d.coffeeName;
+  if (d.brewTime)     document.getElementById('brewTime').value = d.brewTime;
+  if (d.waterTemp)    document.getElementById('waterTemp').value = d.waterTemp;
+  if (d.coffeeName)   document.getElementById('coffeeName').value = d.coffeeName;
+  if (d.grinderNotes) document.getElementById('grinderNotes').value = d.grinderNotes;
   show('s1');
 }
 
@@ -763,7 +773,9 @@ function clearSetup() {
   document.getElementById('brewMethod').value = '';
   document.getElementById('coffeeDose').value = '';
   document.getElementById('waterAmount').value = '';
+  document.getElementById('waterTemp').value = '';
   document.getElementById('coffeeName').value = '';
+  document.getElementById('grinderNotes').value = '';
 }
 
 function goToTasting() {
@@ -788,12 +800,14 @@ function toggleChip(el) {
 }
 
 async function analyse() {
-  const method     = document.getElementById('brewMethod').value;
-  const coffee     = document.getElementById('coffeeDose').value;
-  const water      = document.getElementById('waterAmount').value;
-  const brewTime   = document.getElementById('brewTime').value.trim();
-  const coffeeName = document.getElementById('coffeeName').value;
-  const freeNotes  = document.getElementById('freeNotes').value.trim();
+  const method       = document.getElementById('brewMethod').value;
+  const coffee       = document.getElementById('coffeeDose').value;
+  const water        = document.getElementById('waterAmount').value;
+  const brewTime     = document.getElementById('brewTime').value.trim();
+  const waterTemp    = document.getElementById('waterTemp').value.trim();
+  const coffeeName   = document.getElementById('coffeeName').value;
+  const grinderNotes = document.getElementById('grinderNotes').value.trim();
+  const freeNotes    = document.getElementById('freeNotes').value.trim();
   const selected   = chips.map(c => c.text).join(', ');
 
   const btn = document.getElementById('analyseBtn');
@@ -813,7 +827,9 @@ async function analyse() {
         coffee,
         water,
         brewTime,
+        waterTemp,
         coffeeName,
+        grinderNotes,
         tastingNotes: selected,
         freeNotes,
         ref: localStorage.getItem('dialin_ref') || undefined
@@ -847,7 +863,7 @@ async function analyse() {
     const usesRemaining = data.usesRemaining;
 
     localStorage.setItem('dialin_last_brew', JSON.stringify({
-      timestamp: Date.now(), method, coffee, water, brewTime, coffeeName, notes: selected, advice
+      timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice
     }));
 
     loadHomeState();
