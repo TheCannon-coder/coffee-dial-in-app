@@ -1029,17 +1029,13 @@ function renderBrewStep() {
     nextBtn.textContent = 'Start timer';
     nextBtn.onclick = function() {
       nextBtn.textContent = isLast ? 'Done ✓' : 'Next step →';
-      nextBtn.disabled = true;
-      nextBtn.style.opacity = '0.5';
+      nextBtn.onclick = brewNext;
       brewTimer = setInterval(() => {
         brewSecondsLeft--;
         timerEl.textContent = formatTime(brewSecondsLeft);
         if (brewSecondsLeft <= 0) {
           clearInterval(brewTimer);
           timerEl.textContent = '0:00';
-          nextBtn.disabled = false;
-          nextBtn.style.opacity = '1';
-          nextBtn.onclick = brewNext;
         }
       }, 1000);
     };
