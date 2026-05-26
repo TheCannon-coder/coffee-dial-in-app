@@ -438,12 +438,7 @@ header {
     <div class="card-arrow">→</div>
   </div>
 
-  <div id="repeatBrewCard" class="home-card prev-brew" onclick="startRepeatBrew()" style="display:none">
-    <div class="card-eyebrow">Pick up where you left off</div>
-    <div class="card-title" id="repeatBrewTitle">Brew this again</div>
-    <div class="card-detail" id="repeatBrewDetail"></div>
-    <div class="card-arrow">→</div>
-  </div>
+  <div id="savedCoffeesContainer"></div>
 
 </div>
 
@@ -751,7 +746,10 @@ async function submitEmail() {
     });
     const data = await res.json();
     if (data.lastBrew) {
-      localStorage.setItem('dialin_last_brew', JSON.stringify(data.lastBrew));
+      // Seed server brew into saved coffees if local storage is empty
+      if (!localStorage.getItem('dialin_saved_coffees')) {
+        saveCoffee(data.lastBrew);
+      }
     }
   } catch (e) {
     // Non-fatal — proceed without history if the fetch fails
@@ -768,19 +766,53 @@ function setGreeting() {
   document.querySelector('.home-greeting').textContent = greet;
 }
 
+// ── Saved coffees (up to 2) ──────────────────────────────────
+
+function getSavedCoffees() {
+  // Migrate legacy single-brew format
+  const legacy = localStorage.getItem('dialin_last_brew');
+  const existing = localStorage.getItem('dialin_saved_coffees');
+  if (legacy && !existing) {
+    localStorage.setItem('dialin_saved_coffees', JSON.stringify([JSON.parse(legacy)]));
+  }
+  const raw = localStorage.getItem('dialin_saved_coffees');
+  return raw ? JSON.parse(raw) : [];
+}
+
+function saveCoffee(brewData) {
+  let coffees = getSavedCoffees();
+  const name = brewData.coffeeName?.toLowerCase().trim() || '';
+  const idx = coffees.findIndex(c => (c.coffeeName?.toLowerCase().trim() || '') === name);
+  if (idx >= 0) {
+    coffees[idx] = brewData; // update existing slot
+  } else {
+    coffees.unshift(brewData); // new coffee — add to front
+    if (coffees.length > 2) coffees = coffees.slice(0, 2);
+  }
+  localStorage.setItem('dialin_saved_coffees', JSON.stringify(coffees));
+  // keep legacy key in sync for api/user.js seeding
+  localStorage.setItem('dialin_last_brew', JSON.stringify(coffees[0]));
+}
+
+let selectedRepeatIdx = 0;
+
 function loadHomeState() {
-  const raw = localStorage.getItem('dialin_last_brew');
-  if (!raw) return;
-  const d = JSON.parse(raw);
-  const repeatCard = document.getElementById('repeatBrewCard');
-  const repeatTitle = document.getElementById('repeatBrewTitle');
-  const repeatDetail = document.getElementById('repeatBrewDetail');
-
-  const parts = [d.method, d.coffee ? d.coffee + 'g' : null, d.water ? d.water + 'ml' : null].filter(Boolean).join(' · ');
-
-  repeatTitle.textContent = d.coffeeName ? d.coffeeName : 'Brew this again';
-  repeatDetail.textContent = parts;
-  repeatCard.style.display = 'flex';
+  const coffees = getSavedCoffees();
+  const container = document.getElementById('savedCoffeesContainer');
+  container.innerHTML = '';
+  coffees.forEach((d, i) => {
+    const parts = [d.method, d.coffee ? d.coffee + 'g' : null, d.water ? d.water + 'ml' : null].filter(Boolean).join(' · ');
+    const card = document.createElement('div');
+    card.className = 'home-card prev-brew';
+    card.onclick = () => startRepeatBrew(i);
+    card.innerHTML = `
+      <div class="card-eyebrow">Pick up where you left off</div>
+      <div class="card-title">${d.coffeeName || 'Brew this again'}</div>
+      <div class="card-detail">${parts}</div>
+      <div class="card-arrow">→</div>
+    `;
+    container.appendChild(card);
+  });
 }
 
 function startNewBrew() {
@@ -788,10 +820,11 @@ function startNewBrew() {
   show('s1');
 }
 
-function startRepeatBrew() {
-  const raw = localStorage.getItem('dialin_last_brew');
-  if (!raw) return;
-  const d = JSON.parse(raw);
+function startRepeatBrew(idx) {
+  const coffees = getSavedCoffees();
+  if (!coffees.length) return;
+  selectedRepeatIdx = idx || 0;
+  const d = coffees[selectedRepeatIdx];
   const date = new Date(d.timestamp).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
   const parts = [d.method, d.coffee ? d.coffee + 'g coffee' : null, d.water ? d.water + 'ml water' : null, d.coffeeName].filter(Boolean).join(' · ');
 
@@ -800,17 +833,16 @@ function startRepeatBrew() {
     <div class="rc-brew">${parts || 'Your last brew'}</div>
     ${d.advice ? `<div class="rc-tip"><strong>Tip for this brew:</strong> ${d.advice}</div>` : ''}
   `;
-
   show('s0b');
 }
 
 function continueRepeatBrew() {
-  const raw = localStorage.getItem('dialin_last_brew');
-  if (!raw) { show('s1'); return; }
-  const d = JSON.parse(raw);
-  if (d.method)     document.getElementById('brewMethod').value = d.method;
-  if (d.coffee)     document.getElementById('coffeeDose').value = d.coffee;
-  if (d.water)      document.getElementById('waterAmount').value = d.water;
+  const coffees = getSavedCoffees();
+  if (!coffees.length) { show('s1'); return; }
+  const d = coffees[selectedRepeatIdx];
+  if (d.method)       document.getElementById('brewMethod').value = d.method;
+  if (d.coffee)       document.getElementById('coffeeDose').value = d.coffee;
+  if (d.water)        document.getElementById('waterAmount').value = d.water;
   if (d.brewTime)     document.getElementById('brewTime').value = d.brewTime;
   if (d.waterTemp)    document.getElementById('waterTemp').value = d.waterTemp;
   if (d.coffeeName)   document.getElementById('coffeeName').value = d.coffeeName;
@@ -953,9 +985,7 @@ async function analyse() {
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
     const usesRemaining = data.usesRemaining;
 
-    localStorage.setItem('dialin_last_brew', JSON.stringify({
-      timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice
-    }));
+    saveCoffee({ timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice });
 
     loadHomeState();
 
