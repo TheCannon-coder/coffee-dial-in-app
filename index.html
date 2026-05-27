@@ -712,6 +712,10 @@ header {
       <label>Water (ml)</label>
       <input type="number" id="bd-water" placeholder="e.g. 250" min="1" max="2000">
     </div>
+    <div class="field">
+      <label>Brew time</label>
+      <input type="text" id="bd-brewTime" placeholder="e.g. 3:00" autocomplete="off">
+    </div>
     <div class="field ig-full">
       <label>Grinder setting or other notes</label>
       <textarea id="bd-grinderNotes" placeholder="e.g. Setting 14, third notch from fine…" rows="2" autocomplete="off"></textarea>
@@ -1512,7 +1516,9 @@ function finishBrewWorkflow() {
   if (workflowBrewSeconds > 0) {
     const m = Math.floor(workflowBrewSeconds / 60);
     const s = workflowBrewSeconds % 60;
-    document.getElementById('brewTime').value = `${m}:${s.toString().padStart(2, '0')}`;
+    const brewTimeStr = `${m}:${s.toString().padStart(2, '0')}`;
+    document.getElementById('brewTime').value = brewTimeStr;
+    document.getElementById('bd-brewTime').value = brewTimeStr;
   }
 
   // Pre-populate details screen — apply dose adjustment if active
@@ -1542,15 +1548,17 @@ function brewDetailsNext() {
   if (method) document.getElementById('brewMethod').value = method;
 
   // Copy details screen values back into s1 form fields
-  const name   = document.getElementById('bd-coffeeName').value;
-  const coffee = document.getElementById('bd-coffee').value;
-  const water  = document.getElementById('bd-water').value;
-  const grind  = document.getElementById('bd-grinderNotes').value;
+  const name      = document.getElementById('bd-coffeeName').value;
+  const coffee    = document.getElementById('bd-coffee').value;
+  const water     = document.getElementById('bd-water').value;
+  const grind     = document.getElementById('bd-grinderNotes').value;
+  const brewTime  = document.getElementById('bd-brewTime').value;
 
-  if (name)   document.getElementById('coffeeName').value   = name;
-  if (coffee) document.getElementById('coffeeDose').value   = coffee;
-  if (water)  document.getElementById('waterAmount').value  = water;
-  if (grind)  document.getElementById('grinderNotes').value = grind;
+  if (name)     document.getElementById('coffeeName').value   = name;
+  if (coffee)   document.getElementById('coffeeDose').value   = coffee;
+  if (water)    document.getElementById('waterAmount').value  = water;
+  if (grind)    document.getElementById('grinderNotes').value = grind;
+  if (brewTime) document.getElementById('brewTime').value     = brewTime;
 
   brewFromWorkflow = false;
   show('s2');
