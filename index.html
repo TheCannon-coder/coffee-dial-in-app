@@ -3,15 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dial In</title>
-<meta name="description" content="Get personalised coffee coaching tips based on how your brew tastes. Dial in your perfect cup.">
-<meta property="og:title" content="Dial In — Coffee Coaching">
-<meta property="og:description" content="Get personalised coaching tips based on how your brew tastes. Dial in your perfect cup.">
-<meta property="og:image" content="https://coffee-dial-in-app.vercel.app/preview.png">
-<meta property="og:url" content="https://coffee-dial-in-app.vercel.app">
+<title>Dial In — Free Coffee Coaching for Home Brewers</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="description" content="Get personalised brewing advice based on how your cup tastes. Dial in your V60, AeroPress, espresso and more — free coffee coaching for home brewers.">
+<link rel="canonical" href="https://www.coffeebrew.coach">
+<meta property="og:title" content="Dial In — Free Coffee Coaching for Home Brewers">
+<meta property="og:description" content="Get personalised brewing advice based on how your cup tastes. Dial in your V60, AeroPress, espresso and more — free coffee coaching for home brewers.">
+<meta property="og:image" content="https://www.coffeebrew.coach/preview.png">
+<meta property="og:url" content="https://www.coffeebrew.coach">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://coffee-dial-in-app.vercel.app/preview.png">
+<meta name="twitter:title" content="Dial In — Free Coffee Coaching for Home Brewers">
+<meta name="twitter:description" content="Get personalised brewing advice based on how your cup tastes. Dial in your V60, AeroPress, espresso and more.">
+<meta name="twitter:image" content="https://www.coffeebrew.coach/preview.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Dial In",
+  "url": "https://www.coffeebrew.coach",
+  "description": "Personalised coffee coaching based on how your cup tastes. Get one-tap brewing advice for V60, AeroPress, espresso, French press, and more.",
+  "applicationCategory": "LifestyleApplication",
+  "operatingSystem": "Web",
+  "browserRequirements": "Requires JavaScript",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "Dial In",
+    "url": "https://www.coffeebrew.coach"
+  }
+}
+</script>
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -395,6 +421,14 @@ header {
 }
 .r-btn:hover { background: rgba(245,240,232,0.15); }
 .r-btn.saved { background: rgba(106,128,96,0.3); border-color: var(--sage); color: #B4D4A0; }
+.r-btn.r-skip { background: transparent; border-color: transparent; color: rgba(245,240,232,0.4); }
+.r-btn.r-skip:hover { color: rgba(245,240,232,0.65); background: transparent; }
+.r-save-prompt { border-top: 1px solid rgba(245,240,232,0.1); margin-top: 0.8rem; padding-top: 0.8rem; display: flex; flex-direction: column; gap: 0.55rem; }
+.r-save-label { font-size: 0.78rem; color: rgba(245,240,232,0.55); }
+.r-email-input { background: rgba(245,240,232,0.07); border: 1px solid rgba(245,240,232,0.15); border-radius: 10px; padding: 0.6rem 0.75rem; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
+.r-email-input::placeholder { color: rgba(245,240,232,0.3); }
+.r-email-input:focus { outline: none; border-color: rgba(245,240,232,0.35); }
+.r-save-actions { display: flex; gap: 0.6rem; }
 
 .dots { display: flex; gap: 5px; align-items: center; justify-content: center; height: 20px; }
 .dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--cream); animation: dp 1.2s ease-in-out infinite; }
@@ -731,6 +765,7 @@ header {
 <script>
 let chips = [];
 let userEmail = localStorage.getItem('dialin_email') || '';
+let pendingBrew = null; // holds brew data after an anonymous tip, until email is saved
 
 // Silently capture referral code from URL (?ref=CODE)
 (function captureRef() {
@@ -745,12 +780,13 @@ function show(id) {
 }
 
 function goHome() {
+  if (!userEmail) { show('s1'); return; }
   show('s0');
 }
 
 function init() {
   if (!userEmail) {
-    show('se');
+    show('s1');
     return;
   }
   setGreeting();
@@ -797,6 +833,17 @@ function setGreeting() {
 }
 
 // ── Saved coffees (up to 2) ──────────────────────────────────
+
+function formatCardTip(advice) {
+  if (!advice) return '';
+  // The AI always returns two sentences: opener + adjustment.
+  // Strip the opener and keep only the actionable second sentence.
+  const actionSentence = advice.replace(/^[^.!?]+[.!?]\s*/, '').trim() || advice.trim();
+  // Reframe "Let's..." as "This time we should..." and remove "next time" (now redundant)
+  return actionSentence
+    .replace(/^Let's\b/i, 'This time we should')
+    .replace(/\s+next time\b/gi, '');
+}
 
 function getSavedCoffees() {
   // Migrate legacy single-brew format
@@ -861,7 +908,7 @@ function startRepeatBrew(idx) {
   document.getElementById('reminderCard').innerHTML = `
     <div class="rc-label">Last brewed · ${date}</div>
     <div class="rc-brew">${parts || 'Your last brew'}</div>
-    ${d.advice ? `<div class="rc-tip"><strong>Tip for this brew:</strong> ${d.advice}</div>` : ''}
+    ${d.advice ? `<div class="rc-tip">${formatCardTip(d.advice)}</div>` : ''}
   `;
   show('s0b');
 }
@@ -1015,24 +1062,43 @@ async function analyse() {
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
     const usesRemaining = data.usesRemaining;
 
-    saveCoffee({ timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice });
+    if (userEmail) {
+      // Signed-in path — save immediately
+      saveCoffee({ timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice });
+      loadHomeState();
 
-    loadHomeState();
+      const remainingLine = (usesRemaining !== undefined && usesRemaining !== null)
+        ? `<div class="r-remaining">${usesRemaining} dial-in${usesRemaining !== 1 ? 's' : ''} remaining this month</div>`
+        : '';
 
-    const remainingLine = (usesRemaining !== undefined && usesRemaining !== null)
-      ? `<div class="r-remaining">${usesRemaining} dial-in${usesRemaining !== 1 ? 's' : ''} remaining this month</div>`
-      : '';
+      resultArea.innerHTML = `
+        <div class="result">
+          <div class="r-label">Our next brew tip</div>
+          <div class="r-text">${advice}</div>
+          ${remainingLine}
+          <div class="r-actions">
+            <button class="r-btn saved">✓ Saved</button>
+            <button class="r-btn" onclick="finishAndGoHome()">Done</button>
+          </div>
+        </div>`;
+    } else {
+      // Anonymous path — store brew, prompt for email
+      pendingBrew = { method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice };
 
-    resultArea.innerHTML = `
-      <div class="result">
-        <div class="r-label">Our next brew tip</div>
-        <div class="r-text">${advice}</div>
-        ${remainingLine}
-        <div class="r-actions">
-          <button class="r-btn saved">✓ Saved</button>
-          <button class="r-btn" onclick="finishAndGoHome()">Done</button>
-        </div>
-      </div>`;
+      resultArea.innerHTML = `
+        <div class="result">
+          <div class="r-label">Our next brew tip</div>
+          <div class="r-text">${advice}</div>
+          <div class="r-save-prompt">
+            <div class="r-save-label">Save this brew and track your history</div>
+            <input type="email" id="saveEmailInput" class="r-email-input" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')submitSaveEmail()">
+            <div class="r-save-actions">
+              <button id="saveEmailBtn" class="r-btn" onclick="submitSaveEmail()">Save</button>
+              <button class="r-btn r-skip" onclick="finishAndGoHome()">Skip</button>
+            </div>
+          </div>
+        </div>`;
+    }
     resultArea.style.display = 'block';
     resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -1062,8 +1128,69 @@ function finishAndGoHome() {
   document.getElementById('freeNotes').value = '';
   document.getElementById('analyseBtn').disabled = true;
   document.getElementById('resultArea').style.display = 'none';
-  loadHomeState();
-  show('s0');
+  if (userEmail) {
+    loadHomeState();
+    show('s0');
+  } else {
+    show('s1');
+  }
+}
+
+async function submitSaveEmail() {
+  const input = document.getElementById('saveEmailInput');
+  const v = input ? input.value.trim().toLowerCase() : '';
+  if (!v || !v.includes('@') || !v.includes('.')) {
+    if (input) input.focus();
+    return;
+  }
+
+  const btn = document.getElementById('saveEmailBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+  try {
+    const res = await fetch('/api/save-brew', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: v,
+        method:        pendingBrew.method,
+        coffee:        pendingBrew.coffee,
+        water:         pendingBrew.water,
+        brewTime:      pendingBrew.brewTime,
+        waterTemp:     pendingBrew.waterTemp,
+        coffeeName:    pendingBrew.coffeeName,
+        grinderNotes:  pendingBrew.grinderNotes,
+        tastingNotes:  pendingBrew.notes,
+        advice:        pendingBrew.advice,
+        ref: localStorage.getItem('dialin_ref') || undefined,
+      })
+    });
+    const data = await res.json();
+
+    // Persist email and save brew card locally
+    userEmail = v;
+    localStorage.setItem('dialin_email', v);
+    saveCoffee({ timestamp: Date.now(), ...pendingBrew });
+    pendingBrew = null;
+    loadHomeState();
+    setGreeting();
+
+    // Swap email prompt for saved confirmation
+    const remaining = data.usesRemaining;
+    const remainingLine = (remaining !== undefined && remaining !== null)
+      ? `<div class="r-remaining">${remaining} dial-in${remaining !== 1 ? 's' : ''} remaining this month</div>`
+      : '';
+    const prompt = document.querySelector('.r-save-prompt');
+    if (prompt) {
+      prompt.outerHTML = `${remainingLine}<div class="r-actions">
+        <button class="r-btn saved">✓ Saved</button>
+        <button class="r-btn" onclick="finishAndGoHome()">Done</button>
+      </div>`;
+    }
+  } catch (err) {
+    console.error('Save brew failed:', err);
+    finishAndGoHome();
+  }
 }
 
 init();
@@ -1235,7 +1362,7 @@ function brewCancel() {
 function finishBrewWorkflow() {
   clearInterval(workflowBrewInterval);
 
-  const method = document.getElementById('brewMethod').value;
+  const method = document.getElementById('recipeMethod').value;
   const recipe = RECIPES[method];
 
   // Auto-fill brew time from total elapsed
@@ -1258,6 +1385,10 @@ function finishBrewWorkflow() {
 }
 
 function brewDetailsNext() {
+  // Sync brew method from recipe guide to s1 form so saveCoffee() records it correctly
+  const method = document.getElementById('recipeMethod').value;
+  if (method) document.getElementById('brewMethod').value = method;
+
   // Copy details screen values back into s1 form fields
   const name   = document.getElementById('bd-coffeeName').value;
   const coffee = document.getElementById('bd-coffee').value;
