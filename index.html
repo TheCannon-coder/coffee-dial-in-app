@@ -989,8 +989,9 @@ let brewFromWorkflow = false;
 let workflowBrewStart = null;
 let workflowBrewSeconds = 0;
 let workflowBrewInterval = null;
-let activeAdjustment = null;    // machine-readable adjustment for current brew-along session
-let selectedRepeatIdx = null;   // index into savedCoffees for the current repeat brew
+let activeAdjustment = null;      // machine-readable adjustment for current brew-along session
+let selectedRepeatIdx = null;     // index into savedCoffees for the current repeat brew
+let workflowTimerStarted = false; // true once the elapsed timer has started (first water step)
 
 function onBrewMethodChange() {
   // brew-along toggle hidden until ready to launch
@@ -1090,18 +1091,9 @@ function startBrewWorkflow(method) {
 
   brewFromWorkflow = true;
   workflowBrewSeconds = 0;
-  workflowBrewStart = Date.now();
+  workflowTimerStarted = false;
   clearInterval(workflowBrewInterval);
-  workflowBrewInterval = setInterval(() => {
-    workflowBrewSeconds++;
-    // Update the live elapsed timer
-    const el = document.getElementById('brewElapsedTimer');
-    if (el) {
-      const m = Math.floor(workflowBrewSeconds / 60);
-      const s = workflowBrewSeconds % 60;
-      el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-    }
-  }, 1000);
+  workflowBrewInterval = null;
 
   startBrew(adjustedSteps);
 }
@@ -1423,9 +1415,9 @@ function startBrew(stepsOverride) {
   const r = RECIPES[method];
   brewSteps = stepsOverride || [...r.intro.map(t => ({ text: t, duration: 0 })), ...r.steps];
   brewIndex = 0;
-  // Show elapsed timer only in workflow mode
+  // Elapsed timer is hidden until the first water step begins
   const elapsedWrap = document.getElementById('brewElapsedWrap');
-  if (elapsedWrap) elapsedWrap.style.display = brewFromWorkflow ? 'flex' : 'none';
+  if (elapsedWrap) elapsedWrap.style.display = 'none';
   const elapsedEl = document.getElementById('brewElapsedTimer');
   if (elapsedEl) elapsedEl.textContent = '0:00';
   show('s-brew');
@@ -1454,6 +1446,23 @@ function renderBrewStep() {
     nextBtn.onclick = function() {
       nextBtn.textContent = isLast ? 'Done ✓' : 'Next step →';
       nextBtn.onclick = brewNext;
+
+      // Start the elapsed brew timer on the first water step
+      if (brewFromWorkflow && !workflowTimerStarted) {
+        workflowTimerStarted = true;
+        const elapsedWrap = document.getElementById('brewElapsedWrap');
+        if (elapsedWrap) elapsedWrap.style.display = 'flex';
+        workflowBrewInterval = setInterval(() => {
+          workflowBrewSeconds++;
+          const el = document.getElementById('brewElapsedTimer');
+          if (el) {
+            const m = Math.floor(workflowBrewSeconds / 60);
+            const s = workflowBrewSeconds % 60;
+            el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+          }
+        }, 1000);
+      }
+
       brewTimer = setInterval(() => {
         brewSecondsLeft--;
         timerEl.textContent = formatTime(brewSecondsLeft);
@@ -1486,6 +1495,7 @@ function brewCancel() {
   clearInterval(brewTimer);
   clearInterval(workflowBrewInterval);
   brewFromWorkflow = false;
+  workflowTimerStarted = false;
   activeAdjustment = null;
   const banner = document.getElementById('brewAdjustmentBanner');
   if (banner) banner.style.display = 'none';
@@ -1514,6 +1524,7 @@ function finishBrewWorkflow() {
   const waterAmt = document.getElementById('waterAmount').value || (recipe ? parseInt(recipe.stats['Water']) : '');
 
   activeAdjustment = null;
+  workflowTimerStarted = false;
   const banner = document.getElementById('brewAdjustmentBanner');
   if (banner) banner.style.display = 'none';
 
