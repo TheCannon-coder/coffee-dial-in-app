@@ -116,6 +116,17 @@ Response: Not ideal, but we're getting closer :) Let's grind a little finer next
 Scenario: V60, bitter, flat, lingers too long
 Response: We're pulling a little too much out of the coffee. Let's coarsen up the grind a touch and go from there :)`;
 
+function deriveAdjustment(advice) {
+  const t = advice.toLowerCase();
+  if (t.includes('steep longer'))  return 'steep_longer';
+  if (t.includes('steep shorter')) return 'steep_shorter';
+  if (t.includes('coarsen') || (t.includes('grind') && (t.includes('coarser') || t.includes('coarse')))) return 'grind_coarser';
+  if (t.includes('grind') && (t.includes('finer') || t.includes('fine'))) return 'grind_finer';
+  if (t.includes('more coffee'))   return 'more_coffee';
+  if (t.includes('less coffee'))   return 'less_coffee';
+  return 'none';
+}
+
 function firstOfNextMonth() {
   const now = new Date();
   const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
@@ -166,7 +177,7 @@ export default async function handler(req, res) {
       console.error('Anthropic error:', err);
       return res.status(500).json({ error: 'AI service unavailable' });
     }
-    return res.status(200).json({ advice });
+    return res.status(200).json({ advice, adjustment: deriveAdjustment(advice) });
   }
 
   const cleanEmail = email.toLowerCase().trim();
@@ -315,6 +326,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     advice,
+    adjustment: deriveAdjustment(advice),
     usesRemaining: user.is_pro ? null : 10 - (user.uses_this_month + 1),
     isPro: user.is_pro ?? false,
   });

@@ -201,6 +201,14 @@ header {
   flex-direction: column;
   gap: 0.5rem;
 }
+/* Brew-along elapsed timer */
+.brew-elapsed-wrap { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.brew-elapsed-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); opacity: 0.6; }
+.brew-elapsed-timer { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 400; color: var(--muted); opacity: 0.5; letter-spacing: 0.05em; }
+
+/* Brew-along adjustment banner */
+.brew-adjustment-banner { background: rgba(200,121,65,0.12); border: 1px solid rgba(200,121,65,0.25); color: var(--caramel-light); font-size: 0.8rem; border-radius: 8px; padding: 0.5rem 0.9rem; margin-bottom: 1.5rem; max-width: 280px; }
+
 .reminder-card .rc-label {
   font-size: 0.65rem;
   text-transform: uppercase;
@@ -531,7 +539,7 @@ header {
 
     <div class="field">
       <label>Coffee (g)</label>
-      <input type="number" id="coffeeDose" placeholder="e.g. 18" min="1" max="100">
+      <input type="text" id="coffeeDose" placeholder="e.g. 15g or 2 tbsp" inputmode="decimal" autocomplete="off">
     </div>
     <div class="field">
       <label>Water (ml)</label>
@@ -698,7 +706,7 @@ header {
     </div>
     <div class="field">
       <label>Coffee (g)</label>
-      <input type="number" id="bd-coffee" placeholder="e.g. 15" min="1" max="100">
+      <input type="text" id="bd-coffee" placeholder="e.g. 15g or 2 tbsp" inputmode="decimal" autocomplete="off">
     </div>
     <div class="field">
       <label>Water (ml)</label>
@@ -748,6 +756,8 @@ header {
 <div class="screen" id="s-brew">
   <div class="screen-inner" style="display:flex;flex-direction:column;align-items:center;text-align:center;min-height:70vh;justify-content:center">
 
+    <div id="brewAdjustmentBanner" class="brew-adjustment-banner" style="display:none"></div>
+
     <div id="brewStepCount" style="font-size:0.75rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1.5rem"></div>
 
     <div id="brewInstruction" style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:300;line-height:1.4;color:var(--espresso);margin-bottom:2rem;max-width:280px"></div>
@@ -758,6 +768,11 @@ header {
 
     <button class="btn-primary" id="brewNextBtn" onclick="brewNext()" style="min-width:200px"></button>
     <button class="btn-ghost" onclick="brewCancel()">Stop brewing</button>
+
+    <div id="brewElapsedWrap" class="brew-elapsed-wrap" style="display:none">
+      <span class="brew-elapsed-label">Total time</span>
+      <span id="brewElapsedTimer" class="brew-elapsed-timer">0:00</span>
+    </div>
 
   </div>
 </div>
@@ -834,6 +849,35 @@ function setGreeting() {
 
 // ── Saved coffees (up to 2) ──────────────────────────────────
 
+function parseDoseGrams(value) {
+  if (!value && value !== 0) return null;
+  const v = String(value).trim().toLowerCase();
+
+  // Plain number, optionally followed by 'g' → treat as grams
+  const plain = v.match(/^(\d+(?:\.\d+)?)\s*g?$/);
+  if (plain) {
+    const n = parseFloat(plain[1]);
+    return n > 0 ? n : null;
+  }
+
+  // Tablespoon(s) / tbsp → ~6g each (ground coffee, levelled)
+  const tbsp = v.match(/(\d+(?:\.\d+)?)\s*(?:tbsp|tablespoon)/);
+  if (tbsp) return Math.round(parseFloat(tbsp[1]) * 6);
+
+  // Teaspoon(s) / tsp → ~2.5g each
+  const tsp = v.match(/(\d+(?:\.\d+)?)\s*(?:tsp|teaspoon)/);
+  if (tsp) return Math.round(parseFloat(tsp[1]) * 2.5);
+
+  // Scoop(s) → ~10g each (standard coffee scoop)
+  const scoop = v.match(/(\d+(?:\.\d+)?)\s*scoop/);
+  if (scoop) return Math.round(parseFloat(scoop[1]) * 10);
+
+  // "a spoon/spoonful" (no number) → treat as 1 tablespoon (~6g)
+  if (/\b(?:a\s+)?spoon(?:ful)?\b/.test(v)) return 6;
+
+  return null; // genuinely unparseable
+}
+
 function formatCardTip(advice) {
   if (!advice) return '';
   // The AI always returns two sentences: opener + adjustment.
@@ -871,7 +915,7 @@ function saveCoffee(brewData) {
   localStorage.setItem('dialin_last_brew', JSON.stringify(coffees[0]));
 }
 
-let selectedRepeatIdx = 0;
+// selectedRepeatIdx declared below with brew-along state
 
 function loadHomeState() {
   const coffees = getSavedCoffees();
@@ -893,6 +937,7 @@ function loadHomeState() {
 }
 
 function startNewBrew() {
+  selectedRepeatIdx = null;
   clearSetup();
   show('s1');
 }
@@ -900,7 +945,7 @@ function startNewBrew() {
 function startRepeatBrew(idx) {
   const coffees = getSavedCoffees();
   if (!coffees.length) return;
-  selectedRepeatIdx = idx || 0;
+  selectedRepeatIdx = (idx !== undefined && idx !== null) ? idx : 0;
   const d = coffees[selectedRepeatIdx];
   const date = new Date(d.timestamp).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
   const parts = [d.method, d.coffee ? d.coffee + 'g coffee' : null, d.water ? d.water + 'ml water' : null, d.coffeeName].filter(Boolean).join(' · ');
@@ -944,6 +989,8 @@ let brewFromWorkflow = false;
 let workflowBrewStart = null;
 let workflowBrewSeconds = 0;
 let workflowBrewInterval = null;
+let activeAdjustment = null;    // machine-readable adjustment for current brew-along session
+let selectedRepeatIdx = null;   // index into savedCoffees for the current repeat brew
 
 function onBrewMethodChange() {
   // brew-along toggle hidden until ready to launch
@@ -973,13 +1020,90 @@ function startBrewWorkflow(method) {
   // Sync recipe selector so startBrew() picks up the right method
   document.getElementById('recipeMethod').value = method;
   loadRecipe();
+
+  // Determine adjustment from saved brew (only for repeat brews)
+  const savedCoffees = getSavedCoffees();
+  const savedBrew = (selectedRepeatIdx !== null) ? savedCoffees[selectedRepeatIdx] : null;
+  activeAdjustment = savedBrew?.adjustment || null;
+
+  // Show adjustment banner with specific metrics
+  const banner = document.getElementById('brewAdjustmentBanner');
+  const recipe = RECIPES[method];
+  const parsedPrevDose = parseDoseGrams(savedBrew?.coffee);
+  const recipeDefaultDose = recipe ? parseInt(recipe.stats['Coffee']) : null;
+  const prevDose = parsedPrevDose ?? recipeDefaultDose;
+
+  // Was the saved dose entered in non-metric units (spoons, scoops, etc.)?
+  const savedDoseWasApprox = savedBrew?.coffee
+    && parsedPrevDose !== null
+    && !/^\d+(\.\d+)?\s*g?$/.test(String(savedBrew.coffee).trim());
+
+  // Was the dose completely unparseable? Fall back to recipe default with a note.
+  const savedDoseUnparseable = savedBrew?.coffee && parsedPrevDose === null;
+
+  let bannerMsg = '';
+
+  if (activeAdjustment === 'more_coffee' && prevDose) {
+    const newDose = prevDose + 1;
+    bannerMsg = savedDoseWasApprox
+      ? `Try a little more coffee this time — roughly ${newDose}g if you have a scale`
+      : `Using ${newDose}g this time (up from ${prevDose}g)`;
+  } else if (activeAdjustment === 'less_coffee' && prevDose) {
+    const newDose = Math.max(1, prevDose - 1);
+    bannerMsg = savedDoseWasApprox
+      ? `Try a little less coffee this time — roughly ${newDose}g if you have a scale`
+      : `Using ${newDose}g this time (down from ${prevDose}g)`;
+  } else if (activeAdjustment === 'grind_finer') {
+    bannerMsg = 'Try a touch finer on the grind this time';
+  } else if (activeAdjustment === 'grind_coarser') {
+    bannerMsg = 'Try a touch coarser on the grind this time';
+  } else if (activeAdjustment === 'steep_longer') {
+    bannerMsg = 'Steeping a little longer this time';
+  } else if (activeAdjustment === 'steep_shorter') {
+    bannerMsg = 'Steeping a little shorter this time';
+  }
+
+  // If the dose couldn't be parsed at all, add a gentle nudge toward grams
+  if (savedDoseUnparseable && (activeAdjustment === 'more_coffee' || activeAdjustment === 'less_coffee')) {
+    const direction = activeAdjustment === 'more_coffee' ? 'a little more' : 'a little less';
+    bannerMsg = recipeDefaultDose
+      ? `Try ${direction} coffee this time — the recipe suggests ${recipeDefaultDose}g if you have a scale`
+      : `Try ${direction} coffee this time`;
+  }
+
+  if (banner) {
+    banner.textContent = bannerMsg;
+    banner.style.display = bannerMsg ? 'block' : 'none';
+  }
+
+  // Build adjusted steps for steep time changes (AeroPress only)
+  let adjustedSteps = null;
+  if (recipe && (activeAdjustment === 'steep_longer' || activeAdjustment === 'steep_shorter')) {
+    const delta = activeAdjustment === 'steep_longer' ? 30 : -30;
+    const raw = [...recipe.intro.map(t => ({ text: t, duration: 0 })), ...recipe.steps];
+    adjustedSteps = raw.map(step =>
+      step.duration > 0 && step.text.toLowerCase().includes('steep')
+        ? { ...step, duration: Math.max(15, step.duration + delta) }
+        : step
+    );
+  }
+
   brewFromWorkflow = true;
   workflowBrewSeconds = 0;
   workflowBrewStart = Date.now();
-  // Track total elapsed time for brew time field
   clearInterval(workflowBrewInterval);
-  workflowBrewInterval = setInterval(() => { workflowBrewSeconds++; }, 1000);
-  startBrew();
+  workflowBrewInterval = setInterval(() => {
+    workflowBrewSeconds++;
+    // Update the live elapsed timer
+    const el = document.getElementById('brewElapsedTimer');
+    if (el) {
+      const m = Math.floor(workflowBrewSeconds / 60);
+      const s = workflowBrewSeconds % 60;
+      el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }
+  }, 1000);
+
+  startBrew(adjustedSteps);
 }
 
 function goToSetup() {
@@ -1061,10 +1185,11 @@ async function analyse() {
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
     const usesRemaining = data.usesRemaining;
+    const adjustment = data.adjustment || 'none';
 
     if (userEmail) {
       // Signed-in path — save immediately
-      saveCoffee({ timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice });
+      saveCoffee({ timestamp: Date.now(), method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice, adjustment });
       loadHomeState();
 
       const remainingLine = (usesRemaining !== undefined && usesRemaining !== null)
@@ -1083,7 +1208,7 @@ async function analyse() {
         </div>`;
     } else {
       // Anonymous path — store brew, prompt for email
-      pendingBrew = { method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice };
+      pendingBrew = { method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, notes: selected, advice, adjustment };
 
       resultArea.innerHTML = `
         <div class="result">
@@ -1293,11 +1418,16 @@ function loadRecipe() {
   stepsEl.innerHTML = allSteps.map(s => `<li>${s.text}</li>`).join('');
 }
 
-function startBrew() {
+function startBrew(stepsOverride) {
   const method = document.getElementById('recipeMethod').value;
   const r = RECIPES[method];
-  brewSteps = [...r.intro.map(t => ({ text: t, duration: 0 })), ...r.steps];
+  brewSteps = stepsOverride || [...r.intro.map(t => ({ text: t, duration: 0 })), ...r.steps];
   brewIndex = 0;
+  // Show elapsed timer only in workflow mode
+  const elapsedWrap = document.getElementById('brewElapsedWrap');
+  if (elapsedWrap) elapsedWrap.style.display = brewFromWorkflow ? 'flex' : 'none';
+  const elapsedEl = document.getElementById('brewElapsedTimer');
+  if (elapsedEl) elapsedEl.textContent = '0:00';
   show('s-brew');
   renderBrewStep();
 }
@@ -1356,6 +1486,9 @@ function brewCancel() {
   clearInterval(brewTimer);
   clearInterval(workflowBrewInterval);
   brewFromWorkflow = false;
+  activeAdjustment = null;
+  const banner = document.getElementById('brewAdjustmentBanner');
+  if (banner) banner.style.display = 'none';
   show('s1');
 }
 
@@ -1372,9 +1505,17 @@ function finishBrewWorkflow() {
     document.getElementById('brewTime').value = `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  // Pre-populate details screen from s1 form (or recipe defaults for empty fields)
-  const coffeeDose = document.getElementById('coffeeDose').value || (recipe ? parseInt(recipe.stats['Coffee']) : '');
-  const waterAmt   = document.getElementById('waterAmount').value || (recipe ? parseInt(recipe.stats['Water']) : '');
+  // Pre-populate details screen — apply dose adjustment if active
+  const baseDose = parseDoseGrams(document.getElementById('coffeeDose').value)
+               ?? (recipe ? parseInt(recipe.stats['Coffee']) : null);
+  let coffeeDose = baseDose;
+  if (baseDose && activeAdjustment === 'more_coffee') coffeeDose = baseDose + 1;
+  if (baseDose && activeAdjustment === 'less_coffee') coffeeDose = Math.max(1, baseDose - 1);
+  const waterAmt = document.getElementById('waterAmount').value || (recipe ? parseInt(recipe.stats['Water']) : '');
+
+  activeAdjustment = null;
+  const banner = document.getElementById('brewAdjustmentBanner');
+  if (banner) banner.style.display = 'none';
 
   document.getElementById('bd-coffeeName').value   = document.getElementById('coffeeName').value || '';
   document.getElementById('bd-coffee').value        = coffeeDose || '';
