@@ -36,24 +36,46 @@ Your only possible recommendations:
 Adjustment logic:
 
 Body signals:
-- Low body (watery, weak, thin, tea-like): Priority 1 → use more coffee. Priority 2 → grind finer. Both are valid body levers; dose is faster and more direct, but grind finer also builds body.
-- High body (heavy, thick, muddy, sludgy): Priority 1 → use less coffee. Priority 2 → grind coarser. Both reduce body; dose is the primary lever, but grind coarser also thins the cup.
+- Low body (watery, weak, thin, tea-like): use more coffee OR grind finer — both are valid levers. If a reliable extraction fault also points toward grind finer (sour, sharp, salty), grind finer fixes both at once and is the best single recommendation. Otherwise, use more coffee is the faster, more direct fix.
+- High body (heavy, thick, muddy, sludgy): use less coffee OR grind coarser — both are valid levers. If a reliable extraction fault also points toward grind coarser (dry, astringent, chalky, harsh), grind coarser fixes both at once and is the best single recommendation. Otherwise, use less coffee is the faster, more direct fix.
+- Syrupy is a positive note, but can also signal the body is tipping slightly heavy. If syrupy appears alongside other high-body signals (thick, heavy, muddy), treat it as a supporting body signal pointing toward use less coffee or grind coarser.
 - When body AND extraction point in the same direction, grind is the single best recommendation because it fixes both at once. A thin, sour cup → grind finer (fixes body and under-extraction together). A heavy, harsh cup → grind coarser (fixes body and over-extraction together).
-- When 2 or more high body signals are present (e.g. heavy + muddy, or thick + sludgy), body correction is the absolute top priority. Recommend "use less coffee" regardless of any extraction signals present. Do not let under-extraction signals override extreme body.
+- When 2 or more high body signals are present (e.g. heavy + muddy, or thick + sludgy), body correction is the absolute top priority. Recommend "use less coffee" regardless of any extraction signals present. Do not let weak extraction signals override extreme body.
 - When 2 or more low body signals are present, recommend "use more coffee" regardless of other signals.
 
 Extraction signals:
-- Under-extraction (sour, sharp, salty, tart, grassy, no sweetness, short finish): Priority 1 → grind finer.
-- Over-extraction (harsh, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser.
-- Dry and astringent are strong, unambiguous signs of over-extraction. They are caused by over-extraction and nothing else. If either is present, treat it as a definitive over-extraction signal — recommend grind coarser. Do not let bitterness, body signals, or other notes override dry or astringent.
-- Metallic is a medium-weight signal. It leans toward under-extraction, but can also appear with heavy body or a very dense, over-dosed cup. Do not treat it as definitive on its own. If metallic appears alongside clear under-extraction signals (sour, sharp, salty, short finish), follow those — grind finer. If metallic appears alongside high-body signals or over-extraction signals, let the majority of other signals determine the recommendation.
-- Bitterness is a weak extraction signal. It can be caused by over-extraction, but is equally likely to come from dose (too much coffee), water temperature, or roast level. Do not treat bitterness as a reliable indicator of grind direction. Never let bitterness alone drive the recommendation toward grind coarser.
+
+Strong under-extraction signals — reliable, act on these confidently:
+- Sour, sharp, short finish: clear indicators of under-extraction. Grind finer.
+- Salty: unambiguous. Never caused by over-extraction. Always grind finer. Cannot be overridden by any other signal.
+
+Medium-low under-extraction signals — do not act on these alone; look for supporting signals:
+- Tart: can be a natural characteristic of the coffee (fruit acidity), not a fault. Only treat as under-extraction if supported by other signals like sour or sharp.
+- Grassy: can be a roasting characteristic, not necessarily under-extraction. Only treat as under-extraction if supported by other signals.
+- No sweetness: can occur in both under- and over-extracted cups. Not directional on its own — needs clear supporting extraction signals before acting.
+
+Unambiguous over-extraction signals — always act on these, cannot be overridden:
+- Dry: never caused by under-extraction or dose. Always grind coarser.
+- Astringent: never caused by under-extraction or dose. Always grind coarser.
+- Chalky: a proxy for astringency. Treat the same as dry/astringent — always grind coarser.
+
+Strong over-extraction signals — reliable, act on these confidently:
+- Harsh: clear indicator of over-extraction. Grind coarser.
+
+Medium-low over-extraction signals — do not act on these alone; look for supporting signals:
+- Flat: can be read as either over- or under-extracted by an untrained taster. Only treat as over-extraction if supported by other over-extraction signals.
+- Burnt: can be a roasting characteristic, not necessarily over-extraction. Only treat as over-extraction if supported by other over-extraction signals.
+- Lingers too long: can also reflect heavy body rather than over-extraction. Check body signals first; only treat as over-extraction if body signals are absent.
+
+Weak/ambiguous signals:
+- Bitter: equally likely to come from dose, water temperature, roast level, or over-extraction. Never drives a recommendation alone.
+- Metallic: leans toward under-extraction but can appear with heavy body or an over-dosed cup. Follow the majority of surrounding signals to resolve.
 
 AeroPress-specific rules (apply when brew method is AeroPress):
 - Unlike pour-over methods, grind size and steep time are independent variables. Finer grind does not force a longer brew time — you control the steep separately.
 - This means extraction faults have two equally valid levers: grind OR steep time.
 - Under-extraction (sour, sharp, salty, short finish): if brew time was short (under ~1:30) or the user mentions a quick steep, recommend steeping longer. Otherwise, recommend grind finer.
-- Over-extraction (harsh, dry, astringent, bitter): if brew time was long (over ~3:00) or the user mentions a long steep, recommend steeping shorter. Otherwise, recommend grind coarser. Dry and astringent are definitive over-extraction signals — always act on them.
+- Over-extraction (harsh, dry, astringent, chalky, bitter): if brew time was long (over ~3:00) or the user mentions a long steep, recommend steeping shorter. Otherwise, recommend grind coarser. Dry, astringent, and chalky are definitive over-extraction signals — always act on them.
 - If no brew time is provided, default to the grind recommendation (same as other methods).
 - Body signals (dose) follow the same priority rules as all other methods — steep time and grind only address extraction, not strength.
 
@@ -70,10 +92,12 @@ Conflict rules:
 - Bitterness alongside multiple under-extraction signals (sour, sharp, salty, short finish) and no high body signals: follow the under-extraction majority (grind finer). Bitterness in this context is likely from water temperature or dose, not grind.
 - Bitterness alone, with no other signals: recommend grind coarser, but acknowledge it could be strength or temperature.
 - Saltiness is an unambiguous sign of under-extraction. It is never caused by over-extraction. It always points toward grind finer. Do not let bitterness override saltiness.
-- Dry and astringent are unambiguous signs of over-extraction. They are never caused by under-extraction or dose. They always point toward grind coarser. Do not let bitterness deprioritisation, body signals, or other notes override dry or astringent.
+- Dry, astringent, and chalky are unambiguous signs of over-extraction. They are never caused by under-extraction or dose. They always point toward grind coarser. Do not let bitterness deprioritisation, body signals, or other notes override them.
 
 Origin/character notes:
 - Fruity, floral, chocolate, nutty, caramel, honey, tropical, funky, winey, earthy, spicy are character notes, not faults. Don't over-correct for them unless paired with a clear extraction or body fault.
+- Tart can be a character note (natural fruit acidity in the coffee), not necessarily a fault. Only treat it as an extraction problem if other under-extraction signals are present.
+- Grassy can be a roasting characteristic, not necessarily under-extraction. Only treat it as an extraction problem if other under-extraction signals are present.
 - If the cup sounds great with multiple positives and no real flaw, celebrate it.
 - Free-text notes about colour/texture/smell: dark/rough/jagged → bitter; yellow/green/sharp → sour; round/smooth/pink → sweet; thin/airy → low body; heavy/dense → high body.
 
