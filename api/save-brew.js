@@ -67,7 +67,7 @@ export default async function handler(req, res) {
   } else if (isNewMonth(user.month_reset_at)) {
     const { data: reset, error: resetError } = await supabase
       .from('users')
-      .update({ uses_this_month: 0, month_reset_at: today })
+      .update({ uses_this_month: 0, month_reset_at: today, monthly_limit: 10 })
       .eq('email', cleanEmail)
       .select()
       .single();
@@ -77,6 +77,21 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error' });
     }
     user = reset;
+  }
+
+  // Award referral bonus when a brand-new user activates via a referral link
+  if (isNewUser && ref) {
+    const { data: referrer } = await supabase
+      .from('users')
+      .select('email, monthly_limit')
+      .eq('referral_code', ref)
+      .neq('email', cleanEmail)
+      .maybeSingle();
+    if (referrer) {
+      const newLimit = (referrer.monthly_limit ?? 10) + 2;
+      await supabase.from('users').update({ monthly_limit: newLimit }).eq('email', referrer.email);
+      console.log(`Referral bonus +2 awarded to ${referrer.email} for referring ${cleanEmail}`);
+    }
   }
 
   // Increment usage count
@@ -151,8 +166,9 @@ export default async function handler(req, res) {
     console.error('Brew history save failed:', brewError);
   }
 
+  const monthlyLimit = user.monthly_limit ?? 10;
   return res.status(200).json({
-    usesRemaining: user.is_pro ? null : 10 - (user.uses_this_month + 1),
+    usesRemaining: user.is_pro ? null : monthlyLimit - (user.uses_this_month + 1),
     isPro: user.is_pro ?? false,
   });
 }

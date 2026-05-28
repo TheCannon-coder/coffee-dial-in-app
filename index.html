@@ -213,6 +213,17 @@ header {
 .brew-elapsed-wrap { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
 .brew-elapsed-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); opacity: 0.6; }
 .brew-elapsed-timer { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 400; color: var(--muted); opacity: 0.5; letter-spacing: 0.05em; }
+/* REFERRAL CARD */
+.referral-card { background: rgba(200,121,65,0.07); border: 1px solid rgba(200,121,65,0.22); border-radius: 16px; padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1rem; }
+.referral-eyebrow { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; color: var(--caramel-light); opacity: 0.85; }
+.referral-title { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 300; color: var(--espresso); line-height: 1.35; }
+.referral-link-row { display: flex; gap: 0.5rem; align-items: center; }
+.referral-link-input { flex: 1; min-width: 0; font-size: 0.72rem; color: var(--espresso); background: rgba(245,240,232,0.6); border: 1px solid rgba(42,26,14,0.14); border-radius: 8px; padding: 0.5rem 0.7rem; outline: none; }
+.referral-copy-btn { font-size: 0.78rem; font-weight: 500; color: var(--espresso); background: rgba(42,26,14,0.08); border: 1px solid rgba(42,26,14,0.15); border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.referral-copy-btn:hover { background: rgba(42,26,14,0.14); }
+.referral-share-row { display: flex; gap: 0.5rem; }
+.referral-share-btn { flex: 1; font-size: 0.8rem; font-weight: 400; color: var(--espresso); background: transparent; border: 1px solid rgba(42,26,14,0.18); border-radius: 8px; padding: 0.55rem; cursor: pointer; transition: background 0.15s; }
+.referral-share-btn:hover { background: rgba(42,26,14,0.06); }
 
 /* Brew-along adjustment banner */
 .brew-adjustment-banner { background: rgba(200,121,65,0.12); border: 1px solid rgba(200,121,65,0.25); color: var(--caramel-light); font-size: 0.8rem; border-radius: 8px; padding: 0.5rem 0.9rem; margin-bottom: 1.5rem; max-width: 280px; }
@@ -489,6 +500,19 @@ header {
   </div>
 
   <div id="savedCoffeesContainer"></div>
+
+  <div id="referralCard" class="referral-card" style="display:none">
+    <div class="referral-eyebrow">Invite a friend</div>
+    <div class="referral-title">Share your link — get +2 dial-ins when a friend tries their first brew</div>
+    <div class="referral-link-row">
+      <input type="text" id="referralLinkInput" class="referral-link-input" readonly>
+      <button class="referral-copy-btn" id="referralCopyBtn" onclick="copyReferralLink()">Copy</button>
+    </div>
+    <div class="referral-share-row">
+      <button class="referral-share-btn" onclick="shareReferralEmail()">Email</button>
+      <button class="referral-share-btn" onclick="shareReferralSMS()">Text</button>
+    </div>
+  </div>
 
 </div>
 
@@ -946,6 +970,58 @@ function loadHomeState() {
     `;
     container.appendChild(card);
   });
+  loadReferralCard();
+}
+
+async function loadReferralCard() {
+  if (!userEmail) return;
+  const card = document.getElementById('referralCard');
+  if (!card) return;
+  // Don't re-fetch if already loaded
+  const existing = document.getElementById('referralLinkInput')?.value;
+  if (existing) { card.style.display = 'flex'; return; }
+  try {
+    const res = await fetch('/api/referral-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: userEmail }),
+    });
+    if (!res.ok) return;
+    const { referralUrl } = await res.json();
+    const input = document.getElementById('referralLinkInput');
+    if (input) input.value = referralUrl;
+    card.style.display = 'flex';
+  } catch (e) {
+    // Non-fatal — referral card just stays hidden
+  }
+}
+
+function copyReferralLink() {
+  const input = document.getElementById('referralLinkInput');
+  if (!input) return;
+  const btn = document.getElementById('referralCopyBtn');
+  navigator.clipboard.writeText(input.value).then(() => {
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  }).catch(() => {
+    input.select();
+    document.execCommand('copy');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  });
+}
+
+function shareReferralEmail() {
+  const link = document.getElementById('referralLinkInput')?.value;
+  if (!link) return;
+  const subject = encodeURIComponent('A free app for dialling in your coffee');
+  const body = encodeURIComponent(`Hey — found this free tool for dialling in coffee at home. It gives you one practical tip after each cup based on how it tasted. Really useful if you're trying to improve your brews:\n\n${link}`);
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+function shareReferralSMS() {
+  const link = document.getElementById('referralLinkInput')?.value;
+  if (!link) return;
+  const text = encodeURIComponent(`Free app that gives you brewing tips based on how your coffee tastes — really handy: ${link}`);
+  window.location.href = `sms:?body=${text}`;
 }
 
 function startNewBrew() {
