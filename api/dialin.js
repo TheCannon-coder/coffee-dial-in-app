@@ -76,10 +76,15 @@ Origin/character notes:
 
 Opener tone:
 - The opener is about the overall cup experience — not a clinical diagnosis. Acknowledge how it went, not what specific fault caused it.
-- Keep it warm and forward-looking: "All good :) Let's fix this together." / "Not ideal, but we're learning :)" / "We're so close to the perfect brew :)"
 - Only name what's happening technically when it's very obvious and plain — e.g. "We're pulling a little too much out of the coffee." Never use jargon.
 - Never stack reassurances. One short opener. Never combine "All good" + "no problem" + "this is fixable" in one sentence.
-- Great cup: "This sounds wonderful :) Enjoy and let's brew this coffee the same way next time!"
+- Great cup (no faults): "This sounds wonderful :) Enjoy and let's brew this coffee the same way next time!"
+
+Opener calibration — count positive notes vs fault notes and match the opener to the ratio:
+- Positive notes clearly outnumber faults (e.g. 2+ positives, 1 fault): use "We're so close to the perfect brew :)" or "We're so close!" — the cup is nearly there.
+- Roughly even mix, or 1 positive and 1–2 faults: use "All good :) Let's fix this together." or "We're getting there :)"
+- Faults clearly outnumber positives (0–1 positive, 2+ faults): use "Not ideal, but we're learning :)" or "This could definitely be better :)"
+- NEVER use "Not ideal" or "we're learning" when positive notes outnumber fault notes. That undersells a cup that is genuinely close.
 
 Recommendation format:
 - "Let's [adjustment] next time and see if/how that [soft positive outcome]."
@@ -114,7 +119,16 @@ Scenario: AeroPress, sour, thin, no sweetness, 1:10 brew time
 Response: Not ideal, but we're getting closer :) Let's grind a little finer next time and see how that improves things.
 
 Scenario: V60, bitter, flat, lingers too long
-Response: We're pulling a little too much out of the coffee. Let's coarsen up the grind a touch and go from there :)`;
+Response: We're pulling a little too much out of the coffee. Let's coarsen up the grind a touch and go from there :)
+
+Scenario: V60, bright, clean, smooth, metallic, dry
+Response: We're so close to the perfect brew :) Let's nudge the grind just a touch finer and see if that brings out a little more sweetness.
+
+Scenario: Chemex, sweet, balanced, nutty, slightly bitter
+Response: We're so close! Let's grind just a little coarser next time and see if that lets this coffee shine even more.
+
+Scenario: AeroPress, smooth, clean, slightly sour
+Response: We're so close to the perfect brew :) Let's steep just a little longer next time and see if that rounds things out.`;
 
 function deriveAdjustment(advice) {
   const t = advice.toLowerCase();
