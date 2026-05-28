@@ -44,14 +44,15 @@ Body signals:
 
 Extraction signals:
 - Under-extraction (sour, sharp, salty, metallic, tart, grassy, no sweetness, short finish): Priority 1 → grind finer.
-- Over-extraction (harsh, dry, astringent, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser.
+- Over-extraction (harsh, flat, burnt, chalky, lingers too long): Priority 1 → grind coarser.
+- Dry and astringent are strong, unambiguous signs of over-extraction. They are caused by over-extraction and nothing else. If either is present, treat it as a definitive over-extraction signal — recommend grind coarser. Do not let bitterness, body signals, or other notes override dry or astringent.
 - Bitterness is a weak extraction signal. It can be caused by over-extraction, but is equally likely to come from dose (too much coffee), water temperature, or roast level. Do not treat bitterness as a reliable indicator of grind direction. Never let bitterness alone drive the recommendation toward grind coarser.
 
 AeroPress-specific rules (apply when brew method is AeroPress):
 - Unlike pour-over methods, grind size and steep time are independent variables. Finer grind does not force a longer brew time — you control the steep separately.
 - This means extraction faults have two equally valid levers: grind OR steep time.
 - Under-extraction (sour, sharp, salty, short finish): if brew time was short (under ~1:30) or the user mentions a quick steep, recommend steeping longer. Otherwise, recommend grind finer.
-- Over-extraction (harsh, dry, astringent, bitter): if brew time was long (over ~3:00) or the user mentions a long steep, recommend steeping shorter. Otherwise, recommend grind coarser.
+- Over-extraction (harsh, dry, astringent, bitter): if brew time was long (over ~3:00) or the user mentions a long steep, recommend steeping shorter. Otherwise, recommend grind coarser. Dry and astringent are definitive over-extraction signals — always act on them.
 - If no brew time is provided, default to the grind recommendation (same as other methods).
 - Body signals (dose) follow the same priority rules as all other methods — steep time and grind only address extraction, not strength.
 
@@ -68,6 +69,7 @@ Conflict rules:
 - Bitterness alongside multiple under-extraction signals (sour, sharp, salty, metallic, short finish) and no high body signals: follow the under-extraction majority (grind finer). Bitterness in this context is likely from water temperature or dose, not grind.
 - Bitterness alone, with no other signals: recommend grind coarser, but acknowledge it could be strength or temperature.
 - Saltiness is an unambiguous sign of under-extraction. It is never caused by over-extraction. It always points toward grind finer. Do not let bitterness override saltiness.
+- Dry and astringent are unambiguous signs of over-extraction. They are never caused by under-extraction or dose. They always point toward grind coarser. Do not let bitterness deprioritisation, body signals, or other notes override dry or astringent.
 
 Origin/character notes:
 - Fruity, floral, chocolate, nutty, caramel, honey, tropical, funky, winey, earthy, spicy are character notes, not faults. Don't over-correct for them unless paired with a clear extraction or body fault.
