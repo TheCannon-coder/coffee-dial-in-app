@@ -224,6 +224,12 @@ header {
 .referral-share-row { display: flex; gap: 0.5rem; }
 .referral-share-btn { flex: 1; font-size: 0.8rem; font-weight: 400; color: var(--espresso); background: transparent; border: 1px solid rgba(42,26,14,0.18); border-radius: 8px; padding: 0.55rem; cursor: pointer; transition: background 0.15s; }
 .referral-share-btn:hover { background: rgba(42,26,14,0.06); }
+/* LANDING SCREEN FEATURES */
+.se-features { display: flex; flex-direction: column; gap: 0.9rem; }
+.se-feature { background: rgba(245,240,232,0.55); border-radius: 12px; padding: 0.9rem 1.1rem; }
+.se-feature-title { font-weight: 500; font-size: 0.9rem; color: var(--espresso); margin-bottom: 0.25rem; }
+.se-feature-detail { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+.se-footnote { font-size: 0.75rem; color: var(--muted); opacity: 0.6; text-align: center; margin-top: -0.3rem; }
 
 /* Brew-along adjustment banner */
 .brew-adjustment-banner { background: rgba(200,121,65,0.12); border: 1px solid rgba(200,121,65,0.25); color: var(--caramel-light); font-size: 0.8rem; border-radius: 8px; padding: 0.5rem 0.9rem; margin-bottom: 1.5rem; max-width: 280px; }
@@ -466,6 +472,20 @@ header {
 </head>
 <body>
 
+<noscript>
+  <div style="max-width:480px;margin:2rem auto;padding:1.5rem;font-family:sans-serif;color:#2A1A0E">
+    <h1>Dial In — Free Coffee Coaching for Home Brewers</h1>
+    <p>Get personalised brewing advice based on how your cup actually tastes. Tell us what you noticed — sour, bitter, flat, watery — and we'll give you one clear adjustment to try next time.</p>
+    <h2>How it works</h2>
+    <p>After each brew, tap the notes that match what you tasted. Dial In analyses your feedback and recommends exactly one change — grind finer, adjust your dose, steep a little longer — so you always know what to try next.</p>
+    <h2>Works with any brew method</h2>
+    <p>V60, AeroPress, espresso, French press, Chemex, Moka pot, and more. Whether you're dialling in a pour-over or pulling espresso shots, Dial In gives you practical, taste-based coaching tailored to your method.</p>
+    <h2>Free to use</h2>
+    <p>10 free dial-ins every month. No coffee expertise required — just brew, taste, and let us help you improve.</p>
+    <p><a href="https://www.coffeebrew.coach">Visit coffeebrew.coach</a> — JavaScript required to use the app.</p>
+  </div>
+</noscript>
+
 <header>
   <div class="logo" onclick="goHome()">dial <span>in</span></div>
   <div class="header-right">Coffee Coach</div>
@@ -474,14 +494,31 @@ header {
 <!-- SCREEN: Email collection (first visit only) -->
 <div class="screen" id="se">
   <div>
-    <div class="screen-heading">Let's get started.</div>
-    <div class="screen-sub">Enter your email to unlock your coaching. You'll get 10 free dial-ins every month, no password needed.</div>
+    <h1 class="screen-heading">Free coffee coaching for home brewers.</h1>
+    <p class="screen-sub">Tell us how your cup tasted — and we'll give you one clear adjustment to try next time. No guesswork, no jargon.</p>
   </div>
+
+  <div class="se-features">
+    <div class="se-feature">
+      <div class="se-feature-title">Works with any brew method</div>
+      <div class="se-feature-detail">V60, AeroPress, espresso, French press, Chemex, Moka pot — we know them all.</div>
+    </div>
+    <div class="se-feature">
+      <div class="se-feature-title">One tip at a time</div>
+      <div class="se-feature-detail">Changing too much at once makes it impossible to know what worked. We always recommend exactly one adjustment.</div>
+    </div>
+    <div class="se-feature">
+      <div class="se-feature-title">Taste-based advice</div>
+      <div class="se-feature-detail">Sour? Bitter? Watery? Flat? Tap what you tasted and get a specific, practical next step — grind finer, adjust your dose, steep a little longer.</div>
+    </div>
+  </div>
+
   <div class="field">
     <label>Your email</label>
     <input type="email" id="emailInput" placeholder="you@example.com" onkeydown="if(event.key==='Enter')submitEmail()">
   </div>
   <button class="btn-primary" onclick="submitEmail()">Start brewing →</button>
+  <p class="se-footnote">10 free dial-ins every month. No password needed.</p>
 </div>
 
 <!-- SCREEN 0: Home -->
@@ -560,7 +597,7 @@ header {
         <option>Drip machine</option>
         <option>Other</option>
       </select>
-      <div class="toggle-row" id="brewAlongRow" style="display:none">
+      <div class="toggle-row" id="brewAlongRow">
         <span class="toggle-label">Brew along with me</span>
         <label class="toggle">
           <input type="checkbox" id="brewAlongToggle">
