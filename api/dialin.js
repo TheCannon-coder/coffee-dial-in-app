@@ -86,6 +86,15 @@ Espresso-specific rules (apply when brew method is espresso):
 - Extraction faults follow the same priority as other methods (grind first), but output adjustment is the secondary lever before touching dose in.
 - Dose and shot time: when the user is holding their output constant (pulling to a fixed ratio), dose in also controls shot time and therefore extraction. More dose in → more resistance → slower flow → longer shot time → more extraction. Less dose in → less resistance → faster flow → shorter shot time → less extraction. This means dose can be used as an extraction lever in espresso, not just a strength lever — but only when output stays fixed. Do not recommend this unless grind and output have already been addressed.
 
+Adjustment history and oscillation rules:
+- If "Previous adjustments for this coffee" is provided, use it to detect loops and avoid sending the user backwards.
+- Reversal rule: never recommend an adjustment that directly undoes the most recent one. If the last adjustment was "grind finer", do not recommend "grind coarser". If the last was "grind coarser", do not recommend "grind finer". Same applies to more/less coffee and steep longer/shorter. A single reversal gives the user no new information.
+- Oscillation rule: if the two most recent adjustments are opposites (grind finer → grind coarser, or grind coarser → grind finer), the grind is likely already close. Do not recommend either grind direction again. Switch to a completely different lever:
+  - Under-extraction symptoms still present after grind oscillation → recommend more coffee.
+  - Over-extraction symptoms still present after grind oscillation → recommend less coffee.
+  - For AeroPress: recommend steep time adjustment as the alternative to grind.
+- When pivoting due to history, keep the same warm two-sentence format. You may briefly acknowledge the pivot in the opener: "We've been dialling the grind back and forth — let's try something different." Do not explain the logic in detail.
+
 Conflict rules:
 - Weight the majority of signals. A single note does not override several pointing the other way.
 - Bitterness alongside high body signals (heavy, thick, muddy, sludgy): the bitterness is almost certainly from strength, not extraction. Prioritise body correction — recommend "use less coffee". Do not recommend grind coarser in this case.
@@ -186,9 +195,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, tastingNotes, freeNotes, ref } = req.body ?? {};
+  const { email, method, coffee, water, brewTime, waterTemp, coffeeName, grinderNotes, tastingNotes, freeNotes, adjustmentHistory, ref } = req.body ?? {};
 
   // Build the coaching prompt (shared between anonymous and signed-in paths)
+  const adjustmentLabels = {
+    grind_finer: 'grind finer', grind_coarser: 'grind coarser',
+    more_coffee: 'more coffee', less_coffee: 'less coffee',
+    steep_longer: 'steep longer', steep_shorter: 'steep shorter', none: 'no change',
+  };
+  const historyLine = Array.isArray(adjustmentHistory) && adjustmentHistory.length
+    ? `Previous adjustments for this coffee (oldest → most recent): ${adjustmentHistory.map(a => adjustmentLabels[a] || a).join(' → ')}`
+    : '';
+
   const userMessage = [
     'Brew info:',
     `- Method: ${method || 'not specified'}`,
@@ -199,9 +217,10 @@ export default async function handler(req, res) {
     '',
     `Tasting notes: ${tastingNotes || 'none'}`,
     freeNotes ? `Extra notes: ${freeNotes}` : '',
+    historyLine,
     '',
     'Give me my one next adjustment.',
-  ].filter(line => line !== undefined).join('\n');
+  ].filter(line => line !== undefined && line !== '').join('\n');
 
   // Anonymous path — no email provided, just return the tip
   if (!email || !email.includes('@')) {

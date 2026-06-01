@@ -978,9 +978,15 @@ function saveCoffee(brewData) {
   const name = brewData.coffeeName?.toLowerCase().trim() || '';
   const idx = coffees.findIndex(c => (c.coffeeName?.toLowerCase().trim() || '') === name);
   if (idx >= 0) {
-    coffees[idx] = brewData; // update existing slot
+    // Carry forward the adjustment history and append the new one (keep last 6)
+    const prev = coffees[idx].adjustmentHistory || [];
+    const next = brewData.adjustment && brewData.adjustment !== 'none'
+      ? [...prev, brewData.adjustment].slice(-6)
+      : prev;
+    coffees[idx] = { ...brewData, adjustmentHistory: next };
   } else {
-    coffees.unshift(brewData); // new coffee — add to front
+    const next = brewData.adjustment && brewData.adjustment !== 'none' ? [brewData.adjustment] : [];
+    coffees.unshift({ ...brewData, adjustmentHistory: next });
     if (coffees.length > 2) coffees = coffees.slice(0, 2);
   }
   localStorage.setItem('dialin_saved_coffees', JSON.stringify(coffees));
@@ -1258,6 +1264,13 @@ async function analyse() {
   const resultArea = document.getElementById('resultArea');
   resultArea.style.display = 'none';
 
+  // Look up prior adjustment history for this coffee to help the AI avoid loops
+  const savedCoffees = getSavedCoffees();
+  const matchedCoffee = savedCoffees.find(c =>
+    (c.coffeeName?.toLowerCase().trim() || '') === coffeeName.toLowerCase().trim()
+  );
+  const adjustmentHistory = matchedCoffee?.adjustmentHistory || [];
+
   try {
     const res = await fetch('/api/dialin', {
       method: 'POST',
@@ -1273,6 +1286,7 @@ async function analyse() {
         grinderNotes,
         tastingNotes: selected,
         freeNotes,
+        adjustmentHistory: adjustmentHistory.length ? adjustmentHistory : undefined,
         ref: localStorage.getItem('dialin_ref') || undefined
       })
     });
