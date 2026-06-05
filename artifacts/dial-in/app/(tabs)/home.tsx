@@ -3,9 +3,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
-  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import { useColors } from '@/hooks/useColors';
 import { useUser } from '@/context/UserContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { BrewCard } from '@/components/BrewCard';
 import { ReferralCard } from '@/components/ReferralCard';
 import { getUser, getCustomerPortal } from '@/lib/api';
@@ -28,7 +29,8 @@ function greeting() {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { email, isPro, usesRemaining, monthlyLimit, savedCoffees, updateUserStats, setReferralCode } = useUser();
+  const { email, isPro, usesRemaining, savedCoffees, updateUserStats, setReferralCode } = useUser();
+  const { enabled: notificationsEnabled, toggle: toggleNotifications, permission } = useNotifications();
 
   useEffect(() => {
     if (email) {
@@ -137,6 +139,30 @@ export default function HomeScreen() {
           </View>
         )}
 
+        <View style={[styles.settingsRow, { borderTopColor: colors.border }]}>
+          <Feather name="bell" size={15} color={colors.mutedForeground} />
+          <Text style={[styles.settingsLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            Brew reminders
+          </Text>
+          <Switch
+            value={notificationsEnabled === true}
+            onValueChange={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              toggleNotifications();
+            }}
+            thumbColor={notificationsEnabled ? colors.accent : colors.card}
+            trackColor={{ false: colors.border, true: colors.accent + '55' }}
+            ios_backgroundColor={colors.border}
+            disabled={permission === 'denied'}
+          />
+        </View>
+
+        {permission === 'denied' && (
+          <Text style={[styles.deniedNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            Enable notifications in Settings to turn on reminders.
+          </Text>
+        )}
+
         {email && (
           <Pressable onPress={handleManageSubscription} style={styles.manageLink}>
             <Text style={[styles.manageLinkText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
@@ -217,6 +243,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     marginBottom: 12,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 8,
+  },
+  settingsLabel: {
+    flex: 1,
+    fontSize: 14,
+  },
+  deniedNote: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: -6,
+    marginBottom: 4,
   },
   manageLink: {
     alignItems: 'center',

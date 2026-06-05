@@ -6,6 +6,7 @@ export const KEYS = {
   SAVED_COFFEES: 'dialin_saved_coffees',
   REF: 'dialin_ref',
   IS_PRO: 'dialin_is_pro',
+  NOTIFICATIONS_ENABLED: 'dialin_notifications_enabled',
 } as const;
 
 export async function getItem<T>(key: string): Promise<T | null> {
