@@ -18,7 +18,7 @@ import { useColors } from '@/hooks/useColors';
 import { TasteChip } from '@/components/TasteChip';
 import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
-import { generateId } from '@/lib/storage';
+import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
 
 type Stage = 'selecting' | 'loading' | 'result';
 
@@ -104,6 +104,25 @@ export default function TastingScreen() {
     const tastingNotes = Array.from(selected).join(', ');
     const currentAnonId = email ? undefined : await ensureAnonId();
 
+    // Enforce local brew limit for non-pro users
+    if (!isPro) {
+      const count = await getBrewCount();
+      if (count >= FREE_BREW_LIMIT) {
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
+        nextMonth.setHours(0, 0, 0, 0);
+        router.push({
+          pathname: '/paywall',
+          params: {
+            resetsOn: nextMonth.toISOString(),
+            isAnonymous: email ? '0' : '1',
+          },
+        });
+        setStage('selecting');
+        return;
+      }
+    }
+
     try {
       const result = await dialIn({
         email: email ?? undefined,
@@ -130,10 +149,14 @@ export default function TastingScreen() {
       }
 
       if ('advice' in result) {
+        // Increment local brew count on success
+        if (!isPro) await incrementBrewCount();
+
         setAdvice(result.advice);
         setAdjustment(result.adjustment);
-        setUsesRemaining(result.usesRemaining);
-        updateUserStats(result.isPro, 0, 10);
+        const serverRemaining = result.usesRemaining;
+        setUsesRemaining(serverRemaining);
+        updateUserStats(result.isPro, FREE_BREW_LIMIT - serverRemaining, FREE_BREW_LIMIT);
 
         if (email) {
           const newHistory = [...adjustmentHistory, result.adjustment];

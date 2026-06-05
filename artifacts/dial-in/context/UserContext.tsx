@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { getItem, generateId, KEYS, setItem, removeItem } from '@/lib/storage';
+import { getItem, generateId, KEYS, setItem, removeItem, getBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
 
 export interface SavedCoffee {
   id: string;
@@ -52,17 +52,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function load() {
-      const [email, anonId, savedCoffees, isPro] = await Promise.all([
+      const [email, anonId, savedCoffees, isPro, brewCount] = await Promise.all([
         getItem<string>(KEYS.EMAIL),
         getItem<string>(KEYS.ANON_ID),
         getItem<SavedCoffee[]>(KEYS.SAVED_COFFEES),
         getItem<boolean>(KEYS.IS_PRO),
+        getBrewCount(),
       ]);
+      const resolvedIsPro = isPro ?? false;
       setState(prev => ({
         ...prev,
         email,
         anonId,
-        isPro: isPro ?? false,
+        isPro: resolvedIsPro,
+        usesRemaining: resolvedIsPro ? null : Math.max(0, FREE_BREW_LIMIT - brewCount),
         savedCoffees: savedCoffees ?? [],
         isLoaded: true,
       }));
