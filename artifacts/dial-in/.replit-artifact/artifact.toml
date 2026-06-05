@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Dial In — Coffee Coach"
+version = "1.0.0"
+id = "artifacts/dial-in"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 23624
+
+[services.development]
+run = "pnpm --filter @workspace/dial-in run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/dial-in", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/dial-in", "run", "serve" ]
+
+[services.env]
+PORT = "23624"
+BASE_PATH = "/"
