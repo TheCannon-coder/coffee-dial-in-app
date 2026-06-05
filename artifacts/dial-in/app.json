@@ -2,6 +2,12 @@
   "expo": {
     "name": "Dial In",
     "slug": "dial-in",
+    "owner": "thecannon",
+    "extra": {
+      "eas": {
+        "projectId": "dc599702-2fe8-4dde-9bc2-1eb61c413e44"
+      }
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
