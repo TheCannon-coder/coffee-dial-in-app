@@ -74,6 +74,8 @@ export function getReferralCode(email: string): Promise<{ code: string }> {
 
 export interface PaymentIntentResult {
   clientSecret: string;
+  subscriptionId?: string;
+  customerId?: string;
 }
 
 export function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
