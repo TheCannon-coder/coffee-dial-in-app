@@ -71,3 +71,11 @@ export function saveBrew(email: string, brew: object): Promise<object> {
 export function getReferralCode(email: string): Promise<{ code: string }> {
   return post<{ code: string }>('/referral-code', { email });
 }
+
+export interface PaymentIntentResult {
+  clientSecret: string;
+}
+
+export function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
+  return post<PaymentIntentResult>('/create-payment-intent', { email, plan });
+}

@@ -86,5 +86,19 @@ export async function scheduleReminders(): Promise<void> {
         repeats: true,
       },
     });
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Know a fellow coffee nerd? 🎁',
+        body: 'Share your Dial In link — you both get 2 extra free brews this month.',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: 4,
+        hour: 11,
+        minute: 0,
+        repeats: true,
+      },
+    });
   } catch {}
 }
