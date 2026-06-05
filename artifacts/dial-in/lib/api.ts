@@ -78,6 +78,13 @@ export interface PaymentIntentResult {
   customerId?: string;
 }
 
-export function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
-  return post<PaymentIntentResult>('/create-payment-intent', { email, plan });
+const SUPABASE_FUNCTIONS_URL = 'https://bdfkpchjvsbsbkdyjflo.supabase.co/functions/v1';
+
+export async function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
+  const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, plan }),
+  });
+  return response.json() as Promise<PaymentIntentResult>;
 }
