@@ -30,3 +30,9 @@ externalPort = 8081
 [[ports]]
 localPort = 23624
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_live_uHcBqIhlIh549Nl4yglJ49Bb00aqbdGedI"
+EXPO_PUBLIC_STRIPE_MERCHANT_ID = "merchant.com.coffeebrew.coach"
