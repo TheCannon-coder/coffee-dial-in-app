@@ -33,6 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(privacyRouter);
 app.use(screenshotsRouter);
+app.use("/api", screenshotsRouter);
 app.use("/api", router);
 
 export default app;

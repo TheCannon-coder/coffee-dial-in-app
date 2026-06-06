@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "capture-screenshots": "tsx ./src/capture-screenshots.ts",
+    "upscale-screenshots": "tsx ./src/upscale-screenshots.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
