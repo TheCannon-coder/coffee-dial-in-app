@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { getStepsForMethod } from '@/lib/brew-steps';
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -25,33 +26,69 @@ export default function BrewAlongActiveScreen() {
     adjustmentHistory?: string;
   }>();
 
-  const [seconds, setSeconds] = useState(0);
-  const [running, setRunning] = useState(true);
+  const steps = getStepsForMethod(params.method);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [stepSeconds, setStepSeconds] = useState(0);
+  const [totalSeconds, setTotalSeconds] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [stepDone, setStepDone] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  const currentStep = steps[stepIndex];
+  const isLastStep = stepIndex === steps.length - 1;
+  const hasDuration = currentStep.duration > 0;
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setSeconds(s => s + 1);
-    }, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+    progressAnim.setValue(0);
+    setStepSeconds(0);
+    setStepDone(false);
+    if (hasDuration) {
+      setRunning(true);
     } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      setRunning(false);
     }
+  }, [stepIndex]);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!running) return;
+
+    intervalRef.current = setInterval(() => {
+      setStepSeconds(prev => {
+        const next = prev + 1;
+        setTotalSeconds(t => t + 1);
+
+        if (hasDuration) {
+          Animated.timing(progressAnim, {
+            toValue: next / currentStep.duration,
+            duration: 200,
+            useNativeDriver: false,
+          }).start();
+
+          if (next >= currentStep.duration) {
+            clearInterval(intervalRef.current!);
+            setRunning(false);
+            setStepDone(true);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+
+        return next;
+      });
+    }, 1000);
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [running]);
+  }, [running, hasDuration, currentStep.duration]);
 
-  function handleToggle() {
+  function handleNext() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setRunning(r => !r);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (stepIndex < steps.length - 1) {
+      setStepIndex(i => i + 1);
+    }
   }
 
   function handleDone() {
@@ -64,13 +101,21 @@ export default function BrewAlongActiveScreen() {
         coffeeName: params.coffeeName ?? '',
         dose: params.dose ?? '',
         water: params.water ?? '',
-        autoTime: formatTime(seconds),
+        autoTime: formatTime(totalSeconds),
         waterTemp: params.waterTemp ?? '',
         grinderNotes: params.grinderNotes ?? '',
         adjustmentHistory: params.adjustmentHistory ?? '[]',
       },
     });
   }
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  const canAdvance = !hasDuration || stepDone;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.espresso }}>
@@ -81,35 +126,116 @@ export default function BrewAlongActiveScreen() {
         <Text style={[styles.topTitle, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
           {params.method}
         </Text>
-        <View style={{ width: 40 }} />
+        <Text style={[styles.totalTimer, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+          {formatTime(totalSeconds)}
+        </Text>
+      </View>
+
+      <View style={styles.progressTrack}>
+        {steps.map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.progressDot,
+              {
+                backgroundColor:
+                  i < stepIndex
+                    ? colors.cream
+                    : i === stepIndex
+                    ? 'rgba(255,255,255,0.6)'
+                    : 'rgba(255,255,255,0.15)',
+              },
+            ]}
+          />
+        ))}
       </View>
 
       <View style={styles.center}>
-        <Text style={[styles.timerDisplay, { color: colors.cream, fontFamily: 'Fraunces_300Light' }]}>
-          {formatTime(seconds)}
-        </Text>
-        <Text style={[styles.timerSub, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
-          {running ? 'Brewing...' : 'Paused'}
+        <Text style={[styles.stepNumber, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+          Step {stepIndex + 1} of {steps.length}
         </Text>
 
-        <Pressable
-          style={({ pressed }) => [styles.toggleBtn, { backgroundColor: 'rgba(255,255,255,0.1)', opacity: pressed ? 0.7 : 1 }]}
-          onPress={handleToggle}
-        >
-          <Feather name={running ? 'pause' : 'play'} size={20} color={colors.cream} />
-          <Text style={[styles.toggleBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-            {running ? 'Pause' : 'Resume'}
-          </Text>
-        </Pressable>
+        <Text style={[styles.stepTitle, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
+          {currentStep.title}
+        </Text>
+
+        <Text style={[styles.stepInstruction, { color: '#D4C4B4', fontFamily: 'DMSans_400Regular' }]}>
+          {currentStep.instruction}
+        </Text>
+
+        {hasDuration && (
+          <View style={styles.timerSection}>
+            <Text style={[styles.timerDisplay, { color: stepDone ? '#A89080' : colors.cream, fontFamily: 'Fraunces_300Light' }]}>
+              {stepDone ? '✓' : formatTime(Math.max(0, currentStep.duration - stepSeconds))}
+            </Text>
+            <View style={[styles.progressBar, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+              <Animated.View
+                style={[
+                  styles.progressFill,
+                  { backgroundColor: stepDone ? '#6B9E6B' : colors.cream, width: progressWidth },
+                ]}
+              />
+            </View>
+          </View>
+        )}
+
+        {!hasDuration && !stepDone && (
+          <View style={[styles.manualBadge, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+            <Text style={[styles.manualText, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+              Take your time. Tap when ready.
+            </Text>
+          </View>
+        )}
       </View>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>
-        <Pressable
-          style={({ pressed }) => [styles.doneBtn, { backgroundColor: colors.cream, opacity: pressed ? 0.85 : 1 }]}
-          onPress={handleDone}
-        >
-          <Text style={[styles.doneBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-            Done — how did it taste? →
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+        {!isLastStep ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.nextBtn,
+              {
+                backgroundColor: canAdvance ? colors.cream : 'rgba(255,255,255,0.15)',
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+            onPress={handleNext}
+            disabled={!canAdvance}
+          >
+            <Text
+              style={[
+                styles.nextBtnText,
+                {
+                  color: canAdvance ? colors.espresso : 'rgba(255,255,255,0.3)',
+                  fontFamily: 'DMSans_500Medium',
+                },
+              ]}
+            >
+              {canAdvance ? `Next: ${steps[stepIndex + 1].title} →` : 'Wait for timer...'}
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [
+              styles.nextBtn,
+              { backgroundColor: canAdvance ? colors.cream : 'rgba(255,255,255,0.15)', opacity: pressed ? 0.85 : 1 },
+            ]}
+            onPress={handleDone}
+            disabled={!canAdvance}
+          >
+            <Text
+              style={[
+                styles.nextBtnText,
+                { color: canAdvance ? colors.espresso : 'rgba(255,255,255,0.3)', fontFamily: 'DMSans_500Medium' },
+              ]}
+            >
+              {canAdvance ? 'Done — how did it taste? →' : 'Wait for timer...'}
+            </Text>
+          </Pressable>
+        )}
+
+        <Pressable onPress={handleDone} style={styles.skipLink}>
+          <Text style={[styles.skipLinkText, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+            Skip to tasting
           </Text>
         </Pressable>
       </View>
@@ -122,43 +248,78 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 12,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   topTitle: { fontSize: 15 },
+  totalTimer: { fontSize: 14, minWidth: 40, textAlign: 'right' },
+  progressTrack: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 6,
+    marginBottom: 0,
+  },
+  progressDot: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+  },
   center: {
     flex: 1,
-    alignItems: 'center',
+    paddingHorizontal: 28,
     justifyContent: 'center',
-    gap: 12,
+    gap: 20,
+  },
+  stepNumber: {
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  stepTitle: {
+    fontSize: 34,
+    lineHeight: 40,
+  },
+  stepInstruction: {
+    fontSize: 17,
+    lineHeight: 26,
+  },
+  timerSection: {
+    gap: 16,
+    marginTop: 8,
   },
   timerDisplay: {
-    fontSize: 80,
-    letterSpacing: 4,
+    fontSize: 64,
+    letterSpacing: 2,
   },
-  timerSub: {
-    fontSize: 16,
-    marginTop: -4,
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
   },
-  toggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 100,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginTop: 16,
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
   },
-  toggleBtnText: { fontSize: 16 },
+  manualBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  manualText: { fontSize: 14 },
   footer: {
     paddingHorizontal: 20,
     paddingTop: 12,
+    gap: 12,
   },
-  doneBtn: {
+  nextBtn: {
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  doneBtnText: { fontSize: 17 },
+  nextBtnText: { fontSize: 17 },
+  skipLink: { alignItems: 'center', paddingVertical: 4 },
+  skipLinkText: { fontSize: 14 },
 });

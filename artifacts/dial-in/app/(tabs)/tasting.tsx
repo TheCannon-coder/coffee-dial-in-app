@@ -19,6 +19,7 @@ import { TasteChip } from '@/components/TasteChip';
 import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
+import { checkAndAwardBadges } from '@/lib/achievements';
 
 type Stage = 'selecting' | 'loading' | 'result';
 
@@ -151,6 +152,13 @@ export default function TastingScreen() {
       if ('advice' in result) {
         // Increment local brew count on success
         if (!isPro) await incrementBrewCount();
+
+        // Check and award achievements (fire and forget)
+        checkAndAwardBadges({
+          method: params.method,
+          coffeeName: params.coffeeName ?? '',
+          adjustment: result.adjustment,
+        }).catch(() => {});
 
         setAdvice(result.advice);
         setAdjustment(result.adjustment);
