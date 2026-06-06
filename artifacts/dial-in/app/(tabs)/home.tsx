@@ -108,7 +108,7 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <Text style={[styles.usesText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                  {usesRemaining !== null ? `${usesRemaining} left` : ''}
+                  {Number.isFinite(usesRemaining) ? `${usesRemaining} left` : ''}
                 </Text>
               )}
             </View>
