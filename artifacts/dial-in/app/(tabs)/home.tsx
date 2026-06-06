@@ -145,7 +145,7 @@ export default function HomeScreen() {
             <Text style={[styles.sectionTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
               Your coffees
             </Text>
-            {coffeeGroups.map(group => (
+            {coffeeGroups.slice(0, 3).map(group => (
               <CoffeeFolder
                 key={group.name}
                 coffeeName={group.name}
@@ -156,6 +156,20 @@ export default function HomeScreen() {
                 }}
               />
             ))}
+            {coffeeGroups.length > 3 && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/all-coffees');
+                }}
+                style={({ pressed }) => [styles.seeAllBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Text style={[styles.seeAllText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                  See all {coffeeGroups.length} coffees
+                </Text>
+                <Feather name="chevron-right" size={16} color={colors.espresso} />
+              </Pressable>
+            )}
           </View>
         )}
 
@@ -256,4 +270,15 @@ const styles = StyleSheet.create({
   deniedNote: { fontSize: 12, lineHeight: 16, marginTop: -6, marginBottom: 4 },
   manageLink: { alignItems: 'center', paddingVertical: 12 },
   manageLinkText: { fontSize: 14, textDecorationLine: 'underline' },
+  seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 2,
+  },
+  seeAllText: { fontSize: 14 },
 });
