@@ -14,7 +14,7 @@
       }
     },
     "production": {
-      "autoIncrement": "buildNumber",
+      "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium"
       },
@@ -24,12 +24,6 @@
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      }
-    }
+    "production": {}
   }
 }
