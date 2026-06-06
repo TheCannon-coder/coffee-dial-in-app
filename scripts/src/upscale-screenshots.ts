@@ -13,8 +13,9 @@ const FRAMES = [
   { src: "raw/frame5.jpg", out: "05-level-up-your-craft.png" },
 ];
 
-const TARGET_W = 1290;
-const TARGET_H = 2796;
+// 6.5" iPhone slot accepted by App Store Connect (iPhone XS Max / 11 Pro Max / 12 Pro Max)
+const TARGET_W = 1284;
+const TARGET_H = 2778;
 
 async function main() {
   console.log(`Upscaling to ${TARGET_W}×${TARGET_H}…\n`);
