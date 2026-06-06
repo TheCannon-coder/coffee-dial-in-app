@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import privacyRouter from "./routes/privacy";
+import screenshotsRouter from "./routes/screenshots";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -31,6 +32,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(privacyRouter);
+app.use(screenshotsRouter);
 app.use("/api", router);
 
 export default app;
