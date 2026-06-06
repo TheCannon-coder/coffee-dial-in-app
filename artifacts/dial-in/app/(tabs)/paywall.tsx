@@ -56,7 +56,7 @@ export default function PaywallScreen() {
       const { error: sheetError } = await presentApplePay({
         cartItems: [
           {
-            label: plan === 'yearly' ? 'Dial In — Annual' : 'Dial In — Monthly',
+            label: plan === 'yearly' ? 'Coffee Brew Coach — Annual' : 'Coffee Brew Coach — Monthly',
             amount: plan === 'yearly' ? '44.99' : '4.99',
             paymentType: 'Immediate',
           },

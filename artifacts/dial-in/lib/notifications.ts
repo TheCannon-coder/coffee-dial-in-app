@@ -32,7 +32,7 @@ export async function requestPermission(): Promise<NotificationPermission> {
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'Dial In',
+        name: 'Coffee Brew Coach',
         importance: Notifications.AndroidImportance.DEFAULT,
         sound: null,
       });
@@ -90,7 +90,7 @@ export async function scheduleReminders(): Promise<void> {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Know a fellow coffee nerd? 🎁',
-        body: 'Share your Dial In link — you both get 2 extra free brews this month.',
+        body: 'Share your Coffee Brew Coach link — you both get 2 extra free brews this month.',
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,

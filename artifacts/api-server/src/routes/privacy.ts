@@ -7,7 +7,7 @@ const html = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — Dial In Coffee Coach</title>
+  <title>Privacy Policy — Coffee Brew Coach</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,14 +25,19 @@ const html = `<!DOCTYPE html>
       padding: 60px 0 100px;
     }
 
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
     .wordmark {
       font-family: Georgia, serif;
       font-style: italic;
       font-weight: 300;
-      font-size: 18px;
-      color: #8B6347;
-      margin-bottom: 48px;
-      display: block;
+      font-size: 20px;
+      color: #2C1A0E;
     }
 
     h1 {
@@ -99,13 +104,24 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
   <div class="wrap">
-    <span class="wordmark">Dial In</span>
+    <div class="brand">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="40" height="40" style="border-radius:9px">
+        <rect width="32" height="32" rx="7" fill="#111"/>
+        <path d="M10 11 C11 10 9 9 10 8 C11 7 9 6 10 5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+        <path d="M16 11 C17 10 15 9 16 8 C17 7 15 6 16 5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+        <rect x="5" y="12" width="16" height="2" rx="1" fill="white"/>
+        <path d="M5 14 H21 L19 25 H7 Z" fill="white"/>
+        <path d="M21 17 Q27 17 27 21 Q27 25 21 25" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="4" y="26" width="21" height="1.5" rx="0.75" fill="white"/>
+      </svg>
+      <span class="wordmark">Coffee Brew Coach</span>
+    </div>
 
     <h1>Privacy Policy</h1>
     <p class="effective">Effective date: June 6, 2025</p>
 
     <p>
-      Dial In Coffee Coach ("we", "our", or "us") operates the Dial In — Coffee Coach mobile application
+      Coffee Brew Coach ("we", "our", or "us") operates the Coffee Brew Coach mobile application
       (the "App"). This policy explains what information we collect, how we use it, and your choices.
     </p>
 
@@ -126,7 +142,7 @@ const html = `<!DOCTYPE html>
 
     <p><strong>Payment information</strong></p>
     <p>
-      If you subscribe to Dial In Pro, payments are processed by
+      If you subscribe to Coffee Brew Coach Pro, payments are processed by
       <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>.
       We do not store your card number, expiry date, or CVV. We only retain a Stripe customer ID
       and subscription status.
@@ -179,7 +195,7 @@ const html = `<!DOCTYPE html>
 
     <h2>7. Children</h2>
     <p>
-      Dial In is not directed at children under 13. We do not knowingly collect personal
+      Coffee Brew Coach is not directed at children under 13. We do not knowingly collect personal
       information from anyone under 13. If you believe we have collected such information,
       please contact us and we will delete it promptly.
     </p>
@@ -197,6 +213,7 @@ const html = `<!DOCTYPE html>
       <h2 style="margin-top: 0;">Contact us</h2>
       <p>If you have any questions about this privacy policy or how we handle your data:</p>
       <p><strong>Email:</strong> <a href="mailto:privacy@coffeebrew.coach">privacy@coffeebrew.coach</a></p>
+      <p><strong>App:</strong> Coffee Brew Coach</p>
       <p><strong>Website:</strong> <a href="https://coffeebrew.coach">coffeebrew.coach</a></p>
     </div>
   </div>

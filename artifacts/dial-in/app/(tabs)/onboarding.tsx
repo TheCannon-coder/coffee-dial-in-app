@@ -101,7 +101,7 @@ export default function OnboardingScreen() {
         >
           <View style={styles.hero}>
             <Text style={[styles.wordmark, { color: colors.espresso, fontFamily: 'Fraunces_300Light_Italic' }]}>
-              Dial In
+              Coffee Brew Coach
             </Text>
             <View style={[styles.badge, { backgroundColor: colors.accent }]}>
               <Text style={[styles.badgeText, { color: '#fff', fontFamily: 'DMSans_500Medium' }]}>

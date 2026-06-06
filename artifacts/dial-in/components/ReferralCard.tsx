@@ -35,7 +35,7 @@ export function ReferralCard() {
     const link = `https://www.coffeebrew.coach?ref=${code}`;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({
-      message: `I've been using Dial In to dial in my coffee — give it a try: ${link}`,
+      message: `I've been using Coffee Brew Coach to dial in my coffee — give it a try: ${link}`,
       url: link,
     });
   }
