@@ -22,8 +22,16 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.dialin.coffeecoach",
+      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserNotificationsUsageDescription": "Coffee Brew Coach can remind you to brew and notify you about referral rewards.",
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "android": {},
@@ -39,6 +47,14 @@
       ],
       "expo-font",
       "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#111111",
+          "sounds": []
+        }
+      ],
       [
         "@stripe/stripe-react-native",
         {

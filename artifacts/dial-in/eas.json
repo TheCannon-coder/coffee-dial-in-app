@@ -13,9 +13,23 @@
         "simulator": false
       }
     },
-    "production": {}
+    "production": {
+      "autoIncrement": "buildNumber",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_STRIPE_MERCHANT_ID": "merchant.com.coffeebrew.coach"
+      }
+    }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "",
+        "ascAppId": "",
+        "appleTeamId": ""
+      }
+    }
   }
 }
