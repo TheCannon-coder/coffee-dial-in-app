@@ -20,6 +20,7 @@ import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
 import { checkAndAwardBadges } from '@/lib/achievements';
+import { recordBrewFields, getActiveRecommendations, type GearItem } from '@/lib/gear-tracker';
 
 type Stage = 'selecting' | 'loading' | 'result';
 
@@ -81,6 +82,7 @@ export default function TastingScreen() {
   const [saved, setSaved] = useState(false);
   const [saveEmail, setSaveEmail] = useState('');
   const [saving, setSaving] = useState(false);
+  const [gearItems, setGearItems] = useState<GearItem[]>([]);
 
   const adjustmentHistory: string[] = params.adjustmentHistory
     ? JSON.parse(params.adjustmentHistory)
@@ -186,6 +188,15 @@ export default function TastingScreen() {
           setSaved(true);
         }
 
+        // Track missing fields and check for gear recommendations (fire and forget)
+        recordBrewFields({
+          dose: params.dose,
+          waterTemp: params.waterTemp,
+          grinderNotes: params.grinderNotes,
+        }).then(() => getActiveRecommendations())
+          .then(setGearItems)
+          .catch(() => {});
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStage('result');
       }
@@ -286,6 +297,37 @@ export default function TastingScreen() {
                 </View>
               )}
             </View>
+
+            {gearItems.length > 0 && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.gearTeaser,
+                  { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({
+                    pathname: '/gear-recommendations',
+                    params: { items: JSON.stringify(gearItems) },
+                  });
+                }}
+              >
+                <View style={styles.gearTeaserLeft}>
+                  <Text style={styles.gearTeaserEmojis}>
+                    {gearItems.map(g => g.emoji).join(' ')}
+                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.gearTeaserTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                      Level up your kit
+                    </Text>
+                    <Text style={[styles.gearTeaserSub, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]}>
+                      {gearItems.length} tool{gearItems.length !== 1 ? 's' : ''} could improve your advice quality
+                    </Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.textSoft} />
+              </Pressable>
+            )}
 
             {!isPro && usesRemaining !== null && email && (
               <Text style={[styles.usesText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
@@ -486,4 +528,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: { fontSize: 16 },
+  gearTeaser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  gearTeaserLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  gearTeaserEmojis: { fontSize: 22 },
+  gearTeaserTitle: { fontSize: 15 },
+  gearTeaserSub: { fontSize: 13, marginTop: 2 },
 });
