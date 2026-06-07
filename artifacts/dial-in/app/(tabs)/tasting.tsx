@@ -318,10 +318,10 @@ export default function TastingScreen() {
                   </Text>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.gearTeaserTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                      Level up your kit
+                      Your advice could be more specific
                     </Text>
                     <Text style={[styles.gearTeaserSub, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]}>
-                      {gearItems.length} tool{gearItems.length !== 1 ? 's' : ''} could improve your advice quality
+                      Missing: {gearItems.map(g => g.missingLabel).join(', ')}
                     </Text>
                   </View>
                 </View>
