@@ -4,11 +4,11 @@ export interface DialInParams {
   email?: string;
   anonId?: string;
   method: string;
-  coffee?: string;
+  coffeeName?: string;
+  dose?: string;
   water?: string;
   brewTime?: string;
   waterTemp?: string;
-  coffeeName?: string;
   grinderNotes?: string;
   tastingNotes: string;
   freeNotes?: string;

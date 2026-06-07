@@ -4,6 +4,25 @@ export type BrewStep = {
   duration: number;
 };
 
+export interface BrewParams {
+  dose?: string;
+  water?: string;
+  waterTemp?: string;
+}
+
+const RECIPE_DEFAULTS: Record<string, { dose: string; water: number; temp: string }> = {
+  'V60':         { dose: '15g', water: 250, temp: '93°C' },
+  'Pour over':   { dose: '15g', water: 250, temp: '93°C' },
+  'Chemex':      { dose: '42g', water: 700, temp: '94°C' },
+  'Kalita Wave': { dose: '20g', water: 320, temp: '93°C' },
+  'AeroPress':   { dose: '15g', water: 200, temp: '85°C' },
+  'French press':{ dose: '30g', water: 500, temp: '95°C' },
+  'Espresso':    { dose: '18g', water: 36,  temp: '93°C' },
+  'Moka pot':    { dose: '20g', water: 200, temp: '80°C' },
+  'Cold brew':   { dose: '100g',water: 600, temp: 'Cold' },
+  'Drip machine':{ dose: '60g', water: 1000,temp: '93°C' },
+};
+
 export const BREW_STEPS: Record<string, BrewStep[]> = {
   'V60': [
     { title: 'Heat water', instruction: 'Bring water to 93°C. Rinse your V60 filter with hot water, then discard the rinse water.', duration: 0 },
@@ -11,14 +30,14 @@ export const BREW_STEPS: Record<string, BrewStep[]> = {
     { title: 'Bloom', instruction: 'Pour 45ml in a slow spiral from centre out. All grounds should be wet. Watch the coffee puff up.', duration: 45 },
     { title: 'First pour', instruction: 'Continue pouring in slow circles to 150ml total. Keep it gentle and steady.', duration: 45 },
     { title: 'Second pour', instruction: 'Pour to 250ml total. Maintain a consistent, unhurried pace.', duration: 60 },
-    { title: 'Draw down', instruction: 'Let the coffee drain fully. It should finish drawing down around 3:00.', duration: 30 },
+    { title: 'Draw down', instruction: 'Let the coffee drain fully. It should finish drawing down around 3:00.', duration: 0 },
   ],
   'Pour over': [
     { title: 'Heat water', instruction: 'Heat water to 93°C. Rinse filter and preheat your vessel.', duration: 0 },
     { title: 'Prep coffee', instruction: 'Add 15g of coffee. Give the dripper a gentle shake to level the bed.', duration: 0 },
     { title: 'Bloom', instruction: 'Pour 45ml slowly, wetting all the grounds. You should see the coffee puff up.', duration: 45 },
     { title: 'Main pour', instruction: 'Pour slowly in circles to 250ml total. Take your time — this should take about 2 minutes.', duration: 120 },
-    { title: 'Draw down', instruction: 'Allow the coffee to drain fully. Should finish around 3:30.', duration: 30 },
+    { title: 'Draw down', instruction: 'Allow the coffee to drain fully. Should finish around 3:30.', duration: 0 },
   ],
   'Chemex': [
     { title: 'Heat water', instruction: 'Bring water to 94°C. Open the Chemex filter with 3 layers facing the spout and rinse. Discard rinse water.', duration: 0 },
@@ -35,7 +54,7 @@ export const BREW_STEPS: Record<string, BrewStep[]> = {
     { title: 'Bloom', instruction: 'Pour 45ml directly to the centre to bloom. All grounds should be saturated.', duration: 45 },
     { title: 'First pour', instruction: 'Pour to 135ml in steady centre pours — avoid the filter edges.', duration: 45 },
     { title: 'Second pour', instruction: 'Continue to 220ml, always pouring to the centre.', duration: 45 },
-    { title: 'Final pour', instruction: 'Pour to 320ml. Let it draw down fully — should finish around 3:00.', duration: 45 },
+    { title: 'Final pour', instruction: 'Pour to 320ml total. Let it draw down — should finish around 3:00.', duration: 0 },
   ],
   'AeroPress': [
     { title: 'Heat water', instruction: 'Heat water to 85°C. Rinse the filter cap and attach it to the chamber.', duration: 0 },
@@ -43,15 +62,14 @@ export const BREW_STEPS: Record<string, BrewStep[]> = {
     { title: 'Pour', instruction: 'Pour 200ml of water over the coffee, filling to the top of the chamber.', duration: 0 },
     { title: 'Stir', instruction: 'Stir gently 10 times with the stirrer or a spoon.', duration: 20 },
     { title: 'Steep', instruction: 'Rest the plunger on top (just resting, not pressing) and wait.', duration: 70 },
-    { title: 'Press', instruction: 'Flip onto your cup and press slowly and steadily. This should take about 30 seconds.', duration: 30 },
+    { title: 'Press', instruction: 'Flip onto your cup and press slowly and steadily. Stop when you hear a hiss.', duration: 0 },
   ],
   'French press': [
     { title: 'Heat water', instruction: 'Bring water to 95°C. Rinse the French press with hot water to preheat it, then discard.', duration: 0 },
     { title: 'Add coffee', instruction: 'Add 30g of coarsely ground coffee to the press.', duration: 0 },
     { title: 'Pour & stir', instruction: 'Pour 500ml of water, making sure all grounds are saturated. Stir gently.', duration: 30 },
     { title: 'Steep', instruction: 'Place the lid on with the plunger up. Let the coffee steep undisturbed.', duration: 210 },
-    { title: 'Press', instruction: "Press the plunger down slowly and steadily. If it's very hard, your grind may be too fine.", duration: 30 },
-    { title: 'Pour now', instruction: "Pour straight away — leaving coffee in contact with grounds over-extracts it.", duration: 0 },
+    { title: 'Press & pour', instruction: "Press the plunger down slowly and steadily, then pour straight away — don't let it sit.", duration: 0 },
   ],
   'Espresso': [
     { title: 'Preheat', instruction: 'Allow your machine to heat up fully. Run a blank shot to heat the group head and portafilter.', duration: 0 },
@@ -83,6 +101,47 @@ export const BREW_STEPS: Record<string, BrewStep[]> = {
   ],
 };
 
-export function getStepsForMethod(method: string): BrewStep[] {
-  return BREW_STEPS[method] ?? BREW_STEPS['V60'];
+function scaleWaterAmount(ml: number, ratio: number): number {
+  const scaled = Math.round((ml * ratio) / 5) * 5;
+  return Math.max(5, scaled);
+}
+
+function substituteParams(instruction: string, method: string, userParams: BrewParams): string {
+  const defaults = RECIPE_DEFAULTS[method];
+  if (!defaults) return instruction;
+
+  let result = instruction;
+
+  if (userParams.waterTemp && userParams.waterTemp !== defaults.temp) {
+    const tempStr = userParams.waterTemp.includes('°') ? userParams.waterTemp : `${userParams.waterTemp}°C`;
+    result = result.replace(/\d+°C/g, tempStr);
+  }
+
+  if (userParams.dose && userParams.dose !== defaults.dose) {
+    result = result.replace(
+      new RegExp(defaults.dose.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      userParams.dose,
+    );
+  }
+
+  if (userParams.water) {
+    const userWaterNum = parseInt(userParams.water);
+    if (!isNaN(userWaterNum) && userWaterNum > 0 && userWaterNum !== defaults.water) {
+      const ratio = userWaterNum / defaults.water;
+      result = result.replace(/(\d+)ml/g, (_, ml) => `${scaleWaterAmount(parseInt(ml), ratio)}ml`);
+    }
+  }
+
+  return result;
+}
+
+export function getStepsForMethod(method: string, userParams?: BrewParams): BrewStep[] {
+  const steps = BREW_STEPS[method] ?? BREW_STEPS['V60'];
+  if (!userParams || (!userParams.dose && !userParams.water && !userParams.waterTemp)) {
+    return steps;
+  }
+  return steps.map(step => ({
+    ...step,
+    instruction: substituteParams(step.instruction, method, userParams),
+  }));
 }

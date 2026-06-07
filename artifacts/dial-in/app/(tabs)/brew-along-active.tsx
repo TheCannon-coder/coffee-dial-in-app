@@ -26,7 +26,12 @@ export default function BrewAlongActiveScreen() {
     adjustmentHistory?: string;
   }>();
 
-  const steps = getStepsForMethod(params.method);
+  const steps = getStepsForMethod(params.method, {
+    dose: params.dose,
+    water: params.water,
+    waterTemp: params.waterTemp,
+  });
+
   const [stepIndex, setStepIndex] = useState(0);
   const [stepSeconds, setStepSeconds] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0);
@@ -37,7 +42,8 @@ export default function BrewAlongActiveScreen() {
 
   const currentStep = steps[stepIndex];
   const isLastStep = stepIndex === steps.length - 1;
-  const hasDuration = currentStep.duration > 0;
+  // Last step is always manual — user taps when brew is done
+  const hasDuration = currentStep.duration > 0 && !isLastStep;
 
   useEffect(() => {
     progressAnim.setValue(0);
@@ -86,6 +92,7 @@ export default function BrewAlongActiveScreen() {
   function handleNext() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (intervalRef.current) clearInterval(intervalRef.current);
+    setRunning(false);
     if (stepIndex < steps.length - 1) {
       setStepIndex(i => i + 1);
     }
@@ -115,7 +122,10 @@ export default function BrewAlongActiveScreen() {
     extrapolate: 'clamp',
   });
 
-  const canAdvance = !hasDuration || stepDone;
+  const timerFinished = stepDone || !hasDuration;
+  const isTimerRunning = hasDuration && running && !stepDone;
+
+  const recipeInfo = [params.dose, params.water, params.waterTemp].filter(Boolean).join(' · ');
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.espresso }}>
@@ -150,6 +160,14 @@ export default function BrewAlongActiveScreen() {
         ))}
       </View>
 
+      {recipeInfo ? (
+        <View style={styles.recipeBar}>
+          <Text style={[styles.recipeBarText, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+            {recipeInfo}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.center}>
         <Text style={[styles.stepNumber, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
           Step {stepIndex + 1} of {steps.length}
@@ -179,10 +197,10 @@ export default function BrewAlongActiveScreen() {
           </View>
         )}
 
-        {!hasDuration && !stepDone && (
+        {(isLastStep || (!hasDuration && !stepDone)) && (
           <View style={[styles.manualBadge, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
             <Text style={[styles.manualText, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
-              Take your time. Tap when ready.
+              {isLastStep ? 'Tap when your brew is done.' : 'Take your time. Tap when ready.'}
             </Text>
           </View>
         )}
@@ -194,41 +212,36 @@ export default function BrewAlongActiveScreen() {
             style={({ pressed }) => [
               styles.nextBtn,
               {
-                backgroundColor: canAdvance ? colors.cream : 'rgba(255,255,255,0.15)',
+                backgroundColor: timerFinished ? colors.cream : 'rgba(255,255,255,0.2)',
                 opacity: pressed ? 0.85 : 1,
               },
             ]}
             onPress={handleNext}
-            disabled={!canAdvance}
           >
             <Text
               style={[
                 styles.nextBtnText,
                 {
-                  color: canAdvance ? colors.espresso : 'rgba(255,255,255,0.3)',
+                  color: timerFinished ? colors.espresso : colors.cream,
                   fontFamily: 'DMSans_500Medium',
                 },
               ]}
             >
-              {canAdvance ? `Next: ${steps[stepIndex + 1].title} →` : 'Wait for timer...'}
+              {isTimerRunning
+                ? `Skip timer · Next: ${steps[stepIndex + 1].title} →`
+                : `Next: ${steps[stepIndex + 1].title} →`}
             </Text>
           </Pressable>
         ) : (
           <Pressable
             style={({ pressed }) => [
               styles.nextBtn,
-              { backgroundColor: canAdvance ? colors.cream : 'rgba(255,255,255,0.15)', opacity: pressed ? 0.85 : 1 },
+              { backgroundColor: colors.cream, opacity: pressed ? 0.85 : 1 },
             ]}
             onPress={handleDone}
-            disabled={!canAdvance}
           >
-            <Text
-              style={[
-                styles.nextBtnText,
-                { color: canAdvance ? colors.espresso : 'rgba(255,255,255,0.3)', fontFamily: 'DMSans_500Medium' },
-              ]}
-            >
-              {canAdvance ? 'Done — how did it taste? →' : 'Wait for timer...'}
+            <Text style={[styles.nextBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+              Done — how did it taste? →
             </Text>
           </Pressable>
         )}
@@ -258,12 +271,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 6,
-    marginBottom: 0,
   },
   progressDot: {
     flex: 1,
     height: 3,
     borderRadius: 2,
+  },
+  recipeBar: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    alignItems: 'center',
+  },
+  recipeBarText: {
+    fontSize: 13,
+    letterSpacing: 0.3,
   },
   center: {
     flex: 1,
