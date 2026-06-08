@@ -7,7 +7,7 @@ const C = {
   muted: "#8B6347",
 };
 
-const COMMISSION  = 1.0;
+const COMMISSION  = 2.0;  // Phase 1 launch rate — steps down over time: $1.75 → $1.50 → $1.25 → $1.00
 const CONV_SIGNUP = 0.25;
 const CONV_PRO    = 0.18;
 
@@ -103,7 +103,7 @@ export function EarningsWidget() {
           How much could<br />you earn?
         </div>
         <div style={{ fontSize: 14, color: "#A89080", lineHeight: 1.6 }}>
-          Earn <strong style={{ color: C.tan }}>$1/month</strong> for every Pro subscriber<br />you bring to Dial In.
+          Earn <strong style={{ color: C.tan }}>$2/month</strong> for every Pro subscriber<br />you bring to Dial In.
         </div>
       </div>
 

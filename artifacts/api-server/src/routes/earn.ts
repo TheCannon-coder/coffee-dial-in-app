@@ -112,7 +112,7 @@ router.get("/earn", (_req, res) => {
 <div class="widget">
   <div class="wordmark">dial in &middot; coffee coach</div>
   <h1>How much could<br>you earn?</h1>
-  <p class="subtitle">Earn <strong>$1/month</strong> for every Pro subscriber<br>you bring to Dial In.</p>
+  <p class="subtitle">Earn <strong>$${parseFloat(process.env.REFERRAL_COMMISSION ?? "2.0").toFixed(2)}/month</strong> for every Pro subscriber<br>you bring to Dial In.</p>
 
   <div class="slider-section">
     <div class="slider-row">
@@ -167,7 +167,7 @@ router.get("/earn", (_req, res) => {
 (function () {
   var CONV_SIGNUP = 0.25;
   var CONV_PRO    = 0.18;
-  var COMMISSION  = 1.0;
+  var COMMISSION  = ${parseFloat(process.env.REFERRAL_COMMISSION ?? "2.0")};
   var LOG_MIN = Math.log10(1e3);
   var LOG_MAX = Math.log10(1e6);
 

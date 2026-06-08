@@ -50,9 +50,19 @@ An AI-powered coffee coaching iOS app that guides users to dial in their espress
 
 **Status:** Code complete, gated behind `REFERRAL_PROGRAM=true` env var. Enable to launch.
 
-**Economics (validated):**
-- Commission model: $1/month recurring per referred Pro subscriber
-- Conversion funnel: 25% of referred audience signs up, 18% of signups go Pro
+**Commission phase-down schedule** (controlled by `REFERRAL_COMMISSION` env var — no deploy needed to step down):
+| Phase | Rate | Trigger |
+|---|---|---|
+| 1 — Launch | **$2.00/month** | Day 1 |
+| 2 | $1.75/month | TBD |
+| 3 | $1.50/month | TBD |
+| 4 | $1.25/month | TBD |
+| 5 — Mature | $1.00/month | TBD |
+
+Higher launch rate attracts early advocates; steps down as the program becomes self-sustaining.
+
+**Conversion funnel:**
+- 25% of referred audience signs up, 18% of signups go Pro
 - Pro subscription price: $4.99/month
 
 **Unit economics at scale (20k Pro subscribers, 55% referral-driven):**
