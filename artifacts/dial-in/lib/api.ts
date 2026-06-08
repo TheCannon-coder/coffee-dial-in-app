@@ -1,4 +1,6 @@
-const API_BASE = 'https://www.coffeebrew.coach/api';
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : 'https://www.coffeebrew.coach/api';
 
 export interface DialInParams {
   email?: string;

@@ -13,7 +13,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import { useColors } from '@/hooks/useColors';
@@ -75,6 +74,8 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
 
   /** Save image to the camera roll, requesting permission first. Returns true on success. */
   async function saveToPhotos(uri: string): Promise<boolean> {
+    if (Platform.OS === 'web') return false;
+    const MediaLibrary = await import('expo-media-library');
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status !== 'granted') return false;
     await MediaLibrary.saveToLibraryAsync(uri);
