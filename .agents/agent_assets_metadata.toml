@@ -60,3 +60,9 @@ id = "UTxQdnyQ40Mnd2X2pDj-Q"
 uri = "file://dial-in-coffee-influencers.csv"
 type = "table"
 title = "Coffee Influencer List (CSV — opens in Google Sheets / Excel)"
+
+[[outputs]]
+id = "msSKaGlYlc-QM2Hqt9Kyu"
+uri = "file://dial-in-market-strategy.docx"
+type = "word_document"
+title = "Dial In — Market Domination Strategy (Word Doc)"
