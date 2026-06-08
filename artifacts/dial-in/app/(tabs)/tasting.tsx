@@ -19,9 +19,10 @@ import { TasteChip } from '@/components/TasteChip';
 import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
-import { checkAndAwardBadges } from '@/lib/achievements';
+import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
 import { recordBrewFields, getActiveRecommendations, type GearItem } from '@/lib/gear-tracker';
 import { ShareModal } from '@/components/ShareModal';
+import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
 
 type Stage = 'selecting' | 'loading' | 'result';
 
@@ -85,6 +86,8 @@ export default function TastingScreen() {
   const [saving, setSaving] = useState(false);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [pendingBadges, setPendingBadges] = useState<Badge[]>([]);
+  const [badgeIndex, setBadgeIndex] = useState(0);
 
   const adjustmentHistory: string[] = params.adjustmentHistory
     ? JSON.parse(params.adjustmentHistory)
@@ -157,11 +160,18 @@ export default function TastingScreen() {
         // Increment local brew count on success
         if (!isPro) await incrementBrewCount();
 
-        // Check and award achievements (fire and forget)
+        // Check and award achievements — show modal after result screen renders
         checkAndAwardBadges({
           method: params.method,
           coffeeName: params.coffeeName ?? '',
           adjustment: result.adjustment,
+        }).then(earned => {
+          if (earned.length > 0) {
+            setTimeout(() => {
+              setBadgeIndex(0);
+              setPendingBadges(earned);
+            }, 900);
+          }
         }).catch(() => {});
 
         setAdvice(result.advice);
@@ -236,7 +246,22 @@ export default function TastingScreen() {
         adjustment={adjustment}
         method={params.method}
         coffeeName={params.coffeeName}
+        onBadgeEarned={(badge) => {
+          setShowShareModal(false);
+          setTimeout(() => {
+            setBadgeIndex(0);
+            setPendingBadges([badge]);
+          }, 400);
+        }}
       />
+      {pendingBadges.length > 0 && (
+        <BadgeEarnedModal
+          badges={pendingBadges}
+          index={badgeIndex}
+          onNext={() => setBadgeIndex(i => i + 1)}
+          onClose={() => setPendingBadges([])}
+        />
+      )}
       <View style={[styles.topBar, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} disabled={stage === 'loading'}>
           <Feather name="arrow-left" size={22} color={colors.espresso} />

@@ -18,6 +18,7 @@ import * as Sharing from 'expo-sharing';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import { useColors } from '@/hooks/useColors';
 import { ShareCard } from './ShareCard';
+import { awardSocialBadge, type Badge } from '@/lib/achievements';
 
 const ADJUSTMENT_LABELS: Record<string, string> = {
   grind_finer: 'Grind finer',
@@ -36,6 +37,8 @@ type Props = {
   adjustment: string;
   method: string;
   coffeeName?: string;
+  /** Called with the badge if the coffee_evangelist badge is earned on first share */
+  onBadgeEarned?: (badge: Badge) => void;
 };
 
 type PlatformId = 'instagram' | 'tiktok' | 'facebook' | 'x' | 'reddit' | 'more';
@@ -57,7 +60,7 @@ const PLATFORMS: PlatformConfig[] = [
   { id: 'more',     label: 'More',      color: '#8A7A6A', iconLib: 'Feather',      iconName: 'more-horizontal' },
 ];
 
-export function ShareModal({ visible, onClose, advice, adjustment, method, coffeeName }: Props) {
+export function ShareModal({ visible, onClose, advice, adjustment, method, coffeeName, onBadgeEarned }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,12 +95,14 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
     setSavedMsg(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    let actionTaken = false;
     try {
       switch (platform) {
         case 'instagram': {
           const uri = await capture();
           const saved = await saveToPhotos(uri);
           if (!saved) { setSavedMsg('Allow Photos access to save the card.'); break; }
+          actionTaken = true;
           const canOpen = await Linking.canOpenURL('instagram://');
           if (canOpen) {
             await Linking.openURL('instagram://camera');
@@ -110,6 +115,7 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
           const uri = await capture();
           const saved = await saveToPhotos(uri);
           if (!saved) { setSavedMsg('Allow Photos access to save the card.'); break; }
+          actionTaken = true;
           const canOpen = await Linking.canOpenURL('tiktok://');
           if (canOpen) {
             await Linking.openURL('tiktok://');
@@ -123,16 +129,17 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
           const canShare = await Sharing.isAvailableAsync();
           if (canShare) {
             await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share to Facebook' });
+            actionTaken = true;
           }
           break;
         }
         case 'x': {
           const text = buildShareText() + ' #DialIn #CoffeeCoach';
-          // Try native Twitter app first, fall back to web intent
           const twitterUrl = `twitter://post?message=${encodeURIComponent(text)}`;
           const webUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
           const canOpen = await Linking.canOpenURL(twitterUrl);
           await Linking.openURL(canOpen ? twitterUrl : webUrl);
+          actionTaken = true;
           break;
         }
         case 'reddit': {
@@ -146,6 +153,7 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
           const webUrl = `https://www.reddit.com/submit?title=${title}&text=${body}`;
           const canOpen = await Linking.canOpenURL(redditUrl);
           await Linking.openURL(canOpen ? redditUrl : webUrl);
+          actionTaken = true;
           break;
         }
         case 'more':
@@ -154,9 +162,16 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
           const canShare = await Sharing.isAvailableAsync();
           if (canShare) {
             await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your brew tip' });
+            actionTaken = true;
           }
           break;
         }
+      }
+
+      // Award social badge on first-ever share
+      if (actionTaken) {
+        const socialBadge = await awardSocialBadge();
+        if (socialBadge && onBadgeEarned) onBadgeEarned(socialBadge);
       }
     } catch {
       // silent — user cancelled or app not installed
