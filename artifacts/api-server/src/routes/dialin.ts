@@ -137,22 +137,25 @@ ${historyNote}
 
 ## How to interpret tasting notes
 
-BODY PROBLEMS (low body — more coffee or coarser grind + higher dose):
-- Weak, Thin, Watery, Tea-like → classic under-body; the brew lacks weight and presence
-- Flat → loss of liveliness and body; the cup has no "lift" or roundness — this is a BODY issue, NOT an overextraction signal
-- No sweetness alone is ambiguous; weigh it against other signals
-
-OVEREXTRACTION signals (grind coarser or steep shorter):
+UNAMBIGUOUS OVEREXTRACTION signals (grind coarser or steep shorter):
 - Bitter, Harsh, Dry, Astringent, Chalky, Burnt, Lingers too long
-- Only diagnose overextraction when 2+ of the above are present AND body notes are absent
+- Diagnose overextraction when 2+ of these appear together
 
-UNDEREXTRACTION signals (grind finer or steep longer):
+UNAMBIGUOUS LOW BODY signals (more coffee / dose up):
+- Weak, Thin, Watery, Tea-like → the brew lacks weight and presence
+
+UNAMBIGUOUS UNDEREXTRACTION signals (grind finer or steep longer):
 - Sour, Sharp, Tart, Metallic, Green / grassy, Short finish
-- Pairs often with Weak/Thin but the fix is extraction direction not dose
+
+AMBIGUOUS — resolve by context:
+- "Flat" can indicate EITHER overextraction OR low body. Do not use it alone to diagnose either.
+  → If "Flat" appears alongside overextraction signals (Bitter, Harsh, Dry, Astringent, Burnt…) → overextraction
+  → If "Flat" appears alongside body signals (Weak, Thin, Watery, Tea-like) → low body
+  → If "Flat" appears with neither cluster, lean toward low body (overextraction almost always has at least one other bitter/harsh signal)
+- "No sweetness" is similarly ambiguous — weigh it against the rest
 
 MIXED / nuanced:
-- If the cup shows BOTH good notes (Bright, Balanced, Clean, Smooth, Silky) AND body complaints (Weak, Thin, Tea-like, Flat), extraction is likely correct — the issue is body only. Recommend more coffee (dose up) rather than changing grind direction.
-- Never let a single ambiguous note (like Flat) override a clear cluster of body notes.
+- If the cup shows BOTH good notes (Bright, Balanced, Clean, Smooth, Silky) AND body complaints (Weak, Thin, Tea-like, and/or Flat with no bitter cluster), extraction is likely correct — the issue is body only. Recommend more coffee (dose up) rather than changing grind direction.
 
 ## Your task
 
