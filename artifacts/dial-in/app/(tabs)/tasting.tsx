@@ -21,6 +21,7 @@ import { useUser } from '@/context/UserContext';
 import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
 import { checkAndAwardBadges } from '@/lib/achievements';
 import { recordBrewFields, getActiveRecommendations, type GearItem } from '@/lib/gear-tracker';
+import { ShareModal } from '@/components/ShareModal';
 
 type Stage = 'selecting' | 'loading' | 'result';
 
@@ -83,6 +84,7 @@ export default function TastingScreen() {
   const [saveEmail, setSaveEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const adjustmentHistory: string[] = params.adjustmentHistory
     ? JSON.parse(params.adjustmentHistory)
@@ -227,6 +229,14 @@ export default function TastingScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ShareModal
+        visible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        advice={advice}
+        adjustment={adjustment}
+        method={params.method}
+        coffeeName={params.coffeeName}
+      />
       <View style={[styles.topBar, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} disabled={stage === 'loading'}>
           <Feather name="arrow-left" size={22} color={colors.espresso} />
@@ -410,12 +420,29 @@ export default function TastingScreen() {
           </View>
         )}
         {stage === 'result' && (
-          <Pressable
-            style={({ pressed }) => [styles.nextBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => router.push('/home')}
-          >
-            <Text style={[styles.nextBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Done</Text>
-          </Pressable>
+          <View style={styles.resultFooter}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.shareOutlineBtn,
+                { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowShareModal(true);
+              }}
+            >
+              <Feather name="share-2" size={16} color={colors.espresso} />
+              <Text style={[styles.shareOutlineBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                Share this tip
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.nextBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.85 : 1, flex: 1 }]}
+              onPress={() => router.push('/home')}
+            >
+              <Text style={[styles.nextBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Done</Text>
+            </Pressable>
+          </View>
         )}
       </View>
     </KeyboardAvoidingView>
@@ -528,6 +555,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: { fontSize: 16 },
+  resultFooter: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  shareOutlineBtn: {
+    borderRadius: 100,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  shareOutlineBtnText: { fontSize: 15 },
   gearTeaser: {
     flexDirection: 'row',
     alignItems: 'center',

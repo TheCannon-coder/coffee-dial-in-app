@@ -6,5 +6,6 @@ export const modules: ModuleMap = {
   "./components/mockups/affiliate/GearRecommendations.tsx": () => import("../components/mockups/affiliate/GearRecommendations.tsx"),
   "./components/mockups/affiliate/InviteCard.tsx": () => import("../components/mockups/affiliate/InviteCard.tsx"),
   "./components/mockups/affiliate/ReferralShare.tsx": () => import("../components/mockups/affiliate/ReferralShare.tsx"),
-  "./components/mockups/affiliate/SetupSmartHints.tsx": () => import("../components/mockups/affiliate/SetupSmartHints.tsx")
+  "./components/mockups/affiliate/SetupSmartHints.tsx": () => import("../components/mockups/affiliate/SetupSmartHints.tsx"),
+  "./components/mockups/sharing/ShareCard.tsx": () => import("../components/mockups/sharing/ShareCard.tsx")
 };
