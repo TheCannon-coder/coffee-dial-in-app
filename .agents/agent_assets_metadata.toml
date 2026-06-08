@@ -48,3 +48,9 @@ id = "fAW5dsnwYxnA2e8OflWR2"
 uri = "file://screenshots/dial-in-first-post.jpg"
 type = "image"
 title = "Dial In — First Instagram Post (1080×1080)"
+
+[[outputs]]
+id = "g4fz1Dzstg_K7J0YWRKfr"
+uri = "file://dial-in-coffee-influencers.xlsx"
+type = "table"
+title = "Dial In — Coffee Influencer Outreach List"
