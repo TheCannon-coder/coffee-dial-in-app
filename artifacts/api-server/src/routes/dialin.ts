@@ -135,7 +135,28 @@ ${brewDetails}
 Tasting notes: ${tastingNotes}${freeNotes ? `\nAdditional notes: ${freeNotes}` : ""}
 ${historyNote}
 
-Give one clear, specific, friendly tip (2–3 sentences max) on what to change for the next brew, referencing their actual numbers where relevant. Then pick exactly one adjustment key from: grind_finer, grind_coarser, more_coffee, less_coffee, steep_longer, steep_shorter, none.
+## How to interpret tasting notes
+
+BODY PROBLEMS (low body — more coffee or coarser grind + higher dose):
+- Weak, Thin, Watery, Tea-like → classic under-body; the brew lacks weight and presence
+- Flat → loss of liveliness and body; the cup has no "lift" or roundness — this is a BODY issue, NOT an overextraction signal
+- No sweetness alone is ambiguous; weigh it against other signals
+
+OVEREXTRACTION signals (grind coarser or steep shorter):
+- Bitter, Harsh, Dry, Astringent, Chalky, Burnt, Lingers too long
+- Only diagnose overextraction when 2+ of the above are present AND body notes are absent
+
+UNDEREXTRACTION signals (grind finer or steep longer):
+- Sour, Sharp, Tart, Metallic, Green / grassy, Short finish
+- Pairs often with Weak/Thin but the fix is extraction direction not dose
+
+MIXED / nuanced:
+- If the cup shows BOTH good notes (Bright, Balanced, Clean, Smooth, Silky) AND body complaints (Weak, Thin, Tea-like, Flat), extraction is likely correct — the issue is body only. Recommend more coffee (dose up) rather than changing grind direction.
+- Never let a single ambiguous note (like Flat) override a clear cluster of body notes.
+
+## Your task
+
+Look at the full picture. Identify the single most impactful change. Give one clear, specific, friendly tip (2–3 sentences max), referencing their actual numbers where relevant. Then pick exactly one adjustment key from: grind_finer, grind_coarser, more_coffee, less_coffee, steep_longer, steep_shorter, none.
 
 Respond ONLY with valid JSON, no markdown:
 {"advice": "...", "adjustment": "..."}`;
