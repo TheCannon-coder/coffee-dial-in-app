@@ -42,3 +42,9 @@ id = "X2KfZWU1lURSHjsFq454N"
 uri = "file://attached_assets/app-store-screenshots/05-level-up-your-craft.png"
 type = "image"
 title = "Screenshot 5 — 1284×2778"
+
+[[outputs]]
+id = "fAW5dsnwYxnA2e8OflWR2"
+uri = "file://screenshots/dial-in-first-post.jpg"
+type = "image"
+title = "Dial In — First Instagram Post"
