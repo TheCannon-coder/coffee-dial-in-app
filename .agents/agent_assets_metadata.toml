@@ -53,4 +53,10 @@ title = "Dial In — First Instagram Post (1080×1080)"
 id = "g4fz1Dzstg_K7J0YWRKfr"
 uri = "file://dial-in-coffee-influencers.xlsx"
 type = "table"
-title = "Dial In — Coffee Influencer Outreach List"
+title = "Coffee Influencer List (Excel)"
+
+[[outputs]]
+id = "UTxQdnyQ40Mnd2X2pDj-Q"
+uri = "file://dial-in-coffee-influencers.csv"
+type = "table"
+title = "Coffee Influencer List (CSV — opens in Google Sheets / Excel)"
