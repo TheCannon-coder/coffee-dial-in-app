@@ -150,14 +150,27 @@ UNAMBIGUOUS LOW BODY signals (more coffee / dose up):
 - Weak, Thin, Watery, Tea-like → the brew lacks weight and presence
 
 UNAMBIGUOUS UNDEREXTRACTION signals (grind finer or steep longer):
-- Sour, Sharp, Tart, Metallic, Green / grassy, Short finish
+- Sour, Sharp, Metallic, Green / grassy
 
 AMBIGUOUS — resolve by context:
+- "Tart" can indicate EITHER underextraction OR overextraction. Do not use it alone.
+  → If "Tart" appears alongside other underextraction signals (Sour, Sharp, Metallic) → underextraction (grind finer)
+  → If "Tart" appears alongside overextraction signals (Bitter, Harsh, Dry, Astringent, Burnt…) → overextraction (grind coarser)
+  → If "Tart" appears with neither cluster, lean toward underextraction
+- "Short finish" can indicate EITHER underextraction OR overextraction. Do not use it alone.
+  → If "Short finish" appears alongside overextraction signals (Astringent, Bitter, Dry, Burnt…) → overextraction (grind coarser)
+  → If "Short finish" appears alongside underextraction signals (Sour, Sharp, Metallic) → underextraction (grind finer)
+  → If "Short finish" appears with neither cluster, lean toward underextraction
 - "Flat" can indicate EITHER overextraction OR low body. Do not use it alone to diagnose either.
   → If "Flat" appears alongside overextraction signals (Bitter, Harsh, Dry, Astringent, Burnt…) → overextraction
   → If "Flat" appears alongside body signals (Weak, Thin, Watery, Tea-like) → low body
   → If "Flat" appears with neither cluster, lean toward low body (overextraction almost always has at least one other bitter/harsh signal)
 - "No sweetness" is similarly ambiguous — weigh it against the rest
+
+EXTRACTION VS. BODY — fix extraction first:
+- If the cup shows body signals (Thin, Weak, Watery, Tea-like) AND extraction signals (Astringent, Bitter, Dry, Sour, Sharp), address the extraction issue first.
+- Reason: a properly extracted cup may naturally have adequate body; adding more coffee while extraction is off can amplify the extraction fault (e.g. more dose in an astringent cup increases steep time and makes astringency worse).
+- Once extraction is dialled in, reassess body separately if needed.
 
 MIXED / nuanced:
 - If the cup shows BOTH good notes (Bright, Balanced, Clean, Smooth, Silky) AND body complaints (Weak, Thin, Tea-like, and/or Flat with no bitter cluster), extraction is likely correct — the issue is body only. Recommend more coffee (dose up) rather than changing grind direction.
