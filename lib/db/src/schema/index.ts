@@ -19,3 +19,4 @@
 
 export * from "./users";
 export * from "./gear-clicks";
+export * from "./brews";

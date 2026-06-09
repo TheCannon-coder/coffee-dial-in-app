@@ -71,7 +71,12 @@ export default function TastingScreen() {
     waterTemp?: string;
     grinderNotes?: string;
     adjustmentHistory?: string;
+    sessionId?: string;
   }>();
+
+  const [sessionId] = useState<string>(
+    () => params.sessionId ?? Math.random().toString(36).slice(2) + Date.now().toString(36)
+  );
 
   const { email, isPro, updateUserStats, addOrUpdateCoffee, ensureAnonId, setEmail: saveUserEmail } = useUser();
 
@@ -135,6 +140,7 @@ export default function TastingScreen() {
       const result = await dialIn({
         email: email ?? undefined,
         anonId: currentAnonId ?? undefined,
+        sessionId,
         method: params.method,
         coffeeName: params.coffeeName,
         dose: params.dose,

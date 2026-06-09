@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { eq, or } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
+import { db, usersTable, brewsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
 
@@ -33,6 +34,7 @@ router.post("/dialin", async (req, res) => {
   const {
     email,
     anonId,
+    sessionId: incomingSessionId,
     method,
     coffeeName,
     dose,
@@ -46,6 +48,7 @@ router.post("/dialin", async (req, res) => {
   } = req.body as {
     email?: string;
     anonId?: string;
+    sessionId?: string;
     method: string;
     coffeeName?: string;
     dose?: string;
@@ -57,6 +60,8 @@ router.post("/dialin", async (req, res) => {
     freeNotes?: string;
     adjustmentHistory?: string[];
   };
+
+  const sessionId = incomingSessionId ?? randomUUID();
 
   if (!tastingNotes && !freeNotes) {
     res.status(400).json({ error: "tastingNotes required" });
@@ -213,10 +218,29 @@ Respond ONLY with valid JSON, no markdown:
       .set({ usesThisMonth: newCount })
       .where(eq(usersTable.id, user.id));
 
+    // Log the brew for training / anomaly detection
+    await db.insert(brewsTable).values({
+      userId: user.id,
+      sessionId,
+      method: method ?? null,
+      coffeeName: coffeeName ?? null,
+      dose: dose ?? null,
+      water: water ?? null,
+      brewTime: brewTime ?? null,
+      waterTemp: waterTemp ?? null,
+      grinderNotes: grinderNotes ?? null,
+      tastingNotes: tastingNotes ?? freeNotes ?? "",
+      freeNotes: freeNotes ?? null,
+      adjustmentHistory: adjustmentHistory ?? null,
+      advice,
+      adjustment,
+      aiModel: response.model,
+    });
+
     const limit = email ? FREE_BREW_LIMIT : ANON_BREW_LIMIT;
     const usesRemaining = user.isPro ? FREE_BREW_LIMIT : Math.max(0, limit - newCount);
 
-    res.json({ advice, adjustment, usesRemaining, isPro: user.isPro });
+    res.json({ advice, adjustment, usesRemaining, isPro: user.isPro, sessionId });
   } catch (err) {
     logger.error({ err }, "dialin error");
     res.status(500).json({ error: "internal_error" });

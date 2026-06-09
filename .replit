@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-3.11"]
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -45,3 +45,6 @@ externalPort = 4200
 EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_live_uHcBqIhlIh549Nl4yglJ49Bb00aqbdGedI"
 EXPO_PUBLIC_STRIPE_MERCHANT_ID = "merchant.com.coffeebrew.coach"
 AMAZON_AFFILIATE_TAG = "coffeebrew056-20"
+
+[nix]
+channel = "stable-25_05"

@@ -5,6 +5,7 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
 export interface DialInParams {
   email?: string;
   anonId?: string;
+  sessionId?: string;
   method: string;
   coffeeName?: string;
   dose?: string;
@@ -23,6 +24,7 @@ export interface DialInSuccess {
   adjustment: string;
   usesRemaining: number;
   isPro: boolean;
+  sessionId: string;
 }
 
 export interface DialInLimit {
