@@ -6,9 +6,7 @@ import {
   Switch,
   Text,
   View,
-  Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -221,15 +219,31 @@ export default function HomeScreen() {
             <Text style={[styles.reminderTimeLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
               Remind me at
             </Text>
-            <DateTimePicker
-              value={(() => { const d = new Date(); d.setHours(reminderHour, reminderMinute, 0, 0); return d; })()}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'compact' : 'default'}
-              onChange={(_e: unknown, date?: Date) => {
-                if (date) setReminderTime(date.getHours(), date.getMinutes());
-              }}
-              themeVariant="light"
-            />
+            <View style={styles.reminderTimeStepper}>
+              <Pressable
+                hitSlop={10}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const h = (reminderHour + 23) % 24;
+                  setReminderTime(h, reminderMinute);
+                }}
+              >
+                <Feather name="chevron-left" size={18} color={colors.mutedForeground} />
+              </Pressable>
+              <Text style={[styles.reminderTimeValue, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                {`${reminderHour % 12 === 0 ? 12 : reminderHour % 12}:${String(reminderMinute).padStart(2, '0')} ${reminderHour < 12 ? 'AM' : 'PM'}`}
+              </Text>
+              <Pressable
+                hitSlop={10}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const h = (reminderHour + 1) % 24;
+                  setReminderTime(h, reminderMinute);
+                }}
+              >
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
           </View>
         )}
 
@@ -290,13 +304,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
     marginTop: -1,
     marginBottom: 4,
   },
   reminderTimeLabel: { fontSize: 13 },
+  reminderTimeStepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  reminderTimeValue: { fontSize: 14, minWidth: 72, textAlign: 'center' },
   deniedNote: { fontSize: 12, lineHeight: 16, marginTop: -6, marginBottom: 4 },
   manageLink: { alignItems: 'center', paddingVertical: 12 },
   manageLinkText: { fontSize: 14, textDecorationLine: 'underline' },
