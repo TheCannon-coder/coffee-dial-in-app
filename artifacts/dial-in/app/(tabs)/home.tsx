@@ -17,9 +17,10 @@ import { useUser, SavedCoffee } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
+import { BadgeDetailModal } from '@/components/BadgeDetailModal';
 import { ReferralCard } from '@/components/ReferralCard';
 import { getUser, getCustomerPortal } from '@/lib/api';
-import { getEarnedBadgeIds, ALL_BADGES, BadgeId } from '@/lib/achievements';
+import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 
 function greeting() {
   const h = new Date().getHours();
@@ -49,6 +50,7 @@ export default function HomeScreen() {
   const { email, isPro, usesRemaining, savedCoffees, updateUserStats, setReferralCode } = useUser();
   const { enabled: notificationsEnabled, toggle: toggleNotifications, permission, reminderHour, reminderMinute, setReminderTime } = useNotifications();
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<BadgeId[]>([]);
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
 
   useEffect(() => {
     getEarnedBadgeIds().then(setEarnedBadgeIds).catch(() => {});
@@ -184,7 +186,15 @@ export default function HomeScreen() {
               contentContainerStyle={styles.badgeRow}
             >
               {earnedBadges.map(badge => (
-                <AchievementBadge key={badge.id} badge={badge} earned />
+                <Pressable
+                  key={badge.id}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedBadge(badge);
+                  }}
+                >
+                  <AchievementBadge badge={badge} earned />
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -195,6 +205,11 @@ export default function HomeScreen() {
             <ReferralCard />
           </View>
         )}
+
+        <BadgeDetailModal
+          badge={selectedBadge}
+          onClose={() => setSelectedBadge(null)}
+        />
 
         <View style={[styles.settingsRow, { borderTopColor: colors.border }]}>
           <Feather name="bell" size={15} color={colors.mutedForeground} />
