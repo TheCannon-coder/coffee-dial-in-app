@@ -7,6 +7,8 @@ export const KEYS = {
   REF: 'dialin_ref',
   IS_PRO: 'dialin_is_pro',
   NOTIFICATIONS_ENABLED: 'dialin_notifications_enabled',
+  REMINDER_HOUR: 'dialin_reminder_hour',
+  REMINDER_MINUTE: 'dialin_reminder_minute',
   BREW_COUNT: 'dialin_brew_count',
   BREW_COUNT_MONTH: 'dialin_brew_count_month',
 } as const;

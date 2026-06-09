@@ -58,6 +58,7 @@
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/fraunces": "^0.4.1",
+    "@react-native-community/datetimepicker": "^9.1.0",
     "@stripe/stripe-react-native": "^0.66.0",
     "expo-media-library": "~56.0.6",
     "expo-notifications": "^0.32.17",

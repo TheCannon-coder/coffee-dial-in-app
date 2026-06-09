@@ -6,7 +6,9 @@ import {
   Switch,
   Text,
   View,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -47,7 +49,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { email, isPro, usesRemaining, savedCoffees, updateUserStats, setReferralCode } = useUser();
-  const { enabled: notificationsEnabled, toggle: toggleNotifications, permission } = useNotifications();
+  const { enabled: notificationsEnabled, toggle: toggleNotifications, permission, reminderHour, reminderMinute, setReminderTime } = useNotifications();
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<BadgeId[]>([]);
 
   useEffect(() => {
@@ -214,6 +216,23 @@ export default function HomeScreen() {
           />
         </View>
 
+        {notificationsEnabled === true && permission === 'granted' && (
+          <View style={[styles.reminderTimeRow, { borderColor: colors.border }]}>
+            <Text style={[styles.reminderTimeLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              Remind me at
+            </Text>
+            <DateTimePicker
+              value={(() => { const d = new Date(); d.setHours(reminderHour, reminderMinute, 0, 0); return d; })()}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'compact' : 'default'}
+              onChange={(_e: unknown, date?: Date) => {
+                if (date) setReminderTime(date.getHours(), date.getMinutes());
+              }}
+              themeVariant="light"
+            />
+          </View>
+        )}
+
         {permission === 'denied' && (
           <Text style={[styles.deniedNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
             Enable notifications in Settings to turn on reminders.
@@ -267,6 +286,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   settingsLabel: { flex: 1, fontSize: 14 },
+  reminderTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: -1,
+    marginBottom: 4,
+  },
+  reminderTimeLabel: { fontSize: 13 },
   deniedNote: { fontSize: 12, lineHeight: 16, marginTop: -6, marginBottom: 4 },
   manageLink: { alignItems: 'center', paddingVertical: 12 },
   manageLinkText: { fontSize: 14, textDecorationLine: 'underline' },

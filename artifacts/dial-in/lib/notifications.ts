@@ -51,7 +51,40 @@ export async function cancelAllNotifications(): Promise<void> {
   } catch {}
 }
 
-export async function scheduleReminders(): Promise<void> {
+export const DEFAULT_REMINDER_HOUR = 8;
+export const DEFAULT_REMINDER_MINUTE = 30;
+
+const DAILY_REMINDER_ID = 'dialin_daily_morning';
+
+export async function scheduleDailyReminder(hour: number, minute: number): Promise<void> {
+  if (!isNative) return;
+  const status = await getPermissionStatus();
+  if (status !== 'granted') return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(() => {});
+    await Notifications.scheduleNotificationAsync({
+      identifier: DAILY_REMINDER_ID,
+      content: {
+        title: 'Morning coffee time ☕',
+        body: 'How did yesterday\'s brew go? Let\'s dial in today\'s cup.',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      },
+    });
+  } catch {}
+}
+
+export async function cancelDailyReminder(): Promise<void> {
+  if (!isNative) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(() => {});
+  } catch {}
+}
+
+export async function scheduleReminders(hour = DEFAULT_REMINDER_HOUR, minute = DEFAULT_REMINDER_MINUTE): Promise<void> {
   if (!isNative) return;
   await cancelAllNotifications();
 
@@ -59,6 +92,8 @@ export async function scheduleReminders(): Promise<void> {
   if (status !== 'granted') return;
 
   try {
+    await scheduleDailyReminder(hour, minute);
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Your free dial-ins reset today ☕',
@@ -69,7 +104,6 @@ export async function scheduleReminders(): Promise<void> {
         day: 1,
         hour: 9,
         minute: 0,
-        repeats: true,
       },
     });
 
@@ -83,7 +117,6 @@ export async function scheduleReminders(): Promise<void> {
         weekday: 7,
         hour: 9,
         minute: 30,
-        repeats: true,
       },
     });
 
@@ -97,7 +130,6 @@ export async function scheduleReminders(): Promise<void> {
         weekday: 4,
         hour: 11,
         minute: 0,
-        repeats: true,
       },
     });
   } catch {}
