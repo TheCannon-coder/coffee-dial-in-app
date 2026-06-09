@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "migrate-supabase-brews": "tsx ./src/migrate-supabase-brews.ts",
     "capture-screenshots": "tsx ./src/capture-screenshots.ts",
     "upscale-screenshots": "tsx ./src/upscale-screenshots.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -14,6 +15,7 @@
     "tsx": "catalog:"
   },
   "dependencies": {
+    "pg": "^8.20.0",
     "puppeteer": "^25.1.0"
   }
 }
