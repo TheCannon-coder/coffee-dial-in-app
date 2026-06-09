@@ -25,6 +25,8 @@ export const brewsTable = pgTable("brews", {
   adjustment: text("adjustment").notNull(),
   aiModel: text("ai_model"),
 
+  comparedToPrevious: text("compared_to_previous"),
+
   wasHelpful: boolean("was_helpful"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),

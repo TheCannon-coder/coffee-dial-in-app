@@ -16,6 +16,7 @@ export interface DialInParams {
   tastingNotes: string;
   freeNotes?: string;
   adjustmentHistory?: string[];
+  brewComparison?: 'better' | 'same' | 'worse';
   ref?: string;
 }
 

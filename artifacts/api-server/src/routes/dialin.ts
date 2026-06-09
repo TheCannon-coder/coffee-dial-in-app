@@ -45,6 +45,7 @@ router.post("/dialin", async (req, res) => {
     tastingNotes,
     freeNotes,
     adjustmentHistory,
+    brewComparison,
   } = req.body as {
     email?: string;
     anonId?: string;
@@ -59,6 +60,7 @@ router.post("/dialin", async (req, res) => {
     tastingNotes: string;
     freeNotes?: string;
     adjustmentHistory?: string[];
+    brewComparison?: 'better' | 'same' | 'worse';
   };
 
   const sessionId = incomingSessionId ?? randomUUID();
@@ -280,6 +282,7 @@ Respond ONLY with valid JSON, no markdown:
       advice,
       adjustment,
       aiModel: response.model,
+      comparedToPrevious: brewComparison ?? null,
     });
 
     const limit = email ? FREE_BREW_LIMIT : ANON_BREW_LIMIT;

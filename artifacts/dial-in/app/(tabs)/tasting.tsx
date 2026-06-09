@@ -82,6 +82,7 @@ export default function TastingScreen() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [freeText, setFreeText] = useState('');
+  const [brewComparison, setBrewComparison] = useState<'better' | 'same' | 'worse' | null>(null);
   const [stage, setStage] = useState<Stage>('selecting');
   const [advice, setAdvice] = useState('');
   const [adjustment, setAdjustment] = useState('');
@@ -151,6 +152,7 @@ export default function TastingScreen() {
         tastingNotes,
         freeNotes: freeText,
         adjustmentHistory,
+        brewComparison: brewComparison ?? undefined,
       });
 
       if ('error' in result && result.error === 'limit_reached') {
@@ -318,6 +320,40 @@ export default function TastingScreen() {
                 textAlignVertical="top"
               />
             </View>
+
+            {adjustmentHistory.length > 0 && (
+              <View style={styles.comparisonGroup}>
+                <Text style={[styles.comparisonLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                  The most important question: was this brew better or worse than the previous?
+                </Text>
+                <View style={styles.comparisonButtons}>
+                  {(['worse', 'same', 'better'] as const).map((option) => {
+                    const labels = { worse: '👎 Worse', same: '→ Same', better: '👍 Better' };
+                    const selected = brewComparison === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        style={[
+                          styles.comparisonBtn,
+                          {
+                            backgroundColor: selected ? colors.espresso : colors.card,
+                            borderColor: selected ? colors.espresso : colors.border,
+                          },
+                        ]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setBrewComparison(prev => prev === option ? null : option);
+                        }}
+                      >
+                        <Text style={[styles.comparisonBtnText, { color: selected ? colors.cream : colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                          {labels[option]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
           </>
         )}
 
@@ -505,6 +541,17 @@ const styles = StyleSheet.create({
   groupLabel: { fontSize: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
   freeTextGroup: { gap: 10 },
+  comparisonGroup: { gap: 12, paddingTop: 4 },
+  comparisonLabel: { fontSize: 16, lineHeight: 22 },
+  comparisonButtons: { flexDirection: 'row', gap: 10 },
+  comparisonBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  comparisonBtnText: { fontSize: 14 },
   textarea: {
     borderRadius: 12,
     borderWidth: 1.5,
