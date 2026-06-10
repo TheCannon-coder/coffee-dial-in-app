@@ -101,7 +101,7 @@ router.get("/gear/recommend", async (req, res) => {
   const cached = getGearRecommendCache(cacheKey);
   if (cached) {
     req.log.debug({ cacheKey }, "gear/recommend: cache hit");
-    res.json({ items: cached });
+    res.json({ items: cached.items, cachedAt: cached.cachedAt });
     return;
   }
 
@@ -208,7 +208,7 @@ Return ONLY valid JSON. No markdown. No explanation outside the array.`;
 
     setGearRecommendCache(cacheKey, items);
     req.log.debug({ cacheKey, count: items.length }, "gear/recommend: cache stored");
-    res.json({ items });
+    res.json({ items, cachedAt: null });
   } catch (err) {
     req.log.error({ err }, "gear/recommend: failed");
     res.status(500).json({ error: "internal_error" });

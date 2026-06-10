@@ -17,10 +17,21 @@ import { type GearItem, dismissGearRecommendations } from '@/lib/gear-tracker';
 export default function GearRecommendationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ items?: string }>();
+  const params = useLocalSearchParams<{ items?: string; cachedAt?: string }>();
   const [dismissing, setDismissing] = useState(false);
 
   const items: GearItem[] = params.items ? JSON.parse(params.items) : [];
+  const cachedAt = params.cachedAt || null;
+
+  function formatCachedAt(iso: string): string {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const diffMins = Math.round(diffMs / 60_000);
+    if (diffMins < 2) return 'Updated just now';
+    if (diffMins < 60) return `Updated ${diffMins} minutes ago`;
+    const diffHours = Math.round(diffMins / 60);
+    if (diffHours === 1) return 'Updated 1 hour ago';
+    return `Updated ${diffHours} hours ago`;
+  }
 
   async function handleDismiss() {
     setDismissing(true);
@@ -53,6 +64,12 @@ export default function GearRecommendationsScreen() {
         <Text style={[styles.intro, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]}>
           We noticed some data you haven't been logging. Here's what it means for your coaching.
         </Text>
+
+        {cachedAt && (
+          <Text style={[styles.cacheNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            {formatCachedAt(cachedAt)}
+          </Text>
+        )}
 
         {items.map((item, index) => (
           <View key={item.id}>
@@ -143,6 +160,7 @@ const styles = StyleSheet.create({
   productLinkName: { fontSize: 15 },
   productLinkPrice: { fontSize: 14 },
   affiliateNote: { fontSize: 12, lineHeight: 18, marginTop: 8 },
+  cacheNote: { fontSize: 12, lineHeight: 18, marginTop: -4 },
   footer: {
     position: 'absolute',
     bottom: 0,

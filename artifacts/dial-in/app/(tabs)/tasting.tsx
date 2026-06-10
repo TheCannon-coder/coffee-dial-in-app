@@ -91,6 +91,7 @@ export default function TastingScreen() {
   const [saveEmail, setSaveEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
+  const [gearCachedAt, setGearCachedAt] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingBadges, setPendingBadges] = useState<Badge[]>([]);
   const [badgeIndex, setBadgeIndex] = useState(0);
@@ -215,7 +216,7 @@ export default function TastingScreen() {
           grinderNotes: params.grinderNotes,
           method: params.method,
         }).then(() => getActiveRecommendations())
-          .then(setGearItems)
+          .then(({ items, cachedAt }) => { setGearItems(items); setGearCachedAt(cachedAt); })
           .catch(() => {});
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -386,7 +387,7 @@ export default function TastingScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push({
                     pathname: '/gear-recommendations',
-                    params: { items: JSON.stringify(gearItems) },
+                    params: { items: JSON.stringify(gearItems), cachedAt: gearCachedAt ?? '' },
                   });
                 }}
               >

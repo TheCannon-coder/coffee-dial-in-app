@@ -93,12 +93,18 @@ export async function recordBrewFields(fields: BrewFields): Promise<void> {
   ]);
 }
 
+export type GearRecommendResult = {
+  items: GearItem[];
+  cachedAt: string | null;
+};
+
 /**
  * Returns gear items for fields missing >= MISS_THRESHOLD times.
  * Calls the backend AI endpoint to get contextual, possibility-language product pitches.
- * Returns empty array if the user dismissed recently or has no qualifying gaps.
+ * Returns empty items if the user dismissed recently or has no qualifying gaps.
+ * `cachedAt` is an ISO string when the server served a cached result, or null for a fresh AI call.
  */
-export async function getActiveRecommendations(): Promise<GearItem[]> {
+export async function getActiveRecommendations(): Promise<GearRecommendResult> {
   const [missedDose, missedTemp, missedGrinder, dismissedAt, lastMethod, brewCount] =
     await Promise.all([
       getItem<number>(KEYS.MISS_DOSE),
@@ -111,7 +117,7 @@ export async function getActiveRecommendations(): Promise<GearItem[]> {
 
   if (dismissedAt) {
     const daysSince = (Date.now() - new Date(dismissedAt).getTime()) / 86_400_000;
-    if (daysSince < DISMISS_DAYS) return [];
+    if (daysSince < DISMISS_DAYS) return { items: [], cachedAt: null };
   }
 
   const dose = missedDose ?? 0;
@@ -119,7 +125,7 @@ export async function getActiveRecommendations(): Promise<GearItem[]> {
   const grinder = missedGrinder ?? 0;
 
   if (dose < MISS_THRESHOLD && temp < MISS_THRESHOLD && grinder < MISS_THRESHOLD) {
-    return [];
+    return { items: [], cachedAt: null };
   }
 
   try {
@@ -135,12 +141,12 @@ export async function getActiveRecommendations(): Promise<GearItem[]> {
       signal: AbortSignal.timeout(8000),
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) return { items: [], cachedAt: null };
 
-    const data = (await res.json()) as { items?: GearItem[] };
-    return data.items ?? [];
+    const data = (await res.json()) as { items?: GearItem[]; cachedAt?: string | null };
+    return { items: data.items ?? [], cachedAt: data.cachedAt ?? null };
   } catch {
-    return [];
+    return { items: [], cachedAt: null };
   }
 }
 
