@@ -1534,7 +1534,7 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
 <!-- ── AI Catalogue Generator ──────────────────────────────────────────── -->
 <div class="section">
 <h2 style="font-size:1.1rem;margin-bottom:4px">🤖 Generate Catalogue with AI</h2>
-<p class="sub">GPT generates real coffee gear with Amazon ASINs across all brew methods. Review before importing — nothing is saved until you click Import.</p>
+<p class="sub">GPT generates 12 real coffee gear products with Amazon search links. Run it multiple times to build up your catalogue — nothing is saved until you click Import.</p>
 
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px">
   <label style="margin:0;font-weight:600;font-size:0.875rem">Focus area (optional)</label>
@@ -1961,21 +1961,20 @@ Each object in the array must have EXACTLY these fields:
 Do NOT include these already-catalogued slugs: ${existingSlugs}.
 Return ONLY a valid JSON array. No markdown fences, no extra text, no commentary.`;
 
-  const userPrompt = `Generate 30 coffee gear products for ${methodLabel}.
+  const userPrompt = `Generate exactly 12 coffee gear products for ${methodLabel}.
 
-Cover a spread of:
+Pick 12 distinct items from this spread:
 - Grinders (hand and electric, budget to premium)
 - Scales (general and espresso-specific)
 - Kettles (gooseneck, variable temperature)
 - Brewers/drippers (${focus === "all" ? "V60, Chemex, AeroPress, French press, Moka pot, cold brew" : methodLabel})
-- Espresso accessories (tampers, distribution tools, puck screens, milk thermometers) ${focus === "espresso" || focus === "all" ? "" : "— skip these"}
-- Grinder cleaning / maintenance tools
-- Coffee storage (airtight canisters, bean vaults)
+- Espresso accessories (tampers, distribution tools, puck screens) ${focus === "espresso" || focus === "all" ? "" : "— skip these"}
+- Coffee storage (airtight canisters)
 - Water quality (filters, TDS meters)
-- Refractometers and extraction meters (intermediate/advanced)
 
 Spread experience levels: ~60% beginner, ~30% intermediate, ~10% advanced.
-For each product include all brew methods it meaningfully serves.`;
+For each product include all brew methods it meaningfully serves.
+Return EXACTLY 12 items — no more, no less.`;
 
   try {
     const completion = await openai.chat.completions.create({
