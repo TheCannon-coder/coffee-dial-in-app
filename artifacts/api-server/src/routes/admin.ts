@@ -1465,11 +1465,19 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
   .btn-ai { background: #5b3a29; }
   .btn-ai:hover { background: #7a4f38; }
   .btn-sm { padding: 6px 14px; font-size: 0.85rem; margin-top: 0; }
+  .btn-edit { background: none; border: 1px solid #2C1A0E; color: #2C1A0E; padding: 3px 10px; border-radius: 5px; font-size: 0.78rem; cursor: pointer; margin-right: 4px; margin-top: 0; }
+  .btn-edit:hover { background: #2C1A0E; color: #FAF7F2; }
+  .btn-toggle { border: none; padding: 3px 10px; border-radius: 5px; font-size: 0.78rem; cursor: pointer; margin-top: 0; }
+  .btn-toggle-active { background: #f8d7da; color: #721c24; }
+  .btn-toggle-active:hover { background: #f5c6cb; }
+  .btn-toggle-inactive { background: #d4edda; color: #155724; }
+  .btn-toggle-inactive:hover { background: #c3e6cb; }
+  .btn-toggle:disabled { opacity: 0.5; cursor: default; }
   .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #155724; }
   .error { background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #721c24; }
   table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.85rem; }
   th { text-align: left; padding: 8px 10px; background: #2C1A0E; color: #FAF7F2; }
-  td { padding: 8px 10px; border-bottom: 1px solid #e0d8cf; vertical-align: top; }
+  td { padding: 8px 10px; border-bottom: 1px solid #e0d8cf; vertical-align: middle; }
   tr:hover td { background: #f0ebe3; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
   .badge-active { background: #d4edda; color: #155724; }
@@ -1481,6 +1489,9 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
   #preview-table-wrap table { margin-top: 0; }
   .asin-link { font-size: 0.8rem; color: #5b3a29; }
   .methods-cell { font-size: 0.75rem; color: #666; }
+  #form-section { scroll-margin-top: 20px; }
+  .editing-banner { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; display: none; }
+  .editing-banner.visible { display: block; }
 </style>
 </head>
 <body>
@@ -1623,36 +1634,37 @@ async function importSelected() {
 </script>
 
 <!-- ── Manual Add / Update ─────────────────────────────────────────────── -->
-<div class="section">
+<div class="section" id="form-section">
 <h2 style="font-size:1.1rem;margin-bottom:4px">Add / Update Product</h2>
 <p class="sub">Existing slugs are updated; new slugs are created.</p>
-<form method="POST" action="/api/admin/gear">
+<div class="editing-banner" id="editing-banner">✏️ Editing <strong id="editing-slug-label"></strong> — <a href="#" onclick="clearForm();return false;">clear form</a></div>
+<form method="POST" action="/api/admin/gear" id="gear-form">
   <label>Slug (URL-safe, e.g. <code>acaia-lunar</code>)</label>
-  <input name="slug" required placeholder="acaia-lunar" pattern="[a-z0-9-]+" title="lowercase letters, numbers, hyphens only">
+  <input name="slug" id="f-slug" required placeholder="acaia-lunar" pattern="[a-z0-9-]+" title="lowercase letters, numbers, hyphens only">
 
   <label>Product Name</label>
-  <input name="name" required placeholder="Acaia Lunar Espresso Scale">
+  <input name="name" id="f-name" required placeholder="Acaia Lunar Espresso Scale">
 
   <label>Amazon URL (without affiliate tag)</label>
-  <input name="amazonUrl" required placeholder="https://www.amazon.com/dp/B07BMPKJVN" type="url">
+  <input name="amazonUrl" id="f-amazonUrl" required placeholder="https://www.amazon.com/dp/B07BMPKJVN" type="url">
 
   <label>Price Label</label>
-  <input name="priceLabel" required placeholder="~$200">
+  <input name="priceLabel" id="f-priceLabel" required placeholder="~$200">
 
   <label>Brew Methods</label>
   <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px">
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="espresso"> Espresso</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="general"> General (any)</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="pour_over"> Pour-over</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="v60"> V60</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="chemex"> Chemex</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="kalita"> Kalita</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="aeropress"> AeroPress</label>
-    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="french_press"> French Press</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="espresso" class="bm"> Espresso</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="general" class="bm"> General (any)</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="pour_over" class="bm"> Pour-over</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="v60" class="bm"> V60</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="chemex" class="bm"> Chemex</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="kalita" class="bm"> Kalita</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="aeropress" class="bm"> AeroPress</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="french_press" class="bm"> French Press</label>
   </div>
 
   <label>Experience Level</label>
-  <select name="experienceLevel">
+  <select name="experienceLevel" id="f-experienceLevel">
     <option value="beginner">Beginner (0–9 brews or missing basic data)</option>
     <option value="intermediate">Intermediate (10+ brews, tracking well)</option>
     <option value="advanced">Advanced (30+ brews, no gaps)</option>
@@ -1660,11 +1672,11 @@ async function importSelected() {
   <div class="hint">Beginner products show to everyone; intermediate to 10+ brew users; advanced to 30+ brew users.</div>
 
   <label>Description Hint (for AI — explain when to recommend this)</label>
-  <textarea name="descriptionHint" required placeholder="Essential for espresso users not logging dose in grams. Accurate to 0.1g, fits under low-clearance machines."></textarea>
+  <textarea name="descriptionHint" id="f-descriptionHint" required placeholder="Essential for espresso users not logging dose in grams. Accurate to 0.1g, fits under low-clearance machines."></textarea>
   <div class="hint">This is not shown to users — it guides the AI on when and how to pitch this product.</div>
 
   <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:normal">
-    <input type="checkbox" name="active" value="true" checked style="width:auto">
+    <input type="checkbox" name="active" id="f-active" value="true" checked style="width:auto">
     Active (visible to users)
   </label>
 
@@ -1676,19 +1688,76 @@ async function importSelected() {
 <h2 style="font-size:1.1rem;margin-bottom:16px">Current Catalogue</h2>
 {{TABLE}}
 </div>
+
+<script>
+var PRODUCTS = {{PRODUCTS_JSON}};
+
+function editProduct(slug) {
+  var p = PRODUCTS.find(function(x){ return x.slug === slug; });
+  if (!p) return;
+  document.getElementById('f-slug').value = p.slug;
+  document.getElementById('f-name').value = p.name;
+  document.getElementById('f-amazonUrl').value = p.amazonUrl;
+  document.getElementById('f-priceLabel').value = p.priceLabel;
+  document.getElementById('f-descriptionHint').value = p.descriptionHint;
+  document.getElementById('f-experienceLevel').value = p.experienceLevel;
+  document.getElementById('f-active').checked = p.active;
+  document.querySelectorAll('.bm').forEach(function(cb) {
+    cb.checked = p.brewMethods.indexOf(cb.value) !== -1;
+  });
+  var banner = document.getElementById('editing-banner');
+  document.getElementById('editing-slug-label').textContent = slug;
+  banner.classList.add('visible');
+  document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function clearForm() {
+  document.getElementById('gear-form').reset();
+  document.getElementById('editing-banner').classList.remove('visible');
+}
+
+function toggleProduct(slug, makeActive) {
+  var btn = document.getElementById('toggle-btn-' + slug);
+  var badge = document.getElementById('badge-' + slug);
+  btn.disabled = true;
+  fetch('/api/admin/gear/' + encodeURIComponent(slug), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active: makeActive })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var isActive = data.active;
+    badge.className = 'badge ' + (isActive ? 'badge-active' : 'badge-inactive');
+    badge.textContent = isActive ? 'active' : 'inactive';
+    btn.textContent = isActive ? 'Deactivate' : 'Activate';
+    btn.className = 'btn-toggle ' + (isActive ? 'btn-toggle-active' : 'btn-toggle-inactive');
+    btn.onclick = function(){ toggleProduct(slug, !isActive); };
+    var prod = PRODUCTS.find(function(x){ return x.slug === slug; });
+    if (prod) prod.active = isActive;
+    btn.disabled = false;
+  })
+  .catch(function() {
+    btn.disabled = false;
+    alert('Toggle failed — check server logs.');
+  });
+}
+</script>
 </body>
 </html>`;
 
-function buildProductTable(
-  products: Array<{
-    slug: string;
-    name: string;
-    priceLabel: string;
-    experienceLevel: string;
-    brewMethods: string[];
-    active: boolean;
-  }>,
-): string {
+type GearProductRow = {
+  slug: string;
+  name: string;
+  amazonUrl: string;
+  priceLabel: string;
+  experienceLevel: string;
+  brewMethods: string[];
+  descriptionHint: string;
+  active: boolean;
+};
+
+function buildProductTable(products: GearProductRow[]): string {
   if (products.length === 0) return "<p>No products yet.</p>";
   const rows = products
     .map(
@@ -1698,12 +1767,22 @@ function buildProductTable(
       <td>${p.priceLabel}</td>
       <td>${p.experienceLevel}</td>
       <td>${p.brewMethods.join(", ")}</td>
-      <td><span class="badge ${p.active ? "badge-active" : "badge-inactive"}">${p.active ? "active" : "inactive"}</span></td>
+      <td>
+        <span class="badge ${p.active ? "badge-active" : "badge-inactive"}" id="badge-${p.slug}">${p.active ? "active" : "inactive"}</span>
+      </td>
+      <td>
+        <button class="btn-edit" onclick="editProduct('${p.slug}')">Edit</button>
+        <button
+          id="toggle-btn-${p.slug}"
+          class="btn-toggle ${p.active ? "btn-toggle-active" : "btn-toggle-inactive"}"
+          onclick="toggleProduct('${p.slug}', ${!p.active})"
+        >${p.active ? "Deactivate" : "Activate"}</button>
+      </td>
     </tr>`,
     )
     .join("");
   return `<table>
-    <thead><tr><th>Slug</th><th>Name</th><th>Price</th><th>Level</th><th>Methods</th><th>Status</th></tr></thead>
+    <thead><tr><th>Slug</th><th>Name</th><th>Price</th><th>Level</th><th>Methods</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -1714,18 +1793,20 @@ router.get("/admin/gear", async (req, res) => {
       .select({
         slug: gearProductsTable.slug,
         name: gearProductsTable.name,
+        amazonUrl: gearProductsTable.amazonUrl,
         priceLabel: gearProductsTable.priceLabel,
         experienceLevel: gearProductsTable.experienceLevel,
         brewMethods: gearProductsTable.brewMethods,
+        descriptionHint: gearProductsTable.descriptionHint,
         active: gearProductsTable.active,
       })
       .from(gearProductsTable)
       .orderBy(gearProductsTable.createdAt);
 
-    const html = GEAR_FORM_HTML.replace("{{MESSAGE}}", "").replace(
-      "{{TABLE}}",
-      buildProductTable(products),
-    );
+    const html = GEAR_FORM_HTML
+      .replace("{{MESSAGE}}", "")
+      .replace("{{TABLE}}", buildProductTable(products))
+      .replace("{{PRODUCTS_JSON}}", JSON.stringify(products));
     res.setHeader("Content-Type", "text/html");
     res.send(html);
   } catch (err) {
@@ -1779,19 +1860,21 @@ router.post("/admin/gear", async (req, res) => {
     .select({
       slug: gearProductsTable.slug,
       name: gearProductsTable.name,
+      amazonUrl: gearProductsTable.amazonUrl,
       priceLabel: gearProductsTable.priceLabel,
       experienceLevel: gearProductsTable.experienceLevel,
       brewMethods: gearProductsTable.brewMethods,
+      descriptionHint: gearProductsTable.descriptionHint,
       active: gearProductsTable.active,
     })
     .from(gearProductsTable)
     .orderBy(gearProductsTable.createdAt)
     .catch(() => []);
 
-  const html = GEAR_FORM_HTML.replace("{{MESSAGE}}", message).replace(
-    "{{TABLE}}",
-    buildProductTable(products),
-  );
+  const html = GEAR_FORM_HTML
+    .replace("{{MESSAGE}}", message)
+    .replace("{{TABLE}}", buildProductTable(products))
+    .replace("{{PRODUCTS_JSON}}", JSON.stringify(products));
   res.setHeader("Content-Type", "text/html");
   res.send(html);
 });
@@ -1909,6 +1992,47 @@ For each product include all brew methods it meaningfully serves.`;
   } catch (err) {
     logger.error({ err }, "admin/gear/generate: OpenAI error");
     res.status(502).json({ error: "AI request failed — check server logs" });
+  }
+});
+
+router.patch("/admin/gear/:slug", async (req, res) => {
+  const slug = req.params["slug"];
+  const body = req.body as Record<string, unknown>;
+
+  const updates: { active?: boolean; priceLabel?: string; descriptionHint?: string } = {};
+
+  if (typeof body["active"] === "boolean") {
+    updates.active = body["active"];
+  }
+  if (typeof body["priceLabel"] === "string" && body["priceLabel"].trim()) {
+    updates.priceLabel = body["priceLabel"].trim();
+  }
+  if (typeof body["descriptionHint"] === "string" && body["descriptionHint"].trim()) {
+    updates.descriptionHint = body["descriptionHint"].trim();
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "no valid fields to update (allowed: active, priceLabel, descriptionHint)" });
+    return;
+  }
+
+  try {
+    const [updated] = await db
+      .update(gearProductsTable)
+      .set(updates)
+      .where(eq(gearProductsTable.slug, slug))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+
+    invalidateGearRecommendCache();
+    res.json(updated);
+  } catch (err) {
+    logger.error({ err }, "admin/gear PATCH error");
+    res.status(500).json({ error: "internal_error" });
   }
 });
 
