@@ -84,6 +84,31 @@ async function getCurrentRates(): Promise<
   return rates;
 }
 
+/**
+ * Resolve the commission rate for one affiliate + plan type.
+ * Custom rate on the affiliate wins over the global phase rate.
+ * Returns rate in cents.
+ */
+function resolveRateCents(
+  affiliate: {
+    tier: string;
+    customMonthlyRateCents: number | null;
+    customAnnualRateCents: number | null;
+    customLifetimeRateCents: number | null;
+  },
+  planType: string,
+  globalRates: Record<string, Record<string, number>>,
+): number {
+  const customMap: Record<string, number | null> = {
+    monthly: affiliate.customMonthlyRateCents,
+    annual: affiliate.customAnnualRateCents,
+    lifetime: affiliate.customLifetimeRateCents,
+  };
+  const custom = customMap[planType];
+  if (custom !== null && custom !== undefined) return custom;
+  return globalRates[affiliate.tier]?.[planType] ?? 75;
+}
+
 // ── Affiliates ─────────────────────────────────────────────────────────────────
 
 router.get("/admin/affiliates", async (req, res) => {
@@ -237,15 +262,27 @@ router.get("/admin/affiliates/:id", async (req, res) => {
 
 router.patch("/admin/affiliates/:id", async (req, res) => {
   const id = Number(req.params["id"]);
-  const { tier, audienceSize, payoutEmail, payoutMethod, isActive, notes } =
-    req.body as {
-      tier?: string;
-      audienceSize?: number;
-      payoutEmail?: string;
-      payoutMethod?: string;
-      isActive?: boolean;
-      notes?: string;
-    };
+  const {
+    tier,
+    audienceSize,
+    payoutEmail,
+    payoutMethod,
+    isActive,
+    notes,
+    customMonthlyRateCents,
+    customAnnualRateCents,
+    customLifetimeRateCents,
+  } = req.body as {
+    tier?: string;
+    audienceSize?: number;
+    payoutEmail?: string;
+    payoutMethod?: string;
+    isActive?: boolean;
+    notes?: string;
+    customMonthlyRateCents?: number | null;
+    customAnnualRateCents?: number | null;
+    customLifetimeRateCents?: number | null;
+  };
 
   try {
     const updates: Partial<typeof affiliatesTable.$inferInsert> = {};
@@ -255,6 +292,9 @@ router.patch("/admin/affiliates/:id", async (req, res) => {
     if (payoutMethod !== undefined) updates.payoutMethod = payoutMethod;
     if (isActive !== undefined) updates.isActive = isActive;
     if (notes !== undefined) updates.notes = notes;
+    if (customMonthlyRateCents !== undefined) updates.customMonthlyRateCents = customMonthlyRateCents;
+    if (customAnnualRateCents !== undefined) updates.customAnnualRateCents = customAnnualRateCents;
+    if (customLifetimeRateCents !== undefined) updates.customLifetimeRateCents = customLifetimeRateCents;
 
     const [updated] = await db
       .update(affiliatesTable)
@@ -270,6 +310,54 @@ router.patch("/admin/affiliates/:id", async (req, res) => {
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "admin/affiliates update error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+/**
+ * Set custom commission rates for one affiliate.
+ * Pass null for a plan type to remove the override and fall back to the tier rate.
+ * Example: { "monthlyRateCents": 125, "annualRateCents": null, "lifetimeRateCents": null }
+ */
+router.post("/admin/affiliates/:id/set-rates", async (req, res) => {
+  const id = Number(req.params["id"]);
+  const { monthlyRateCents, annualRateCents, lifetimeRateCents } = req.body as {
+    monthlyRateCents?: number | null;
+    annualRateCents?: number | null;
+    lifetimeRateCents?: number | null;
+  };
+
+  try {
+    const affiliate = await db.query.affiliatesTable.findFirst({
+      where: eq(affiliatesTable.id, id),
+    });
+    if (!affiliate) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+
+    const updates: Partial<typeof affiliatesTable.$inferInsert> = {};
+    if (monthlyRateCents !== undefined) updates.customMonthlyRateCents = monthlyRateCents;
+    if (annualRateCents !== undefined) updates.customAnnualRateCents = annualRateCents;
+    if (lifetimeRateCents !== undefined) updates.customLifetimeRateCents = lifetimeRateCents;
+
+    const [updated] = await db
+      .update(affiliatesTable)
+      .set(updates)
+      .where(eq(affiliatesTable.id, id))
+      .returning();
+
+    const globalRates = await getCurrentRates();
+    res.json({
+      affiliate: updated,
+      effectiveRates: {
+        monthly: resolveRateCents(updated, "monthly", globalRates),
+        annual: resolveRateCents(updated, "annual", globalRates),
+        lifetime: resolveRateCents(updated, "lifetime", globalRates),
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "admin/affiliates set-rates error");
     res.status(500).json({ error: "internal_error" });
   }
 });
@@ -379,7 +467,7 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
     let ledgerEntry = null;
     if (planType === "annual" || planType === "lifetime") {
       const rates = await getCurrentRates();
-      const amountCents = rates[affiliate.tier]?.[planType] ?? 0;
+      const amountCents = resolveRateCents(affiliate, planType, rates);
 
       if (amountCents > 0) {
         const [entry] = await db
@@ -472,12 +560,15 @@ router.post("/admin/payouts/generate", async (req, res) => {
 
     const rates = await getCurrentRates();
 
-    // Find all active monthly referral conversions
+    // Find all active monthly referral conversions (include custom rate columns)
     const activeMonthly = await db
       .select({
         conversionId: referralConversionsTable.id,
         referrerUserId: referralConversionsTable.referrerUserId,
         tier: affiliatesTable.tier,
+        customMonthlyRateCents: affiliatesTable.customMonthlyRateCents,
+        customAnnualRateCents: affiliatesTable.customAnnualRateCents,
+        customLifetimeRateCents: affiliatesTable.customLifetimeRateCents,
         affiliatePayoutEmail: affiliatesTable.payoutEmail,
         affiliatePayoutMethod: affiliatesTable.payoutMethod,
       })
@@ -521,7 +612,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
           periodMonth,
           planType: "monthly",
           commissionType: "recurring",
-          amountCents: rates[c.tier]?.["monthly"] ?? 75,
+          amountCents: resolveRateCents(c, "monthly", rates),
           tier: c.tier,
           status: "pending",
         })),

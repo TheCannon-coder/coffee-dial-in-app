@@ -26,6 +26,10 @@ export const affiliatesTable = pgTable("affiliates", {
   payoutMethod: text("payout_method").notNull().default("paypal"),
   isActive: boolean("is_active").notNull().default(true),
   notes: text("notes"),
+  /** Per-affiliate rate overrides — take priority over the phase-based tier rate when set */
+  customMonthlyRateCents: integer("custom_monthly_rate_cents"),
+  customAnnualRateCents: integer("custom_annual_rate_cents"),
+  customLifetimeRateCents: integer("custom_lifetime_rate_cents"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
