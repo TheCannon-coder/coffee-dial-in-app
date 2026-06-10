@@ -109,6 +109,52 @@ function resolveRateCents(
   return globalRates[affiliate.tier]?.[planType] ?? 75;
 }
 
+type AffiliateWithRates = {
+  id: number;
+  tier: string;
+  customMonthlyRateCents: number | null;
+  customAnnualRateCents: number | null;
+  customLifetimeRateCents: number | null;
+};
+
+/**
+ * On an affiliate's first subscription event, permanently lock their commission
+ * rates to the phase that was active at that moment.  Subsequent phase changes
+ * won't affect them — they keep earning the rate they were promised when they
+ * first drove a subscriber.  Returns the affiliate record (possibly updated).
+ *
+ * If the affiliate already has rates locked (any non-null custom column) this
+ * is a no-op, so it's safe to call on every subscribe event.
+ */
+async function ensureRatesLocked(
+  affiliate: AffiliateWithRates,
+  globalRates: Record<string, Record<string, number>>,
+): Promise<AffiliateWithRates> {
+  const alreadyLocked =
+    affiliate.customMonthlyRateCents !== null ||
+    affiliate.customAnnualRateCents !== null ||
+    affiliate.customLifetimeRateCents !== null;
+
+  if (alreadyLocked) return affiliate;
+
+  const tierRates = globalRates[affiliate.tier] ?? {};
+  const monthly = tierRates["monthly"] ?? 75;
+  const annual = tierRates["annual"] ?? 0;
+  const lifetime = tierRates["lifetime"] ?? 0;
+
+  const [updated] = await db
+    .update(affiliatesTable)
+    .set({
+      customMonthlyRateCents: monthly,
+      customAnnualRateCents: annual,
+      customLifetimeRateCents: lifetime,
+    })
+    .where(eq(affiliatesTable.id, affiliate.id))
+    .returning();
+
+  return updated;
+}
+
 // ── Affiliates ─────────────────────────────────────────────────────────────────
 
 router.get("/admin/affiliates", async (req, res) => {
@@ -463,11 +509,16 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
       })
       .where(eq(referralConversionsTable.id, id));
 
+    // Lock this affiliate's rates to the current phase if this is their first
+    // ever subscription — guarantees they always earn at the rate they were
+    // promised when they first drove a paying user, regardless of future phases.
+    const rates = await getCurrentRates();
+    const lockedAffiliate = await ensureRatesLocked(affiliate, rates);
+
     // For annual and lifetime: generate a one-time commission immediately
     let ledgerEntry = null;
     if (planType === "annual" || planType === "lifetime") {
-      const rates = await getCurrentRates();
-      const amountCents = resolveRateCents(affiliate, planType, rates);
+      const amountCents = resolveRateCents(lockedAffiliate, planType, rates);
 
       if (amountCents > 0) {
         const [entry] = await db
@@ -565,6 +616,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
       .select({
         conversionId: referralConversionsTable.id,
         referrerUserId: referralConversionsTable.referrerUserId,
+        affiliateId: affiliatesTable.id,
         tier: affiliatesTable.tier,
         customMonthlyRateCents: affiliatesTable.customMonthlyRateCents,
         customAnnualRateCents: affiliatesTable.customAnnualRateCents,
@@ -605,15 +657,33 @@ router.post("/admin/payouts/generate", async (req, res) => {
     );
 
     if (newEntries.length > 0) {
+      // Lock rates for any affiliate who hasn't had a subscription event yet
+      // (edge case: monthly subscriber added without going through /subscribe).
+      const lockedEntries = await Promise.all(
+        newEntries.map(async (c) => ({
+          ...c,
+          locked: await ensureRatesLocked(
+            {
+              id: c.affiliateId,
+              tier: c.tier,
+              customMonthlyRateCents: c.customMonthlyRateCents,
+              customAnnualRateCents: c.customAnnualRateCents,
+              customLifetimeRateCents: c.customLifetimeRateCents,
+            },
+            rates,
+          ),
+        })),
+      );
+
       await db.insert(commissionLedgerTable).values(
-        newEntries.map((c) => ({
-          affiliateUserId: c.referrerUserId,
-          conversionId: c.conversionId,
+        lockedEntries.map(({ locked, conversionId, referrerUserId, tier }) => ({
+          affiliateUserId: referrerUserId,
+          conversionId,
           periodMonth,
           planType: "monthly",
           commissionType: "recurring",
-          amountCents: resolveRateCents(c, "monthly", rates),
-          tier: c.tier,
+          amountCents: resolveRateCents(locked, "monthly", rates),
+          tier,
           status: "pending",
         })),
       );
