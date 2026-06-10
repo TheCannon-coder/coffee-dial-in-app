@@ -201,7 +201,7 @@ Return ONLY valid JSON. No markdown. No explanation outside the array.`;
           solutionText: pick.solutionText,
           productName: product.name,
           productPrice: product.priceLabel,
-          affiliateUrl: `https://www.coffeebrew.coach/api/gear/${product.slug}`,
+          affiliateUrl: `https://www.coffeebrew.coach/api/gear/${product.slug}?src=rec`,
         } satisfies GearItem;
       })
       .filter((item): item is GearItem => item !== null);
@@ -219,20 +219,42 @@ Return ONLY valid JSON. No markdown. No explanation outside the array.`;
 
 router.get("/gear/stats", async (req, res) => {
   try {
-    const rows = await db.execute<{ product_id: string; product_name: string; clicks: string }>(
-      `SELECT product_id, product_name, COUNT(*) AS clicks
+    const rows = await db.execute<{
+      product_id: string;
+      product_name: string;
+      source: string;
+      clicks: string;
+    }>(
+      `SELECT product_id, product_name, source, COUNT(*) AS clicks
        FROM gear_clicks
-       GROUP BY product_id, product_name
-       ORDER BY clicks DESC`,
+       GROUP BY product_id, product_name, source
+       ORDER BY product_id, source`,
     );
 
-    res.json({
-      stats: rows.rows.map((r) => ({
+    // Pivot into per-product rows with source breakdown
+    const byProduct = new Map<
+      string,
+      { productId: string; productName: string; total: number; recommendation: number; direct: number }
+    >();
+
+    for (const r of rows.rows) {
+      const entry = byProduct.get(r.product_id) ?? {
         productId: r.product_id,
         productName: r.product_name,
-        clicks: Number(r.clicks),
-      })),
-    });
+        total: 0,
+        recommendation: 0,
+        direct: 0,
+      };
+      const count = Number(r.clicks);
+      entry.total += count;
+      if (r.source === "recommendation") entry.recommendation += count;
+      else entry.direct += count;
+      byProduct.set(r.product_id, entry);
+    }
+
+    const stats = Array.from(byProduct.values()).sort((a, b) => b.total - a.total);
+
+    res.json({ stats });
   } catch (err) {
     req.log.error({ err }, "failed to fetch gear stats");
     res.status(500).json({ error: "internal_error" });
@@ -260,12 +282,15 @@ router.get("/gear/:productId", async (req, res) => {
     req.socket.remoteAddress ??
     "unknown";
 
+  const src = (req.query["src"] as string | undefined) === "rec" ? "recommendation" : "direct";
+
   db.insert(gearClicksTable)
     .values({
       productId,
       productName: dbProduct.name,
       ipHash: hashIp(ip),
       userAgent: req.headers["user-agent"] ?? null,
+      source: src,
     })
     .then(() => {
       req.log.info({ productId, productName: dbProduct.name }, "gear click recorded");
