@@ -1,0 +1,50 @@
+Here's exactly what to paste into Replit:
+
+---
+
+> **Build an affiliate programme backend with full compliance automation. Here are the requirements:**
+>
+> **Affiliate Onboarding (must complete before any payout is ever triggered):**
+> - Affiliate signs up with name, email, PayPal email (for payouts), country
+> - If US-based: collect W-9 data (legal name, address, SSN or EIN, entity type). Store encrypted.
+> - If non-US: collect W-8BEN data (name, country, foreign tax ID). Store encrypted.
+> - Affiliate must check a box confirming: *"I agree to disclose my affiliate relationship with Dial In in all promotional content per FTC guidelines."* Store this as `ftc_disclosure_accepted: true` with a timestamp.
+> - Do not allow any payout to process if tax form is incomplete or FTC disclosure is not accepted.
+>
+> **Promo Code & Conversion Tracking:**
+> - Each affiliate gets a unique promo code (e.g. JAMES20)
+> - When a user enters a promo code in the app at signup, record: `referrer_affiliate_id`, `referred_user_id`, `conversion_date`, `plan_purchased`, `gross_amount`, `commission_owed`, `payout_status: pending`
+> - Block self-referral: if the device ID or email of the referrer matches the referee, reject the code silently
+> - Commission does not become `payable` until the referred user has been active for **30 days** without refunding
+>
+> **1099 Compliance Automation:**
+> - Track `total_paid_ytd` per affiliate, reset each January 1
+> - When `total_paid_ytd` crosses $600, flag the affiliate as `requires_1099: true`
+> - At year end, generate a 1099-NEC record for every affiliate where `total_paid_ytd >= 600` and `country = US`
+> - Export these as a CSV in IRS format for filing (or integrate Stripe Connect 1099 generation if using Stripe payouts)
+>
+> **Payout Logic:**
+> - Monthly payout run: query all conversions where `payout_status: payable` and `conversion_date` is 30+ days ago
+> - Sum commissions per affiliate
+> - Do not pay affiliates with incomplete tax forms or missing FTC disclosure
+> - Mark paid conversions as `payout_status: paid` with `paid_date` and `payout_amount`
+> - Log every payout with a full audit trail
+>
+> **Database tables needed:**
+> - `affiliates` (id, name, email, paypal_email, country, tax_form_type, tax_form_data encrypted, ftc_disclosure_accepted, ftc_accepted_at, tier, active, created_at)
+> - `referral_conversions` (id, affiliate_id, referred_user_id, promo_code, plan, gross_amount, commission_owed, conversion_date, payout_status, paid_date, payout_amount)
+> - `affiliate_payouts` (id, affiliate_id, payout_date, total_amount, conversions_included, method, reference_id)
+> - `tax_records` (id, affiliate_id, year, total_paid, requires_1099, filed_at)
+>
+> **Self-referral prevention:**
+> - At promo code entry: check if the device_id or email submitting the code matches the affiliate account linked to that code. If yes, reject with a generic "invalid code" error — do not reveal why.
+
+---
+
+## A Few Extra Notes to Add if Replit Asks for Clarification
+
+**On Stripe Connect:** If Replit suggests using Stripe Connect for payouts — say yes for Stage 2+ (30+ affiliates). Stripe Connect automates W-9 collection, 1099 generation, and direct bank transfers. For Stage 1 you can use PayPal Payouts manually.
+
+**On encryption:** Tax data (SSN, EIN) must be encrypted at rest. Tell Replit to use AES-256 encryption on those fields and never return them raw in any API response.
+
+**On the 30-day hold:** This also protects you from refund fraud — someone referring themselves on a second device, collecting the commission, then refunding the purchase.

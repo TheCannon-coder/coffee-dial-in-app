@@ -29,7 +29,7 @@
  */
 
 import { Router } from "express";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import {
   affiliatesTable,
@@ -37,6 +37,7 @@ import {
   commissionLedgerTable,
   payoutBatchesTable,
   commissionPhasesTable,
+  taxRecordsTable,
 } from "@workspace/db";
 import { getStripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
@@ -530,6 +531,9 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
     const now = new Date();
     const periodMonth = currentMonth();
 
+    // payableAfter = 30 days after subscription — protects against refund fraud
+    const payableAfter = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
     await db
       .update(referralConversionsTable)
       .set({
@@ -537,6 +541,7 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
         stripeSubscriptionId: stripeSubscriptionId ?? null,
         isSubscriptionActive: true,
         subscribedAt: now,
+        payableAfter,
       })
       .where(eq(referralConversionsTable.id, id));
 
@@ -667,6 +672,11 @@ router.post("/admin/payouts/generate", async (req, res) => {
           eq(referralConversionsTable.planType, "monthly"),
           eq(referralConversionsTable.isSubscriptionActive, true),
           eq(affiliatesTable.isActive, true),
+          // Only include conversions that have passed the 30-day hold
+          or(
+            isNull(referralConversionsTable.payableAfter),
+            lte(referralConversionsTable.payableAfter, sql`NOW()`),
+          ),
         ),
       );
 
@@ -973,7 +983,7 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
       }
     }
 
-    // Load approved ledger entries with affiliate Connect details
+    // Load approved ledger entries with affiliate Connect + compliance details
     const entries = await db
       .select({
         ledgerId: commissionLedgerTable.id,
@@ -981,6 +991,9 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
         amountCents: commissionLedgerTable.amountCents,
         stripeConnectAccountId: affiliatesTable.stripeConnectAccountId,
         connectOnboardingComplete: affiliatesTable.connectOnboardingComplete,
+        taxFormComplete: affiliatesTable.taxFormComplete,
+        ftcDisclosureAccepted: affiliatesTable.ftcDisclosureAccepted,
+        totalPaidYtdCents: affiliatesTable.totalPaidYtdCents,
       })
       .from(commissionLedgerTable)
       .innerJoin(
@@ -1000,6 +1013,9 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
       {
         stripeConnectAccountId: string | null;
         connectOnboardingComplete: boolean;
+        taxFormComplete: boolean;
+        ftcDisclosureAccepted: boolean;
+        totalPaidYtdCents: number;
         ledgerIds: number[];
         totalCents: number;
       }
@@ -1009,6 +1025,9 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
       const cur = byAffiliate.get(e.affiliateUserId) ?? {
         stripeConnectAccountId: e.stripeConnectAccountId,
         connectOnboardingComplete: e.connectOnboardingComplete,
+        taxFormComplete: e.taxFormComplete,
+        ftcDisclosureAccepted: e.ftcDisclosureAccepted,
+        totalPaidYtdCents: e.totalPaidYtdCents,
         ledgerIds: [],
         totalCents: 0,
       };
@@ -1019,15 +1038,27 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
 
     const results: {
       affiliateUserId: number;
-      status: "transferred" | "skipped_no_connect" | "skipped_incomplete" | "failed";
+      status:
+        | "transferred"
+        | "skipped_no_connect"
+        | "skipped_incomplete"
+        | "skipped_compliance"
+        | "failed";
       transferId?: string;
       amountCents?: number;
       error?: string;
     }[] = [];
 
     const now = new Date();
+    // $600 threshold for 1099-NEC requirement (in cents)
+    const THRESHOLD_1099_CENTS = 60_000;
 
     for (const [affiliateUserId, group] of byAffiliate) {
+      // Compliance gate: tax form + FTC disclosure must both be complete
+      if (!group.taxFormComplete || !group.ftcDisclosureAccepted) {
+        results.push({ affiliateUserId, status: "skipped_compliance" });
+        continue;
+      }
       if (!group.stripeConnectAccountId) {
         results.push({ affiliateUserId, status: "skipped_no_connect" });
         continue;
@@ -1049,10 +1080,21 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
           },
         });
 
+        const newYtd = group.totalPaidYtdCents + group.totalCents;
+
         await db
           .update(commissionLedgerTable)
           .set({ status: "paid", stripeTransferId: transfer.id, paidAt: now })
           .where(inArray(commissionLedgerTable.id, group.ledgerIds));
+
+        // Track YTD earnings and flag for 1099 when $600 threshold is crossed
+        await db
+          .update(affiliatesTable)
+          .set({
+            totalPaidYtdCents: sql`total_paid_ytd_cents + ${group.totalCents}`,
+            requires1099: newYtd >= THRESHOLD_1099_CENTS,
+          })
+          .where(eq(affiliatesTable.userId, affiliateUserId));
 
         results.push({
           affiliateUserId,

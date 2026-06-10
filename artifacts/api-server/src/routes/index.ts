@@ -5,6 +5,7 @@ import userRouter from "./user";
 import gearRouter from "./gear";
 import adminRouter from "./admin";
 import connectRouter from "./connect";
+import complianceRouter from "./compliance";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(userRouter);
 router.use(gearRouter);
 router.use(adminRouter);
 router.use(connectRouter);
+router.use(complianceRouter);
 
 export default router;

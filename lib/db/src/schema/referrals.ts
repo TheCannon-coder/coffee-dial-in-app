@@ -7,8 +7,12 @@ import {
   timestamp,
   date,
   bigint,
+  unique,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
+
+/** timestamptz shorthand — stores with time zone */
+const tsz = (name: string) => timestamp(name, { withTimezone: true });
 
 /**
  * Affiliate registrations — one row per affiliate user.
@@ -33,6 +37,23 @@ export const affiliatesTable = pgTable("affiliates", {
   /** Stripe Connect Express account for automated payouts */
   stripeConnectAccountId: text("stripe_connect_account_id"),
   connectOnboardingComplete: boolean("connect_onboarding_complete").notNull().default(false),
+  /** Affiliate display name */
+  name: text("name"),
+  /** ISO country code — determines W-9 (US) vs W-8BEN (non-US) requirement */
+  country: text("country").notNull().default("US"),
+  /** 'w9' | 'w8ben' — which form was submitted */
+  taxFormType: text("tax_form_type"),
+  /** AES-256-GCM encrypted JSON blob of the tax form. NEVER return raw in any API response. */
+  taxFormDataEnc: text("tax_form_data_enc"),
+  /** True once a complete, valid tax form has been submitted */
+  taxFormComplete: boolean("tax_form_complete").notNull().default(false),
+  /** FTC disclosure: affiliate confirmed they'll disclose relationship in all promotional content */
+  ftcDisclosureAccepted: boolean("ftc_disclosure_accepted").notNull().default(false),
+  ftcAcceptedAt: tsz("ftc_accepted_at"),
+  /** Running total of commissions paid in the current calendar year (cents) */
+  totalPaidYtdCents: integer("total_paid_ytd_cents").notNull().default(0),
+  /** Flips to true when totalPaidYtdCents crosses $600 — triggers 1099 requirement */
+  requires1099: boolean("requires_1099").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -56,6 +77,13 @@ export const referralConversionsTable = pgTable("referral_conversions", {
   isSubscriptionActive: boolean("is_subscription_active")
     .notNull()
     .default(false),
+  /**
+   * Earliest timestamp at which this conversion's commission becomes payable.
+   * Set to subscribedAt + 30 days. Commissions are only included in a payout
+   * batch once this date has passed — protects against refund fraud and
+   * self-referral on a second device.
+   */
+  payableAfter: tsz("payable_after"),
   signedUpAt: timestamp("signed_up_at").defaultNow().notNull(),
   subscribedAt: timestamp("subscribed_at"),
   cancelledAt: timestamp("cancelled_at"),
@@ -149,3 +177,26 @@ export const commissionPhasesTable = pgTable("commission_phases", {
 });
 
 export type CommissionPhase = typeof commissionPhasesTable.$inferSelect;
+
+/**
+ * Annual tax record snapshot — one row per (affiliate, year).
+ * Created / updated by POST /api/admin/tax/reset-ytd at year end.
+ * Used to generate 1099-NEC CSVs for IRS filing.
+ */
+export const taxRecordsTable = pgTable(
+  "tax_records",
+  {
+    id: serial("id").primaryKey(),
+    affiliateId: integer("affiliate_id")
+      .notNull()
+      .references(() => affiliatesTable.id),
+    year: integer("year").notNull(),
+    totalPaidCents: integer("total_paid_cents").notNull().default(0),
+    requires1099: boolean("requires_1099").notNull().default(false),
+    filedAt: tsz("filed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [unique("tax_records_affiliate_year").on(t.affiliateId, t.year)],
+);
+
+export type TaxRecord = typeof taxRecordsTable.$inferSelect;
