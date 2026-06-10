@@ -47,15 +47,43 @@ const router = Router();
 
 // ── Auth middleware ────────────────────────────────────────────────────────────
 
+/**
+ * Admin auth middleware.
+ * Supports two schemes so both API clients and browsers are covered:
+ *  1. X-Admin-Key header (existing API clients, curl)
+ *  2. HTTP Basic Auth (browser form submissions — any username, password = ADMIN_KEY)
+ */
+function parseAdminKey(req: import("express").Request): string | undefined {
+  const headerKey = req.headers["x-admin-key"] as string | undefined;
+  if (headerKey) return headerKey;
+
+  const auth = req.headers["authorization"];
+  if (auth?.startsWith("Basic ")) {
+    const decoded = Buffer.from(auth.slice(6), "base64").toString("utf8");
+    const colonIdx = decoded.indexOf(":");
+    if (colonIdx !== -1) return decoded.slice(colonIdx + 1);
+  }
+  return undefined;
+}
+
 router.use((req, res, next) => {
   if (!req.path.startsWith("/admin")) { next(); return; }
-  const key = req.headers["x-admin-key"];
+
   const expected = process.env["ADMIN_KEY"];
   if (!expected) {
     res.status(503).json({ error: "admin_not_configured" });
     return;
   }
+
+  const key = parseAdminKey(req);
   if (!key || key !== expected) {
+    // For HTML-producing routes (browser requests), send Basic Auth challenge
+    const acceptsHtml = req.headers["accept"]?.includes("text/html");
+    if (acceptsHtml && !key) {
+      res.setHeader("WWW-Authenticate", 'Basic realm="Dial In Admin"');
+      res.status(401).send("Authentication required. Enter your admin key as the password.");
+      return;
+    }
     res.status(401).json({ error: "unauthorized" });
     return;
   }

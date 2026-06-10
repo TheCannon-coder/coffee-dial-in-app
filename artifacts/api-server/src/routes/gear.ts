@@ -79,7 +79,9 @@ router.get("/gear/recommend", async (req, res) => {
     return;
   }
 
-  const method = (req.query["method"] as string | undefined) ?? "general";
+  const rawMethod = (req.query["method"] as string | undefined) ?? "general";
+  // Normalize method to catalogue keys (e.g. "pour over" → "pour_over")
+  const method = rawMethod.toLowerCase().trim().replace(/[\s-]+/g, "_");
   const missedDose = Number(req.query["missedDose"] ?? 0);
   const missedTemp = Number(req.query["missedTemp"] ?? 0);
   const missedGrinder = Number(req.query["missedGrinder"] ?? 0);
@@ -97,9 +99,11 @@ router.get("/gear/recommend", async (req, res) => {
       .where(eq(gearProductsTable.active, true));
 
     const candidates = allProducts.filter((p) => {
+      // Espresso: must be tagged for espresso
+      // All others: must match the exact method OR be tagged "general" (cross-method)
       const methodMatch = isEspresso
         ? p.brewMethods.includes("espresso")
-        : !p.brewMethods.includes("espresso") || p.brewMethods.includes("general");
+        : p.brewMethods.includes(method) || p.brewMethods.includes("general");
       const levelMatch =
         (levelOrder[p.experienceLevel as ExperienceLevel] ?? 0) <= userLevel + 1;
       return methodMatch && levelMatch;
