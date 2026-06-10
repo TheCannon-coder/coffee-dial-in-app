@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
@@ -49,6 +49,61 @@ router.post("/user", async (req, res) => {
     });
   } catch (err) {
     logger.error({ err }, "user error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.post("/user/apple", async (req, res) => {
+  const { appleUserId, email } = req.body as { appleUserId?: string; email?: string };
+  if (!appleUserId) {
+    res.status(400).json({ error: "appleUserId required" });
+    return;
+  }
+
+  const monthKey = currentMonthKey();
+
+  try {
+    // Look up by Apple user ID first
+    let user = await db.query.usersTable.findFirst({
+      where: eq(usersTable.appleUserId, appleUserId),
+    });
+
+    if (!user && email) {
+      // First-time Apple sign-in: find or create by email, attach Apple user ID
+      user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+      if (!user) {
+        const referralCode = makeReferralCode();
+        const [created] = await db
+          .insert(usersTable)
+          .values({ email, appleUserId, isPro: false, usesThisMonth: 0, monthKey, referralCode })
+          .returning();
+        user = created;
+      } else {
+        // Existing email account — attach Apple ID
+        await db.update(usersTable).set({ appleUserId }).where(eq(usersTable.id, user.id));
+        user = { ...user, appleUserId };
+      }
+    }
+
+    if (!user) {
+      res.status(400).json({ error: "email required for first-time sign-in" });
+      return;
+    }
+
+    if (user.monthKey !== monthKey) {
+      await db.update(usersTable).set({ usesThisMonth: 0, monthKey }).where(eq(usersTable.id, user.id));
+      user = { ...user, usesThisMonth: 0, monthKey };
+    }
+
+    res.json({
+      email: user.email ?? "",
+      isPro: user.isPro,
+      usesThisMonth: user.usesThisMonth,
+      monthlyLimit: FREE_BREW_LIMIT,
+      referralCode: user.referralCode ?? "",
+    });
+  } catch (err) {
+    logger.error({ err }, "user/apple error");
     res.status(500).json({ error: "internal_error" });
   }
 });

@@ -77,6 +77,18 @@ export function getReferralCode(email: string): Promise<{ code: string }> {
   return post<{ code: string }>('/referral-code', { email });
 }
 
+export interface AppleSignInResult {
+  email: string;
+  isPro: boolean;
+  usesThisMonth: number;
+  monthlyLimit: number;
+  referralCode: string;
+}
+
+export function signInWithApple(appleUserId: string, email?: string): Promise<AppleSignInResult> {
+  return post<AppleSignInResult>('/user/apple', { appleUserId, email });
+}
+
 export interface PaymentIntentResult {
   clientSecret: string;
   subscriptionId?: string;

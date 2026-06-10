@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -14,9 +14,11 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useColors } from '@/hooks/useColors';
 import { useUser } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
+import { signInWithApple } from '@/lib/api';
 
 const FEATURES = [
   {
@@ -46,6 +48,13 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false));
+  }, []);
 
   function isValidEmail(e: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
@@ -64,6 +73,33 @@ export default function OnboardingScreen() {
       setShowNotifPrompt(true);
     } catch {
       setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAppleSignIn() {
+    setError('');
+    setLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const result = await signInWithApple(
+        credential.user,
+        credential.email ?? undefined,
+      );
+      await setEmail(result.email);
+      setShowNotifPrompt(true);
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code;
+      if (code !== 'ERR_REQUEST_CANCELED') {
+        setError('Apple sign-in failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -136,6 +172,26 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={styles.form}>
+            {appleAvailable && (
+              <>
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={100}
+                  style={styles.appleBtn}
+                  onPress={handleAppleSignIn}
+                />
+
+                <View style={styles.divider}>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                    or
+                  </Text>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                </View>
+              </>
+            )}
+
             <TextInput
               style={[
                 styles.input,
@@ -294,6 +350,22 @@ const styles = StyleSheet.create({
   form: {
     gap: 12,
     marginBottom: 16,
+  },
+  appleBtn: {
+    height: 52,
+    width: '100%',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 13,
   },
   input: {
     borderRadius: 12,

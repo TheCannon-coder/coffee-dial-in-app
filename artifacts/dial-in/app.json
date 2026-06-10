@@ -21,6 +21,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "bundleIdentifier": "com.dialin.coffeecoach",
       "buildNumber": "3",
       "infoPlist": {
@@ -48,6 +49,7 @@
         }
       ],
       "expo-font",
+      "expo-apple-authentication",
       "expo-web-browser",
       [
         "expo-notifications",

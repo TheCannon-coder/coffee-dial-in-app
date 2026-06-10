@@ -11,6 +11,7 @@ export const usersTable = pgTable("users", {
   monthKey: text("month_key"),
   referralCode: text("referral_code").unique(),
   stripeCustomerId: text("stripe_customer_id"),
+  appleUserId: text("apple_user_id").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
