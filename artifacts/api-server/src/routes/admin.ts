@@ -30,6 +30,7 @@
 
 import { Router } from "express";
 import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
+import { usdCentsToEurCents, isEuMemberState } from "../lib/compliance-utils";
 import { db, usersTable } from "@workspace/db";
 import {
   affiliatesTable,
@@ -993,6 +994,11 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
         connectOnboardingComplete: affiliatesTable.connectOnboardingComplete,
         taxFormComplete: affiliatesTable.taxFormComplete,
         ftcDisclosureAccepted: affiliatesTable.ftcDisclosureAccepted,
+        gdprConsent: affiliatesTable.gdprConsent,
+        withholdTax: affiliatesTable.withholdTax,
+        withholdTaxRatePct: affiliatesTable.withholdTaxRatePct,
+        country: affiliatesTable.country,
+        dac7Reportable: affiliatesTable.dac7Reportable,
         totalPaidYtdCents: affiliatesTable.totalPaidYtdCents,
       })
       .from(commissionLedgerTable)
@@ -1015,6 +1021,11 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
         connectOnboardingComplete: boolean;
         taxFormComplete: boolean;
         ftcDisclosureAccepted: boolean;
+        gdprConsent: boolean;
+        withholdTax: boolean;
+        withholdTaxRatePct: number;
+        country: string | null;
+        dac7Reportable: boolean;
         totalPaidYtdCents: number;
         ledgerIds: number[];
         totalCents: number;
@@ -1027,6 +1038,11 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
         connectOnboardingComplete: e.connectOnboardingComplete,
         taxFormComplete: e.taxFormComplete,
         ftcDisclosureAccepted: e.ftcDisclosureAccepted,
+        gdprConsent: e.gdprConsent,
+        withholdTax: e.withholdTax,
+        withholdTaxRatePct: e.withholdTaxRatePct,
+        country: e.country,
+        dac7Reportable: e.dac7Reportable,
         totalPaidYtdCents: e.totalPaidYtdCents,
         ledgerIds: [],
         totalCents: 0,
@@ -1045,7 +1061,9 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
         | "skipped_compliance"
         | "failed";
       transferId?: string;
-      amountCents?: number;
+      grossCents?: number;
+      withheldCents?: number;
+      netCents?: number;
       error?: string;
     }[] = [];
 
@@ -1054,8 +1072,17 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
     const THRESHOLD_1099_CENTS = 60_000;
 
     for (const [affiliateUserId, group] of byAffiliate) {
-      // Compliance gate: tax form + FTC disclosure must both be complete
-      if (!group.taxFormComplete || !group.ftcDisclosureAccepted) {
+      const country = (group.country ?? "US").toUpperCase();
+
+      // Compliance gate: tax form + FTC disclosure must both be complete.
+      // EU/UK affiliates additionally require GDPR consent.
+      const needsGdpr = isEuMemberState(country) || country === "GB";
+      const complianceOk =
+        group.taxFormComplete &&
+        group.ftcDisclosureAccepted &&
+        (!needsGdpr || group.gdprConsent);
+
+      if (!complianceOk) {
         results.push({ affiliateUserId, status: "skipped_compliance" });
         continue;
       }
@@ -1068,31 +1095,44 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
         continue;
       }
 
+      // Apply withholding (AU without ABN → 47%; all others → 0%)
+      const withheldCents = group.withholdTax
+        ? Math.floor(group.totalCents * (group.withholdTaxRatePct / 100))
+        : 0;
+      const netCents = group.totalCents - withheldCents;
+
       try {
         const transfer = await stripe.transfers.create({
-          amount: group.totalCents,
+          amount: netCents,
           currency: "usd",
           destination: group.stripeConnectAccountId,
           metadata: {
             batchId: String(id),
             affiliateUserId: String(affiliateUserId),
             periodMonth: batch.periodMonth,
+            grossCents: String(group.totalCents),
+            withheldCents: String(withheldCents),
+            withholdingRatePct: String(group.withholdTaxRatePct),
           },
         });
 
         const newYtd = group.totalPaidYtdCents + group.totalCents;
+        const eurEquivCents = usdCentsToEurCents(group.totalCents);
 
         await db
           .update(commissionLedgerTable)
           .set({ status: "paid", stripeTransferId: transfer.id, paidAt: now })
           .where(inArray(commissionLedgerTable.id, group.ledgerIds));
 
-        // Track YTD earnings and flag for 1099 when $600 threshold is crossed
+        // Track YTD, 1099 threshold, and DAC7 EUR-equivalent earnings
         await db
           .update(affiliatesTable)
           .set({
             totalPaidYtdCents: sql`total_paid_ytd_cents + ${group.totalCents}`,
             requires1099: newYtd >= THRESHOLD_1099_CENTS,
+            ...(group.dac7Reportable && {
+              totalEarnedEurEquivCents: sql`total_earned_eur_equiv_cents + ${eurEquivCents}`,
+            }),
           })
           .where(eq(affiliatesTable.userId, affiliateUserId));
 
@@ -1100,7 +1140,9 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
           affiliateUserId,
           status: "transferred",
           transferId: transfer.id,
-          amountCents: group.totalCents,
+          grossCents: group.totalCents,
+          withheldCents,
+          netCents,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

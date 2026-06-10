@@ -54,6 +54,27 @@ export const affiliatesTable = pgTable("affiliates", {
   totalPaidYtdCents: integer("total_paid_ytd_cents").notNull().default(0),
   /** Flips to true when totalPaidYtdCents crosses $600 — triggers 1099 requirement */
   requires1099: boolean("requires_1099").notNull().default(false),
+
+  // ── International compliance ─────────────────────────────────────────────
+  /**
+   * Whether to withhold tax before payout.
+   * Applies to AU affiliates without an ABN (ATO requires 47% withholding).
+   * All others: 0% — W-8BEN certification shifts tax responsibility to affiliate.
+   */
+  withholdTax: boolean("withhold_tax").notNull().default(false),
+  withholdTaxRatePct: integer("withhold_tax_rate_pct").notNull().default(0),
+  /** GDPR consent — required for EU member state and UK affiliates */
+  gdprConsent: boolean("gdpr_consent").notNull().default(false),
+  gdprConsentAt: tsz("gdpr_consent_at"),
+  /**
+   * DAC7 reportable — true for EU member state affiliates.
+   * EU Digital Services Act (DAC7) requires platforms to report seller income
+   * to tax authorities when annual gross proceeds exceed EUR €2,000.
+   */
+  dac7Reportable: boolean("dac7_reportable").notNull().default(false),
+  /** Cumulative earnings in EUR-equivalent cents for DAC7 threshold monitoring */
+  totalEarnedEurEquivCents: integer("total_earned_eur_equiv_cents").notNull().default(0),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
