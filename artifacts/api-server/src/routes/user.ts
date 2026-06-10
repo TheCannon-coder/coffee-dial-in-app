@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
-import { db, usersTable, referralConversionsTable } from "@workspace/db";
+import { desc, eq } from "drizzle-orm";
+import { db, usersTable, referralConversionsTable, affiliatesTable, commissionLedgerTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -158,6 +158,100 @@ router.post("/referral-code", async (req, res) => {
     res.json({ code });
   } catch (err) {
     logger.error({ err }, "referral-code error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// ── Affiliate self-serve ────────────────────────────────────────────────────────
+
+router.post("/affiliate/me", async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email) { res.status(400).json({ error: "email required" }); return; }
+
+  try {
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+    if (!user) { res.status(404).json({ error: "user_not_found" }); return; }
+
+    const affiliate = await db.query.affiliatesTable.findFirst({
+      where: eq(affiliatesTable.userId, user.id),
+    });
+
+    if (!affiliate) {
+      res.json({ isAffiliate: false, referralCode: user.referralCode });
+      return;
+    }
+
+    const [conversions, ledger] = await Promise.all([
+      db.select().from(referralConversionsTable)
+        .where(eq(referralConversionsTable.referrerUserId, user.id)),
+      db.select().from(commissionLedgerTable)
+        .where(eq(commissionLedgerTable.affiliateUserId, user.id)),
+    ]);
+
+    const totalConversions = conversions.length;
+    const activeConversions = conversions.filter(c => c.isSubscriptionActive).length;
+    const totalPaidCents = ledger.filter(e => e.status === "paid").reduce((s, e) => s + e.amountCents, 0);
+    const pendingCents = ledger.filter(e => e.status === "pending").reduce((s, e) => s + e.amountCents, 0);
+    const monthlyRateCents = affiliate.customMonthlyRateCents ?? 75;
+
+    res.json({
+      isAffiliate: true,
+      tier: affiliate.tier,
+      referralCode: user.referralCode,
+      monthlyRateCents,
+      totalConversions,
+      activeConversions,
+      totalPaidCents,
+      pendingCents,
+      estimatedMonthlyEarningsCents: activeConversions * monthlyRateCents,
+    });
+  } catch (err) {
+    logger.error({ err }, "affiliate/me error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.post("/affiliate/me/metrics", async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email) { res.status(400).json({ error: "email required" }); return; }
+
+  try {
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+    if (!user) { res.status(404).json({ error: "user_not_found" }); return; }
+
+    const affiliate = await db.query.affiliatesTable.findFirst({
+      where: eq(affiliatesTable.userId, user.id),
+    });
+    if (!affiliate) { res.json({ isAffiliate: false, months: [] }); return; }
+
+    const [conversions, ledger] = await Promise.all([
+      db.select().from(referralConversionsTable)
+        .where(eq(referralConversionsTable.referrerUserId, user.id))
+        .orderBy(desc(referralConversionsTable.signedUpAt)),
+      db.select().from(commissionLedgerTable)
+        .where(eq(commissionLedgerTable.affiliateUserId, user.id)),
+    ]);
+
+    const convByMonth = new Map<string, number>();
+    for (const c of conversions) {
+      const key = c.signedUpAt.toISOString().slice(0, 7);
+      convByMonth.set(key, (convByMonth.get(key) ?? 0) + 1);
+    }
+    const earnByMonth = new Map<string, number>();
+    for (const e of ledger) {
+      earnByMonth.set(e.periodMonth, (earnByMonth.get(e.periodMonth) ?? 0) + e.amountCents);
+    }
+
+    const now = new Date();
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return { month: key, newConversions: convByMonth.get(key) ?? 0, earningsCents: earnByMonth.get(key) ?? 0 };
+    });
+
+    res.json({ isAffiliate: true, months });
+  } catch (err) {
+    logger.error({ err }, "affiliate/me/metrics error");
     res.status(500).json({ error: "internal_error" });
   }
 });

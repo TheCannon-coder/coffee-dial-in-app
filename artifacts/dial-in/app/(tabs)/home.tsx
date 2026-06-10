@@ -269,6 +269,22 @@ export default function HomeScreen() {
         )}
 
         {email && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/affiliate');
+            }}
+            style={[styles.settingsRow, { borderTopColor: colors.border }]}
+          >
+            <Feather name="trending-up" size={15} color={colors.mutedForeground} />
+            <Text style={[styles.settingsLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              Refer {'&'} earn
+            </Text>
+            <Feather name="chevron-right" size={15} color={colors.mutedForeground} />
+          </Pressable>
+        )}
+
+        {email && (
           <Pressable onPress={handleManageSubscription} style={styles.manageLink}>
             <Text style={[styles.manageLinkText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
               Manage subscription

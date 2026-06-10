@@ -97,6 +97,37 @@ export interface PaymentIntentResult {
 
 const SUPABASE_FUNCTIONS_URL = 'https://bdfkpchjvsbsbkdyjflo.supabase.co/functions/v1';
 
+export interface AffiliateStats {
+  isAffiliate: boolean;
+  tier?: string;
+  referralCode?: string | null;
+  monthlyRateCents?: number;
+  totalConversions?: number;
+  activeConversions?: number;
+  totalPaidCents?: number;
+  pendingCents?: number;
+  estimatedMonthlyEarningsCents?: number;
+}
+
+export interface AffiliateMonth {
+  month: string;
+  newConversions: number;
+  earningsCents: number;
+}
+
+export interface AffiliateMetrics {
+  isAffiliate: boolean;
+  months: AffiliateMonth[];
+}
+
+export function getAffiliateStats(email: string): Promise<AffiliateStats> {
+  return post<AffiliateStats>('/affiliate/me', { email });
+}
+
+export function getAffiliateMetrics(email: string): Promise<AffiliateMetrics> {
+  return post<AffiliateMetrics>('/affiliate/me/metrics', { email });
+}
+
 export async function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
   const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
     method: 'POST',
