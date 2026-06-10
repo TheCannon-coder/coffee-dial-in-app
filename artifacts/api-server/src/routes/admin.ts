@@ -48,6 +48,7 @@ const router = Router();
 // ── Auth middleware ────────────────────────────────────────────────────────────
 
 router.use((req, res, next) => {
+  if (!req.path.startsWith("/admin")) { next(); return; }
   const key = req.headers["x-admin-key"];
   const expected = process.env["ADMIN_KEY"];
   if (!expected) {

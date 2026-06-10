@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, usersTable, referralConversionsTable, affiliatesTable, commissionLedgerTable } from "@workspace/db";
+import { getStripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -157,6 +158,89 @@ router.post("/referral-code", async (req, res) => {
     res.json({ code });
   } catch (err) {
     logger.error({ err }, "referral-code error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// ── Payments ───────────────────────────────────────────────────────────────────
+
+router.post("/create-checkout", async (req, res) => {
+  const { email, plan } = req.body as { email?: string; plan?: "monthly" | "yearly" };
+  if (!email || !plan) {
+    res.status(400).json({ error: "email and plan required" });
+    return;
+  }
+
+  const priceId =
+    plan === "yearly"
+      ? process.env["STRIPE_PRICE_ID_YEARLY"]
+      : process.env["STRIPE_PRICE_ID_MONTHLY"];
+
+  if (!priceId) {
+    res.status(503).json({ error: "payment_not_configured" });
+    return;
+  }
+
+  try {
+    const stripe = getStripe();
+
+    let user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+    let customerId = user?.stripeCustomerId ?? null;
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email });
+      customerId = customer.id;
+      if (user) {
+        await db.update(usersTable).set({ stripeCustomerId: customerId }).where(eq(usersTable.id, user.id));
+      }
+    }
+
+    const domains = (process.env["REPLIT_DOMAINS"] ?? "localhost").split(",");
+    const baseUrl = `https://${domains[0]}`;
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ["card"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: "subscription",
+      success_url: `${baseUrl}/?checkout=success`,
+      cancel_url: `${baseUrl}/`,
+      metadata: { email },
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    logger.error({ err }, "create-checkout error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.post("/customer-portal", async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email) {
+    res.status(400).json({ error: "email required" });
+    return;
+  }
+
+  try {
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+    if (!user?.stripeCustomerId) {
+      res.status(404).json({ error: "no_subscription_found" });
+      return;
+    }
+
+    const stripe = getStripe();
+    const domains = (process.env["REPLIT_DOMAINS"] ?? "localhost").split(",");
+    const baseUrl = `https://${domains[0]}`;
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: baseUrl,
+    });
+
+    res.json({ url: portalSession.url });
+  } catch (err) {
+    logger.error({ err }, "customer-portal error");
     res.status(500).json({ error: "internal_error" });
   }
 });

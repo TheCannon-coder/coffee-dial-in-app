@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import privacyRouter from "./routes/privacy";
 import screenshotsRouter from "./routes/screenshots";
+import webhookRouter from "./routes/webhook";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -28,6 +29,11 @@ app.use(
   }),
 );
 app.use(cors());
+
+// Stripe webhook must be mounted BEFORE express.json() — it reads the raw body
+// itself for signature verification. All other routes get the parsed JSON body.
+app.use("/api", webhookRouter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
