@@ -213,6 +213,7 @@ export default function TastingScreen() {
           dose: params.dose,
           waterTemp: params.waterTemp,
           grinderNotes: params.grinderNotes,
+          method: params.method,
         }).then(() => getActiveRecommendations())
           .then(setGearItems)
           .catch(() => {});

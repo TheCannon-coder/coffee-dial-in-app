@@ -16,6 +16,7 @@ const router = Router();
  *    if the URL doesn't already contain a tag parameter.
  */
 const PRODUCTS: Record<string, { name: string; amazonUrl: string }> = {
+  // ── General / pour-over ──────────────────────────────────────────────────
   "timemore-black-mirror": {
     name: "Timemore Black Mirror Scale",
     amazonUrl: "https://www.amazon.com/dp/B079K4LS2X",
@@ -39,6 +40,29 @@ const PRODUCTS: Record<string, { name: string; amazonUrl: string }> = {
   "fellow-ode-gen2": {
     name: "Fellow Ode Brew Grinder Gen 2",
     amazonUrl: "https://www.amazon.com/dp/B0BBLZ5ZBP",
+  },
+  "hario-v60": {
+    name: "Hario V60 Plastic Dripper",
+    amazonUrl: "https://www.amazon.com/dp/B002IR1O3A",
+  },
+
+  // ── Espresso-specific ────────────────────────────────────────────────────
+  // Replace these URLs with your SiteStripe links from Amazon Associates
+  "acaia-lunar": {
+    name: "Acaia Lunar Espresso Scale",
+    amazonUrl: "https://www.amazon.com/dp/B07BMPKJVN",
+  },
+  "normcore-tamper": {
+    name: "Normcore 58.5mm Spring Tamper V4",
+    amazonUrl: "https://www.amazon.com/dp/B08MXX4ZSF",
+  },
+  "baratza-sette": {
+    name: "Baratza Sette 270 Espresso Grinder",
+    amazonUrl: "https://www.amazon.com/dp/B06X3WRSQF",
+  },
+  "puck-screen": {
+    name: "IMS Competition Shower Screen",
+    amazonUrl: "https://www.amazon.com/dp/B09GWTLTMH",
   },
 };
 
