@@ -31,7 +31,7 @@
 import { Router } from "express";
 import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
 import { usdCentsToEurCents, isEuMemberState } from "../lib/compliance-utils";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, gearProductsTable } from "@workspace/db";
 import {
   affiliatesTable,
   referralConversionsTable,
@@ -1409,6 +1409,256 @@ router.post("/admin/rates/:id/activate", async (req, res) => {
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "admin/rates activate error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// ── Gear catalogue admin ────────────────────────────────────────────────────────
+
+const GEAR_FORM_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dial In — Gear Catalogue Admin</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #FAF7F2; color: #2C1A0E; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  p.sub { color: #666; margin-top: 0; font-size: 0.9rem; }
+  label { display: block; font-weight: 600; margin-top: 16px; font-size: 0.875rem; }
+  input, textarea, select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; margin-top: 4px; background: #fff; }
+  textarea { min-height: 80px; resize: vertical; }
+  .hint { font-size: 0.8rem; color: #888; margin-top: 3px; }
+  button { margin-top: 24px; background: #2C1A0E; color: #FAF7F2; border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+  button:hover { background: #4a2e14; }
+  .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #155724; }
+  .error { background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #721c24; }
+  table { width: 100%; border-collapse: collapse; margin-top: 32px; font-size: 0.85rem; }
+  th { text-align: left; padding: 8px 10px; background: #2C1A0E; color: #FAF7F2; }
+  td { padding: 8px 10px; border-bottom: 1px solid #e0d8cf; }
+  tr:hover td { background: #f0ebe3; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .badge-active { background: #d4edda; color: #155724; }
+  .badge-inactive { background: #f8d7da; color: #721c24; }
+  .section { margin-top: 48px; border-top: 2px solid #2C1A0E; padding-top: 24px; }
+</style>
+</head>
+<body>
+<h1>☕ Gear Catalogue Admin</h1>
+<p class="sub">Add or update products. Protected — keep this URL private.</p>
+
+{{MESSAGE}}
+
+<div class="section">
+<h2 style="font-size:1.1rem;margin-bottom:4px">Add / Update Product</h2>
+<p class="sub">Existing slugs are updated; new slugs are created.</p>
+<form method="POST" action="/api/admin/gear">
+  <label>Slug (URL-safe, e.g. <code>acaia-lunar</code>)</label>
+  <input name="slug" required placeholder="acaia-lunar" pattern="[a-z0-9-]+" title="lowercase letters, numbers, hyphens only">
+
+  <label>Product Name</label>
+  <input name="name" required placeholder="Acaia Lunar Espresso Scale">
+
+  <label>Amazon URL (without affiliate tag)</label>
+  <input name="amazonUrl" required placeholder="https://www.amazon.com/dp/B07BMPKJVN" type="url">
+
+  <label>Price Label</label>
+  <input name="priceLabel" required placeholder="~$200">
+
+  <label>Brew Methods</label>
+  <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px">
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="espresso"> Espresso</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="general"> General (any)</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="pour_over"> Pour-over</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="v60"> V60</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="chemex"> Chemex</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="kalita"> Kalita</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="aeropress"> AeroPress</label>
+    <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin-top:0"><input type="checkbox" name="brewMethods" value="french_press"> French Press</label>
+  </div>
+
+  <label>Experience Level</label>
+  <select name="experienceLevel">
+    <option value="beginner">Beginner (0–9 brews or missing basic data)</option>
+    <option value="intermediate">Intermediate (10+ brews, tracking well)</option>
+    <option value="advanced">Advanced (30+ brews, no gaps)</option>
+  </select>
+  <div class="hint">Beginner products show to everyone; intermediate to 10+ brew users; advanced to 30+ brew users.</div>
+
+  <label>Description Hint (for AI — explain when to recommend this)</label>
+  <textarea name="descriptionHint" required placeholder="Essential for espresso users not logging dose in grams. Accurate to 0.1g, fits under low-clearance machines."></textarea>
+  <div class="hint">This is not shown to users — it guides the AI on when and how to pitch this product.</div>
+
+  <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:normal">
+    <input type="checkbox" name="active" value="true" checked style="width:auto">
+    Active (visible to users)
+  </label>
+
+  <button type="submit">Save Product</button>
+</form>
+</div>
+
+<div class="section">
+<h2 style="font-size:1.1rem;margin-bottom:16px">Current Catalogue</h2>
+{{TABLE}}
+</div>
+</body>
+</html>`;
+
+function buildProductTable(
+  products: Array<{
+    slug: string;
+    name: string;
+    priceLabel: string;
+    experienceLevel: string;
+    brewMethods: string[];
+    active: boolean;
+  }>,
+): string {
+  if (products.length === 0) return "<p>No products yet.</p>";
+  const rows = products
+    .map(
+      (p) => `<tr>
+      <td>${p.slug}</td>
+      <td>${p.name}</td>
+      <td>${p.priceLabel}</td>
+      <td>${p.experienceLevel}</td>
+      <td>${p.brewMethods.join(", ")}</td>
+      <td><span class="badge ${p.active ? "badge-active" : "badge-inactive"}">${p.active ? "active" : "inactive"}</span></td>
+    </tr>`,
+    )
+    .join("");
+  return `<table>
+    <thead><tr><th>Slug</th><th>Name</th><th>Price</th><th>Level</th><th>Methods</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+router.get("/admin/gear", async (req, res) => {
+  try {
+    const products = await db
+      .select({
+        slug: gearProductsTable.slug,
+        name: gearProductsTable.name,
+        priceLabel: gearProductsTable.priceLabel,
+        experienceLevel: gearProductsTable.experienceLevel,
+        brewMethods: gearProductsTable.brewMethods,
+        active: gearProductsTable.active,
+      })
+      .from(gearProductsTable)
+      .orderBy(gearProductsTable.createdAt);
+
+    const html = GEAR_FORM_HTML.replace("{{MESSAGE}}", "").replace(
+      "{{TABLE}}",
+      buildProductTable(products),
+    );
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
+  } catch (err) {
+    logger.error({ err }, "admin/gear GET error");
+    res.status(500).send("Internal error");
+  }
+});
+
+router.post("/admin/gear", async (req, res) => {
+  const body = req.body as Record<string, string | string[] | undefined>;
+  const slug = (body["slug"] as string | undefined)?.trim().toLowerCase();
+  const name = (body["name"] as string | undefined)?.trim();
+  const amazonUrl = (body["amazonUrl"] as string | undefined)?.trim();
+  const priceLabel = (body["priceLabel"] as string | undefined)?.trim();
+  const descriptionHint = (body["descriptionHint"] as string | undefined)?.trim();
+  const experienceLevel = (body["experienceLevel"] as string | undefined) ?? "beginner";
+  const active = body["active"] === "true";
+
+  const rawMethods = body["brewMethods"];
+  const brewMethods: string[] = Array.isArray(rawMethods)
+    ? rawMethods
+    : rawMethods
+      ? [rawMethods]
+      : [];
+
+  let message = "";
+
+  if (!slug || !name || !amazonUrl || !priceLabel || !descriptionHint || brewMethods.length === 0) {
+    message = '<div class="error">All fields are required, and at least one brew method must be selected.</div>';
+  } else {
+    try {
+      await db
+        .insert(gearProductsTable)
+        .values({ slug, name, amazonUrl, priceLabel, brewMethods, experienceLevel, descriptionHint, active })
+        .onConflictDoUpdate({
+          target: gearProductsTable.slug,
+          set: { name, amazonUrl, priceLabel, brewMethods, experienceLevel, descriptionHint, active },
+        });
+      message = `<div class="success">✓ Product "<strong>${name}</strong>" saved successfully.</div>`;
+    } catch (err) {
+      logger.error({ err }, "admin/gear POST error");
+      message = '<div class="error">Database error — check server logs.</div>';
+    }
+  }
+
+  const products = await db
+    .select({
+      slug: gearProductsTable.slug,
+      name: gearProductsTable.name,
+      priceLabel: gearProductsTable.priceLabel,
+      experienceLevel: gearProductsTable.experienceLevel,
+      brewMethods: gearProductsTable.brewMethods,
+      active: gearProductsTable.active,
+    })
+    .from(gearProductsTable)
+    .orderBy(gearProductsTable.createdAt)
+    .catch(() => []);
+
+  const html = GEAR_FORM_HTML.replace("{{MESSAGE}}", message).replace(
+    "{{TABLE}}",
+    buildProductTable(products),
+  );
+  res.setHeader("Content-Type", "text/html");
+  res.send(html);
+});
+
+router.post("/admin/gear/import", async (req, res) => {
+  const products = req.body as Array<{
+    slug: string;
+    name: string;
+    amazonUrl: string;
+    priceLabel: string;
+    brewMethods: string[];
+    experienceLevel?: string;
+    descriptionHint: string;
+    active?: boolean;
+  }>;
+
+  if (!Array.isArray(products) || products.length === 0) {
+    res.status(400).json({ error: "body must be a non-empty array of products" });
+    return;
+  }
+
+  try {
+    const results = await Promise.all(
+      products.map(async (p) => {
+        const row = {
+          slug: p.slug,
+          name: p.name,
+          amazonUrl: p.amazonUrl,
+          priceLabel: p.priceLabel,
+          brewMethods: p.brewMethods ?? [],
+          experienceLevel: p.experienceLevel ?? "beginner",
+          descriptionHint: p.descriptionHint,
+          active: p.active ?? true,
+        };
+        await db
+          .insert(gearProductsTable)
+          .values(row)
+          .onConflictDoUpdate({ target: gearProductsTable.slug, set: row });
+        return p.slug;
+      }),
+    );
+
+    res.json({ upserted: results.length, slugs: results });
+  } catch (err) {
+    logger.error({ err }, "admin/gear/import error");
     res.status(500).json({ error: "internal_error" });
   }
 });

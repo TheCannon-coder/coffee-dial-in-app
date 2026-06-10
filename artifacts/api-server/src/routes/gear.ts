@@ -1,70 +1,59 @@
 import { createHash } from "crypto";
 import { Router } from "express";
-import { db, gearClicksTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, gearClicksTable, gearProductsTable } from "@workspace/db";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
 
 const router = Router();
 
-/**
- * Product catalogue.
- *
- * HOW TO UPDATE THESE LINKS:
- * 1. Go to your Amazon Associates dashboard (affiliate-program.amazon.com)
- * 2. Search for each product and use SiteStripe to generate a link
- * 3. Replace the `amazonUrl` values below with your generated links (they include your tag)
- * 4. Set AMAZON_AFFILIATE_TAG in Replit Secrets — this gets appended automatically
- *    if the URL doesn't already contain a tag parameter.
- */
-const PRODUCTS: Record<string, { name: string; amazonUrl: string }> = {
-  // ── General / pour-over ──────────────────────────────────────────────────
-  "timemore-black-mirror": {
-    name: "Timemore Black Mirror Scale",
-    amazonUrl: "https://www.amazon.com/dp/B079K4LS2X",
-  },
-  "acaia-pearl": {
-    name: "Acaia Pearl Scale",
-    amazonUrl: "https://www.amazon.com/dp/B00U7ESGIA",
-  },
-  "fellow-stagg-ekg": {
-    name: "Fellow Stagg EKG Electric Kettle",
-    amazonUrl: "https://www.amazon.com/dp/B07GGRJ3VQ",
-  },
-  "bonavita-variable": {
-    name: "Bonavita 1L Variable Temperature Kettle",
-    amazonUrl: "https://www.amazon.com/dp/B005YR0F40",
-  },
-  "timemore-c3-pro": {
-    name: "Timemore C3 Pro Hand Grinder",
-    amazonUrl: "https://www.amazon.com/dp/B08NGZZJWB",
-  },
-  "fellow-ode-gen2": {
-    name: "Fellow Ode Brew Grinder Gen 2",
-    amazonUrl: "https://www.amazon.com/dp/B0BBLZ5ZBP",
-  },
-  "hario-v60": {
-    name: "Hario V60 Plastic Dripper",
-    amazonUrl: "https://www.amazon.com/dp/B002IR1O3A",
-  },
+// ── Experience level scorer ───────────────────────────────────────────────────
 
-  // ── Espresso-specific ────────────────────────────────────────────────────
-  // Replace these URLs with your SiteStripe links from Amazon Associates
-  "acaia-lunar": {
-    name: "Acaia Lunar Espresso Scale",
-    amazonUrl: "https://www.amazon.com/dp/B07BMPKJVN",
-  },
-  "normcore-tamper": {
-    name: "Normcore 58.5mm Spring Tamper V4",
-    amazonUrl: "https://www.amazon.com/dp/B08MXX4ZSF",
-  },
-  "baratza-sette": {
-    name: "Baratza Sette 270 Espresso Grinder",
-    amazonUrl: "https://www.amazon.com/dp/B06X3WRSQF",
-  },
-  "puck-screen": {
-    name: "IMS Competition Shower Screen",
-    amazonUrl: "https://www.amazon.com/dp/B09GWTLTMH",
-  },
+type ExperienceLevel = "beginner" | "intermediate" | "advanced";
+
+function scoreExperienceLevel(params: {
+  missedDose: number;
+  missedTemp: number;
+  missedGrinder: number;
+  brewCount: number;
+}): ExperienceLevel {
+  const { missedDose, missedTemp, missedGrinder, brewCount } = params;
+  const totalMisses = missedDose + missedTemp + missedGrinder;
+  if (brewCount >= 30 && totalMisses <= 1) return "advanced";
+  if (brewCount >= 10 && totalMisses <= 3) return "intermediate";
+  return "beginner";
+}
+
+// ── GearItem type (matches gear-tracker.ts) ───────────────────────────────────
+
+type GearItem = {
+  id: string;
+  emoji: string;
+  missingLabel: string;
+  missCount: number;
+  limitingAdvice: string;
+  solutionText: string;
+  productName: string;
+  productPrice: string;
+  affiliateUrl: string;
 };
+
+type AiPick = {
+  slug: string;
+  missingLabel: string;
+  limitingAdvice: string;
+  solutionText: string;
+};
+
+function slugToEmoji(slug: string): string {
+  if (slug.includes("scale") || slug.includes("lunar") || slug.includes("mirror") || slug.includes("pearl")) return "⚖️";
+  if (slug.includes("kettle")) return "🌡️";
+  if (slug.includes("grinder") || slug.includes("sette") || slug.includes("c3") || slug.includes("ode")) return "⚙️";
+  if (slug.includes("tamper")) return "🔧";
+  if (slug.includes("screen")) return "🔩";
+  if (slug.includes("v60") || slug.includes("hario")) return "☕";
+  return "🛠️";
+}
 
 function buildAffiliateUrl(baseUrl: string): string {
   const tag = process.env.AMAZON_AFFILIATE_TAG;
@@ -82,17 +71,140 @@ function hashIp(ip: string): string {
   return createHash("sha256").update(ip + (process.env.SESSION_SECRET ?? "")).digest("hex").slice(0, 16);
 }
 
-/**
- * GET /api/gear/stats
- * Returns click counts per product. Must be declared before /:productId.
- */
+// ── GET /api/gear/recommend ───────────────────────────────────────────────────
+
+router.get("/gear/recommend", async (req, res) => {
+  if (!process.env.AMAZON_AFFILIATE_TAG) {
+    res.json({ items: [] });
+    return;
+  }
+
+  const method = (req.query["method"] as string | undefined) ?? "general";
+  const missedDose = Number(req.query["missedDose"] ?? 0);
+  const missedTemp = Number(req.query["missedTemp"] ?? 0);
+  const missedGrinder = Number(req.query["missedGrinder"] ?? 0);
+  const brewCount = Number(req.query["brewCount"] ?? 0);
+
+  const experienceLevel = scoreExperienceLevel({ missedDose, missedTemp, missedGrinder, brewCount });
+  const isEspresso = method === "espresso";
+  const levelOrder: Record<ExperienceLevel, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+  const userLevel = levelOrder[experienceLevel];
+
+  try {
+    const allProducts = await db
+      .select()
+      .from(gearProductsTable)
+      .where(eq(gearProductsTable.active, true));
+
+    const candidates = allProducts.filter((p) => {
+      const methodMatch = isEspresso
+        ? p.brewMethods.includes("espresso")
+        : !p.brewMethods.includes("espresso") || p.brewMethods.includes("general");
+      const levelMatch =
+        (levelOrder[p.experienceLevel as ExperienceLevel] ?? 0) <= userLevel + 1;
+      return methodMatch && levelMatch;
+    });
+
+    if (candidates.length === 0) {
+      res.json({ items: [] });
+      return;
+    }
+
+    const missContext: string[] = [];
+    if (missedDose >= 3) missContext.push(`dose skipped ${missedDose} times (no scale)`);
+    if (missedTemp >= 3) missContext.push(`water temperature skipped ${missedTemp} times (no temp-controlled kettle)`);
+    if (missedGrinder >= 3) missContext.push(`grinder setting skipped ${missedGrinder} times (no grinder with numbered settings)`);
+
+    const missContextStr = missContext.length > 0
+      ? `The user has gaps: ${missContext.join("; ")}.`
+      : "The user is logging all fields consistently.";
+
+    const catalogueText = candidates
+      .map((p) => `- slug: ${p.slug} | name: ${p.name} | price: ${p.priceLabel} | hint: ${p.descriptionHint}`)
+      .join("\n");
+
+    const systemPrompt = `You are a curious coffee coach — not a salesperson. You suggest gear only when it directly addresses a gap in the user's brewing practice. Your tone is warm, practical, and honest.
+
+CRITICAL RULES:
+1. Use possibility language ONLY: "might", "could", "may help", "worth considering". NEVER use "will", "definitely", "guaranteed", or any promise of improvement.
+2. Write like a thoughtful barista friend, not a product marketer.
+3. Keep each pitch to 1–2 sentences. Do not over-explain.
+4. Only pick products that directly address a logged gap (missed dose, temp, or grinder). If no clear gap exists, return an empty array.
+5. Pick 1 product maximum; pick 2 only if the user has two distinct gaps needing different tools.`;
+
+    const userPrompt = `User profile:
+- Brew method: ${method}
+- Experience level: ${experienceLevel}
+- Brew count: ${brewCount}
+- ${missContextStr}
+
+Available products:
+${catalogueText}
+
+Return a JSON array of 0–2 objects with these exact keys:
+- "slug": product slug from the catalogue above
+- "missingLabel": short gap label (e.g. "dose in grams", "water temperature", "grinder setting")
+- "limitingAdvice": 1–2 sentences on the gap and why it limits coaching — using possibility language
+- "solutionText": 1–2 sentences on the product and why it might help — using possibility language
+
+Return ONLY valid JSON. No markdown. No explanation outside the array.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "[]";
+
+    let picks: AiPick[] = [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) picks = parsed.slice(0, 2);
+    } catch {
+      req.log.warn({ raw }, "gear/recommend: AI returned non-JSON");
+      res.json({ items: [] });
+      return;
+    }
+
+    const slugMap = new Map(candidates.map((p) => [p.slug, p]));
+
+    const items: GearItem[] = picks
+      .map((pick) => {
+        const product = slugMap.get(pick.slug);
+        if (!product) return null;
+        return {
+          id: pick.slug,
+          emoji: slugToEmoji(pick.slug),
+          missingLabel: pick.missingLabel,
+          missCount: 0,
+          limitingAdvice: pick.limitingAdvice,
+          solutionText: pick.solutionText,
+          productName: product.name,
+          productPrice: product.priceLabel,
+          affiliateUrl: `https://www.coffeebrew.coach/api/gear/${product.slug}`,
+        } satisfies GearItem;
+      })
+      .filter((item): item is GearItem => item !== null);
+
+    res.json({ items });
+  } catch (err) {
+    req.log.error({ err }, "gear/recommend: failed");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// ── GET /api/gear/stats ───────────────────────────────────────────────────────
+
 router.get("/gear/stats", async (req, res) => {
   try {
     const rows = await db.execute<{ product_id: string; product_name: string; clicks: string }>(
       `SELECT product_id, product_name, COUNT(*) AS clicks
        FROM gear_clicks
        GROUP BY product_id, product_name
-       ORDER BY clicks DESC`
+       ORDER BY clicks DESC`,
     );
 
     res.json({
@@ -108,35 +220,36 @@ router.get("/gear/stats", async (req, res) => {
   }
 });
 
-/**
- * GET /api/gear/:productId
- * Records the click and redirects to the Amazon affiliate URL.
- */
+// ── GET /api/gear/:productId — redirect + click tracking ─────────────────────
+
 router.get("/gear/:productId", async (req, res) => {
   const { productId } = req.params;
-  const product = PRODUCTS[productId];
 
-  if (!product) {
+  const dbProduct = await db.query.gearProductsTable
+    .findFirst({ where: eq(gearProductsTable.slug, productId) })
+    .catch(() => null);
+
+  if (!dbProduct) {
     res.status(404).json({ error: "Product not found" });
     return;
   }
 
-  const affiliateUrl = buildAffiliateUrl(product.amazonUrl);
+  const affiliateUrl = buildAffiliateUrl(dbProduct.amazonUrl);
 
-  // Record click (fire and forget — don't block the redirect)
-  const ip = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
-    ?? req.socket.remoteAddress
-    ?? "unknown";
+  const ip =
+    (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ??
+    req.socket.remoteAddress ??
+    "unknown";
 
   db.insert(gearClicksTable)
     .values({
       productId,
-      productName: product.name,
+      productName: dbProduct.name,
       ipHash: hashIp(ip),
       userAgent: req.headers["user-agent"] ?? null,
     })
     .then(() => {
-      req.log.info({ productId, productName: product.name }, "gear click recorded");
+      req.log.info({ productId, productName: dbProduct.name }, "gear click recorded");
     })
     .catch((err: unknown) => {
       req.log.error({ err, productId }, "failed to record gear click");
