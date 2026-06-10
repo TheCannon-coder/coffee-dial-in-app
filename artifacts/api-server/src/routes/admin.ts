@@ -33,6 +33,7 @@ import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
 import { usdCentsToEurCents, isEuMemberState } from "../lib/compliance-utils";
 import { db, usersTable, gearProductsTable, GEAR_EXPERIENCE_LEVELS } from "@workspace/db";
 import { invalidateGearRecommendCache } from "../lib/gear-recommend-cache";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   affiliatesTable,
   referralConversionsTable,
@@ -1451,7 +1452,7 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dial In — Gear Catalogue Admin</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #FAF7F2; color: #2C1A0E; }
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #FAF7F2; color: #2C1A0E; }
   h1 { font-size: 1.5rem; margin-bottom: 4px; }
   p.sub { color: #666; margin-top: 0; font-size: 0.9rem; }
   label { display: block; font-weight: 600; margin-top: 16px; font-size: 0.875rem; }
@@ -1460,16 +1461,26 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
   .hint { font-size: 0.8rem; color: #888; margin-top: 3px; }
   button { margin-top: 24px; background: #2C1A0E; color: #FAF7F2; border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; cursor: pointer; }
   button:hover { background: #4a2e14; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  .btn-ai { background: #5b3a29; }
+  .btn-ai:hover { background: #7a4f38; }
+  .btn-sm { padding: 6px 14px; font-size: 0.85rem; margin-top: 0; }
   .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #155724; }
   .error { background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #721c24; }
-  table { width: 100%; border-collapse: collapse; margin-top: 32px; font-size: 0.85rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.85rem; }
   th { text-align: left; padding: 8px 10px; background: #2C1A0E; color: #FAF7F2; }
-  td { padding: 8px 10px; border-bottom: 1px solid #e0d8cf; }
+  td { padding: 8px 10px; border-bottom: 1px solid #e0d8cf; vertical-align: top; }
   tr:hover td { background: #f0ebe3; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
   .badge-active { background: #d4edda; color: #155724; }
   .badge-inactive { background: #f8d7da; color: #721c24; }
   .section { margin-top: 48px; border-top: 2px solid #2C1A0E; padding-top: 24px; }
+  #generate-status { margin-top: 16px; padding: 12px 16px; border-radius: 6px; background: #fff3cd; border: 1px solid #ffc107; color: #856404; display: none; }
+  #preview-section { display: none; margin-top: 24px; }
+  #preview-table-wrap { max-height: 420px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; }
+  #preview-table-wrap table { margin-top: 0; }
+  .asin-link { font-size: 0.8rem; color: #5b3a29; }
+  .methods-cell { font-size: 0.75rem; color: #666; }
 </style>
 </head>
 <body>
@@ -1478,6 +1489,140 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
 
 {{MESSAGE}}
 
+<!-- ── AI Catalogue Generator ──────────────────────────────────────────── -->
+<div class="section">
+<h2 style="font-size:1.1rem;margin-bottom:4px">🤖 Generate Catalogue with AI</h2>
+<p class="sub">GPT generates real coffee gear with Amazon ASINs across all brew methods. Review before importing — nothing is saved until you click Import.</p>
+
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px">
+  <label style="margin:0;font-weight:600;font-size:0.875rem">Focus area (optional)</label>
+  <select id="gen-focus" style="width:auto;margin:0;font-size:0.9rem">
+    <option value="all">All brew methods (broadest catalogue)</option>
+    <option value="espresso">Espresso only</option>
+    <option value="pour_over">Pour-over / V60 / Chemex</option>
+    <option value="aeropress">AeroPress</option>
+    <option value="french_press">French Press</option>
+    <option value="cold_brew">Cold Brew</option>
+  </select>
+  <button class="btn-ai" id="btn-generate" onclick="runGenerate()" style="margin-top:0">Generate Products</button>
+</div>
+
+<div id="generate-status"></div>
+
+<div id="preview-section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <strong id="preview-count"></strong>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ai btn-sm" onclick="selectAll(true)" style="margin-top:0">Select all</button>
+      <button class="btn-sm" onclick="selectAll(false)" style="background:#888;margin-top:0">Deselect all</button>
+      <button class="btn-sm" id="btn-import" onclick="importSelected()" style="background:#155724;margin-top:0">Import selected →</button>
+    </div>
+  </div>
+  <div id="preview-table-wrap"></div>
+  <p class="hint" style="margin-top:8px">Verify Amazon links before importing — GPT occasionally produces an ASIN that has been delisted. Selected products that already exist in your catalogue will be updated.</p>
+</div>
+</div>
+
+<script>
+let generatedProducts = [];
+
+async function runGenerate() {
+  const focus = document.getElementById('gen-focus').value;
+  const btn = document.getElementById('btn-generate');
+  const status = document.getElementById('generate-status');
+  const preview = document.getElementById('preview-section');
+
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  status.style.display = 'block';
+  status.textContent = 'Asking AI to generate coffee gear suggestions — this takes ~15 seconds…';
+  preview.style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/admin/gear/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ focus }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: resp.statusText }));
+      throw new Error(err.error || resp.statusText);
+    }
+    const data = await resp.json();
+    generatedProducts = data.products;
+    renderPreview(generatedProducts);
+    status.style.display = 'none';
+    preview.style.display = 'block';
+  } catch (e) {
+    status.style.background = '#f8d7da';
+    status.style.borderColor = '#f5c6cb';
+    status.style.color = '#721c24';
+    status.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Products';
+  }
+}
+
+function renderPreview(products) {
+  document.getElementById('preview-count').textContent = products.length + ' products generated — select which to import:';
+  const rows = products.map((p, i) => {
+    const asin = p.amazonUrl.match(/\\/dp\\/([A-Z0-9]{10})/)?.[1] ?? '?';
+    const methods = p.brewMethods.join(', ');
+    return \`<tr>
+      <td><input type="checkbox" id="chk-\${i}" checked></td>
+      <td><strong>\${escHtml(p.name)}</strong><br><span class="methods-cell">\${escHtml(methods)}</span></td>
+      <td>\${escHtml(p.priceLabel)}</td>
+      <td>\${escHtml(p.experienceLevel)}</td>
+      <td><a class="asin-link" href="\${escHtml(p.amazonUrl)}" target="_blank">B\${escHtml(asin.slice(1))}</a></td>
+    </tr>\`;
+  }).join('');
+  document.getElementById('preview-table-wrap').innerHTML =
+    '<table><thead><tr><th style="width:32px"></th><th>Product</th><th>Price</th><th>Level</th><th>ASIN</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selectAll(checked) {
+  generatedProducts.forEach((_, i) => {
+    const chk = document.getElementById('chk-' + i);
+    if (chk) chk.checked = checked;
+  });
+}
+
+async function importSelected() {
+  const selected = generatedProducts.filter((_, i) => {
+    const chk = document.getElementById('chk-' + i);
+    return chk && chk.checked;
+  });
+  if (selected.length === 0) { alert('Select at least one product.'); return; }
+
+  const btn = document.getElementById('btn-import');
+  btn.disabled = true;
+  btn.textContent = 'Importing…';
+
+  try {
+    const resp = await fetch('/api/admin/gear/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(selected),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || resp.statusText);
+    alert('✓ Imported ' + data.upserted + ' products successfully! Reloading page…');
+    location.reload();
+  } catch (e) {
+    alert('Import failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Import selected →';
+  }
+}
+</script>
+
+<!-- ── Manual Add / Update ─────────────────────────────────────────────── -->
 <div class="section">
 <h2 style="font-size:1.1rem;margin-bottom:4px">Add / Update Product</h2>
 <p class="sub">Existing slugs are updated; new slugs are created.</p>
@@ -1649,6 +1794,122 @@ router.post("/admin/gear", async (req, res) => {
   );
   res.setHeader("Content-Type", "text/html");
   res.send(html);
+});
+
+// ── AI catalogue generator ─────────────────────────────────────────────────
+
+const BREW_METHOD_LABELS: Record<string, string> = {
+  all: "espresso, pour-over (V60, Chemex, Kalita), AeroPress, French press, Moka pot, cold brew, and general",
+  espresso: "espresso only",
+  pour_over: "pour-over methods (V60, Chemex, Kalita Wave)",
+  aeropress: "AeroPress only",
+  french_press: "French press only",
+  cold_brew: "cold brew only",
+};
+
+interface GeneratedProduct {
+  slug: string;
+  name: string;
+  amazonUrl: string;
+  priceLabel: string;
+  brewMethods: string[];
+  experienceLevel: "beginner" | "intermediate" | "advanced";
+  descriptionHint: string;
+  active: boolean;
+}
+
+router.post("/admin/gear/generate", async (req, res) => {
+  const focus = (req.body as { focus?: string }).focus ?? "all";
+  const methodLabel = BREW_METHOD_LABELS[focus] ?? BREW_METHOD_LABELS["all"]!;
+
+  // Fetch existing slugs so GPT can avoid duplicates
+  const existingRows = await db
+    .select({ slug: gearProductsTable.slug })
+    .from(gearProductsTable)
+    .catch(() => [] as { slug: string }[]);
+  const existingSlugs = existingRows.map((r) => r.slug).join(", ") || "none";
+
+  const systemPrompt = `You are a coffee gear expert and Amazon affiliate specialist.
+Your job is to produce a JSON array of real, currently-sold coffee equipment products available on Amazon.com.
+
+Rules:
+- Only include products that are genuinely sold on Amazon.com and have a real ASIN (10-character code starting with B or a digit).
+- The amazonUrl must be exactly "https://www.amazon.com/dp/<ASIN>" — no query strings, no affiliate tags.
+- Every product must have a unique slug: lowercase, hyphens only, no spaces (e.g. "baratza-encore-esp").
+- brewMethods must be an array of values from: espresso, general, pour_over, v60, chemex, kalita, aeropress, french_press, cold_brew, moka_pot.
+  Use "general" for gear that benefits all brew styles (scales, storage, water filters, etc.).
+- experienceLevel: "beginner" (essentials anyone should own), "intermediate" (meaningful upgrade), "advanced" (high-end refinement).
+- descriptionHint: 1–2 sentences explaining exactly when the AI coaching system should recommend this product (what user gap it fills). Not shown to users.
+- priceLabel: approximate current retail price as a string like "~$79" or "~$1,200".
+- active: true for all.
+- Do NOT include these already-catalogued slugs: ${existingSlugs}.
+- Return ONLY a valid JSON array. No markdown fences, no commentary.`;
+
+  const userPrompt = `Generate 30 coffee gear products for ${methodLabel}.
+
+Cover a spread of:
+- Grinders (hand and electric, budget to premium)
+- Scales (general and espresso-specific)
+- Kettles (gooseneck, variable temperature)
+- Brewers/drippers (${focus === "all" ? "V60, Chemex, AeroPress, French press, Moka pot, cold brew" : methodLabel})
+- Espresso accessories (tampers, distribution tools, puck screens, milk thermometers) ${focus === "espresso" || focus === "all" ? "" : "— skip these"}
+- Grinder cleaning / maintenance tools
+- Coffee storage (airtight canisters, bean vaults)
+- Water quality (filters, TDS meters)
+- Refractometers and extraction meters (intermediate/advanced)
+
+Spread experience levels: ~60% beginner, ~30% intermediate, ~10% advanced.
+For each product include all brew methods it meaningfully serves.`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "[]";
+    // Strip any accidental markdown fences
+    const json = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    let products: GeneratedProduct[];
+    try {
+      products = JSON.parse(json);
+    } catch {
+      logger.error({ raw }, "admin/gear/generate: GPT returned invalid JSON");
+      res.status(502).json({ error: "AI returned invalid JSON — try again" });
+      return;
+    }
+
+    if (!Array.isArray(products)) {
+      res.status(502).json({ error: "AI response was not an array — try again" });
+      return;
+    }
+
+    // Sanitise: enforce enum values, required fields
+    const clean = products
+      .filter((p) => p.slug && p.name && p.amazonUrl && p.priceLabel && Array.isArray(p.brewMethods))
+      .map((p) => ({
+        slug: String(p.slug).toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-"),
+        name: String(p.name),
+        amazonUrl: String(p.amazonUrl),
+        priceLabel: String(p.priceLabel),
+        brewMethods: (p.brewMethods as string[]).filter(Boolean),
+        experienceLevel: (["beginner", "intermediate", "advanced"] as const).includes(p.experienceLevel)
+          ? p.experienceLevel
+          : "beginner" as const,
+        descriptionHint: String(p.descriptionHint ?? ""),
+        active: true,
+      }));
+
+    logger.info({ count: clean.length, focus }, "admin/gear/generate: AI catalogue generated");
+    res.json({ products: clean });
+  } catch (err) {
+    logger.error({ err }, "admin/gear/generate: OpenAI error");
+    res.status(502).json({ error: "AI request failed — check server logs" });
+  }
 });
 
 router.post("/admin/gear/import", async (req, res) => {
