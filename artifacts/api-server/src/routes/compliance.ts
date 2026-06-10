@@ -133,6 +133,21 @@ router.post("/affiliate/tax-form", async (req: Request, res: Response) => {
     if (!user) { res.status(404).json({ error: "user_not_found" }); return; }
     if (!affiliate) { res.status(404).json({ error: "not_an_affiliate" }); return; }
 
+    // Data minimization: Stripe Connect already collected W-9/W-8BEN, bank
+    // details, and identity during onboarding. Accepting a duplicate manual
+    // form would create a second encrypted copy of SSN/EIN/ABN with no legal
+    // benefit and unnecessary exposure risk. Reject it here.
+    if (affiliate.connectOnboardingComplete) {
+      res.status(409).json({
+        error: "tax_form_not_required",
+        message:
+          "Your tax information was collected by Stripe during Connect onboarding. " +
+          "You do not need to submit a separate form. " +
+          "FTC disclosure and GDPR consent (if applicable) are submitted independently.",
+      });
+      return;
+    }
+
     const country = (affiliate.country ?? "US").toUpperCase();
     const formType = getRequiredTaxForm(country);
 

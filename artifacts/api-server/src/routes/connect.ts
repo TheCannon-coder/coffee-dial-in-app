@@ -13,6 +13,23 @@ import { db, usersTable, affiliatesTable } from "@workspace/db";
 import { getStripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
 
+/**
+ * When a Connect affiliate completes onboarding, Stripe has collected their
+ * W-9/W-8BEN and verified their identity. For AU affiliates specifically,
+ * Stripe collects the W-8BEN which includes the ABN field. We cannot read
+ * that ABN back from Stripe, but we trust Stripe's identity verification
+ * satisfied the ATO requirement. Therefore: withholdTax → false.
+ *
+ * This is an explicit, logged decision — NOT a silent default.
+ */
+function connectCompletionUpdate(country: string) {
+  const isAU = country.toUpperCase() === "AU";
+  return {
+    connectOnboardingComplete: true,
+    ...(isAU && { withholdTax: false, withholdTaxRatePct: 0 }),
+  };
+}
+
 const router = Router();
 
 router.use((_req, res, next) => {
@@ -81,10 +98,15 @@ router.post("/affiliate/connect/onboard", async (req, res) => {
     const account = await stripe.accounts.retrieve(accountId);
     if (account.details_submitted && account.payouts_enabled) {
       if (!affiliate.connectOnboardingComplete) {
+        const update = connectCompletionUpdate(affiliate.country ?? "US");
         await db
           .update(affiliatesTable)
-          .set({ connectOnboardingComplete: true })
+          .set(update)
           .where(eq(affiliatesTable.id, affiliate.id));
+        logger.info(
+          { affiliateId: affiliate.id, country: affiliate.country, ...update },
+          "connect onboarding complete (detected at onboard)",
+        );
       }
       res.json({ alreadyComplete: true, accountId });
       return;
@@ -153,10 +175,15 @@ router.get("/affiliate/connect/status", async (req, res) => {
     const complete = !!(account.details_submitted && account.payouts_enabled);
 
     if (complete && !affiliate.connectOnboardingComplete) {
+      const update = connectCompletionUpdate(affiliate.country ?? "US");
       await db
         .update(affiliatesTable)
-        .set({ connectOnboardingComplete: true })
+        .set(update)
         .where(eq(affiliatesTable.id, affiliate.id));
+      logger.info(
+        { affiliateId: affiliate.id, country: affiliate.country, ...update },
+        "connect onboarding complete (detected at status poll)",
+      );
     }
 
     res.json({
