@@ -92,7 +92,6 @@ export const referralConversionsTable = pgTable("referral_conversions", {
     .notNull()
     .references(() => usersTable.id),
   referredUserId: integer("referred_user_id").references(() => usersTable.id),
-  referredEmail: text("referred_email"),
   planType: text("plan_type"), // monthly | annual | lifetime (null until subscribed)
   stripeSubscriptionId: text("stripe_subscription_id"),
   isSubscriptionActive: boolean("is_subscription_active")

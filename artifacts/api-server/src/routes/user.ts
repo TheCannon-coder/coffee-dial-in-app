@@ -62,7 +62,6 @@ router.post("/user", async (req, res) => {
           referralCode: usedCode,
           referrerUserId: referrer.id,
           referredUserId: user.id,
-          referredEmail: email,
           isSubscriptionActive: false,
         });
       }
