@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { eq, or } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, usersTable, referralConversionsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -18,7 +18,10 @@ function makeReferralCode(): string {
 }
 
 router.post("/user", async (req, res) => {
-  const { email } = req.body as { email?: string };
+  const { email, referralCode: usedCode } = req.body as {
+    email?: string;
+    referralCode?: string;
+  };
   if (!email) {
     res.status(400).json({ error: "email required" });
     return;
@@ -28,17 +31,41 @@ router.post("/user", async (req, res) => {
 
   try {
     let user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+    const isNewUser = !user;
 
     if (!user) {
       const referralCode = makeReferralCode();
       const [created] = await db
         .insert(usersTable)
-        .values({ email, isPro: false, usesThisMonth: 0, monthKey, referralCode })
+        .values({
+          email,
+          isPro: false,
+          usesThisMonth: 0,
+          monthKey,
+          referralCode,
+          referredByCode: usedCode ?? null,
+        })
         .returning();
       user = created;
     } else if (user.monthKey !== monthKey) {
       await db.update(usersTable).set({ usesThisMonth: 0, monthKey }).where(eq(usersTable.id, user.id));
       user = { ...user, usesThisMonth: 0, monthKey };
+    }
+
+    // Record referral conversion for new users that came via a referral code
+    if (isNewUser && usedCode) {
+      const referrer = await db.query.usersTable.findFirst({
+        where: eq(usersTable.referralCode, usedCode),
+      });
+      if (referrer && referrer.id !== user.id) {
+        await db.insert(referralConversionsTable).values({
+          referralCode: usedCode,
+          referrerUserId: referrer.id,
+          referredUserId: user.id,
+          referredEmail: email,
+          isSubscriptionActive: false,
+        });
+      }
     }
 
     res.json({

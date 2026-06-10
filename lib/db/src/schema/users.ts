@@ -12,6 +12,7 @@ export const usersTable = pgTable("users", {
   referralCode: text("referral_code").unique(),
   stripeCustomerId: text("stripe_customer_id"),
   appleUserId: text("apple_user_id").unique(),
+  referredByCode: text("referred_by_code"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
