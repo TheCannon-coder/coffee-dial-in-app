@@ -66,6 +66,36 @@ function currentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/**
+ * Returns the previous calendar month as "YYYY-MM".
+ * Used as the default period when generating a payout batch so that running
+ * the job at the end of month M automatically covers month M-1 commissions.
+ */
+function previousMonth(): string {
+  const d = new Date();
+  const m = d.getMonth(); // 0-indexed
+  if (m === 0) return `${d.getFullYear() - 1}-12`;
+  return `${d.getFullYear()}-${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Returns the last calendar day of the month following periodMonth.
+ * This is the earliest date a batch may be processed — enforcing the rule
+ * that affiliates are always paid one full month after they earn commissions.
+ *
+ * Examples:
+ *   "2026-04" → "2026-05-31"  (April earnings paid no sooner than May 31)
+ *   "2026-12" → "2027-01-31"  (December earnings paid no sooner than Jan 31)
+ */
+function calcProcessableAfter(periodMonth: string): string {
+  const [year, month] = periodMonth.split("-").map(Number);
+  // new Date(year, month+1, 0) = last day of month (month is 1-indexed here,
+  // Date months are 0-indexed, so month+1 in Date = month+2 calendar month,
+  // and day 0 of that = last day of month+1).
+  const d = new Date(year, month + 1, 0);
+  return d.toISOString().split("T")[0]!;
+}
+
 async function getCurrentRates(): Promise<
   Record<string, Record<string, number>>
 > {
@@ -586,7 +616,9 @@ router.get("/admin/payouts", async (req, res) => {
 });
 
 router.post("/admin/payouts/generate", async (req, res) => {
-  const { periodMonth = currentMonth(), notes } = req.body as {
+  // Default to the PREVIOUS month so that running this job at end-of-month M
+  // automatically covers month M-1 commissions, enforcing the 1-month delay.
+  const { periodMonth = previousMonth(), notes } = req.body as {
     periodMonth?: string;
     notes?: string;
   };
@@ -731,6 +763,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
     );
 
     // Create or update the draft batch
+    const processableAfter = calcProcessableAfter(periodMonth);
     let batch;
     if (existing) {
       const [updated] = await db
@@ -739,6 +772,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
           totalAmountCents,
           affiliateCount: uniqueAffiliates.size,
           notes: notes ?? existing.notes,
+          processableAfter,
         })
         .where(eq(payoutBatchesTable.id, existing.id))
         .returning();
@@ -751,6 +785,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
           totalAmountCents,
           affiliateCount: uniqueAffiliates.size,
           notes,
+          processableAfter,
         })
         .returning();
       batch = created;
@@ -922,6 +957,20 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
     if (batch.status !== "approved") {
       res.status(409).json({ error: "batch_must_be_approved_first", status: batch.status });
       return;
+    }
+
+    // Enforce 1-month delay: commissions earned in month M cannot be paid
+    // until the last day of month M+1 to ensure funds are always in hand.
+    if (batch.processableAfter) {
+      const today = new Date().toISOString().split("T")[0]!;
+      if (today < batch.processableAfter) {
+        res.status(409).json({
+          error: "too_early",
+          message: `This batch covers ${batch.periodMonth} commissions and cannot be processed before ${batch.processableAfter}.`,
+          processableAfter: batch.processableAfter,
+        });
+        return;
+      }
     }
 
     // Load approved ledger entries with affiliate Connect details

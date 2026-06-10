@@ -74,6 +74,13 @@ export const payoutBatchesTable = pgTable("payout_batches", {
   totalAmountCents: integer("total_amount_cents").notNull().default(0),
   affiliateCount: integer("affiliate_count").notNull().default(0),
   notes: text("notes"),
+  /**
+   * Earliest date this batch may be processed (transferred to affiliates).
+   * Always set to the last day of the month following periodMonth so there
+   * is always a full month between earning and payout.
+   * e.g. periodMonth "2026-04" → processableAfter "2026-05-31"
+   */
+  processableAfter: date("processable_after"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   approvedAt: timestamp("approved_at"),
   completedAt: timestamp("completed_at"),
