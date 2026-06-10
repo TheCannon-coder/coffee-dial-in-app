@@ -31,7 +31,7 @@
 import { Router } from "express";
 import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
 import { usdCentsToEurCents, isEuMemberState } from "../lib/compliance-utils";
-import { db, usersTable, gearProductsTable } from "@workspace/db";
+import { db, usersTable, gearProductsTable, GEAR_EXPERIENCE_LEVELS } from "@workspace/db";
 import {
   affiliatesTable,
   referralConversionsTable,
@@ -1567,7 +1567,10 @@ router.post("/admin/gear", async (req, res) => {
   const amazonUrl = (body["amazonUrl"] as string | undefined)?.trim();
   const priceLabel = (body["priceLabel"] as string | undefined)?.trim();
   const descriptionHint = (body["descriptionHint"] as string | undefined)?.trim();
-  const experienceLevel = (body["experienceLevel"] as string | undefined) ?? "beginner";
+  const rawLevel = (body["experienceLevel"] as string | undefined) ?? "beginner";
+  const experienceLevel = (GEAR_EXPERIENCE_LEVELS as readonly string[]).includes(rawLevel)
+    ? rawLevel
+    : "beginner";
   const active = body["active"] === "true";
 
   const rawMethods = body["brewMethods"];
@@ -1644,7 +1647,9 @@ router.post("/admin/gear/import", async (req, res) => {
           amazonUrl: p.amazonUrl,
           priceLabel: p.priceLabel,
           brewMethods: p.brewMethods ?? [],
-          experienceLevel: p.experienceLevel ?? "beginner",
+          experienceLevel: (GEAR_EXPERIENCE_LEVELS as readonly string[]).includes(p.experienceLevel ?? "")
+            ? p.experienceLevel!
+            : "beginner",
           descriptionHint: p.descriptionHint,
           active: p.active ?? true,
         };

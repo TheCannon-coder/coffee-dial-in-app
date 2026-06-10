@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedGearProducts } from "./lib/gear-seed";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,9 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Ensure baseline gear catalogue is seeded so affiliate redirect URLs never 404
+  seedGearProducts().catch((seedErr) => {
+    logger.error({ err: seedErr }, "gear seed failed on startup");
+  });
 });
