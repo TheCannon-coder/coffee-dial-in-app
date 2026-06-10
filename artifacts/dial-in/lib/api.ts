@@ -89,13 +89,6 @@ export function signInWithApple(appleUserId: string, email?: string): Promise<Ap
   return post<AppleSignInResult>('/user/apple', { appleUserId, email });
 }
 
-export interface PaymentIntentResult {
-  clientSecret: string;
-  subscriptionId?: string;
-  customerId?: string;
-}
-
-const SUPABASE_FUNCTIONS_URL = 'https://bdfkpchjvsbsbkdyjflo.supabase.co/functions/v1';
 
 export interface AffiliateStats {
   isAffiliate: boolean;
@@ -152,11 +145,3 @@ export function getConnectStatus(email: string): Promise<ConnectStatusResult> {
   return fetch(url).then((r) => r.json()) as Promise<ConnectStatusResult>;
 }
 
-export async function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
-  const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, plan }),
-  });
-  return response.json() as Promise<PaymentIntentResult>;
-}

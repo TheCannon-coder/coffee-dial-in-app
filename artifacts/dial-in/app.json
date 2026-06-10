@@ -58,13 +58,6 @@
           "color": "#111111",
           "sounds": []
         }
-      ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.coffeebrew.coach",
-          "enableGooglePay": false
-        }
       ]
     ],
     "experiments": {
