@@ -32,6 +32,7 @@ import { Router } from "express";
 import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
 import { usdCentsToEurCents, isEuMemberState } from "../lib/compliance-utils";
 import { db, usersTable, gearProductsTable, GEAR_EXPERIENCE_LEVELS } from "@workspace/db";
+import { invalidateGearRecommendCache } from "../lib/gear-recommend-cache";
 import {
   affiliatesTable,
   referralConversionsTable,
@@ -1621,6 +1622,7 @@ router.post("/admin/gear", async (req, res) => {
           target: gearProductsTable.slug,
           set: { name, amazonUrl, priceLabel, brewMethods, experienceLevel, descriptionHint, active },
         });
+      invalidateGearRecommendCache();
       message = `<div class="success">✓ Product "<strong>${name}</strong>" saved successfully.</div>`;
     } catch (err) {
       logger.error({ err }, "admin/gear POST error");
@@ -1689,6 +1691,7 @@ router.post("/admin/gear/import", async (req, res) => {
       }),
     );
 
+    invalidateGearRecommendCache();
     res.json({ upserted: results.length, slugs: results });
   } catch (err) {
     logger.error({ err }, "admin/gear/import error");

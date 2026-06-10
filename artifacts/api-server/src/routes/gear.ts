@@ -4,6 +4,11 @@ import { eq } from "drizzle-orm";
 import { db, gearClicksTable, gearProductsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
+import {
+  gearRecommendCacheKey,
+  getGearRecommendCache,
+  setGearRecommendCache,
+} from "../lib/gear-recommend-cache";
 
 const router = Router();
 
@@ -91,6 +96,14 @@ router.get("/gear/recommend", async (req, res) => {
   const isEspresso = method === "espresso";
   const levelOrder: Record<ExperienceLevel, number> = { beginner: 0, intermediate: 1, advanced: 2 };
   const userLevel = levelOrder[experienceLevel];
+
+  const cacheKey = gearRecommendCacheKey({ method, missedDose, missedTemp, missedGrinder, experienceLevel });
+  const cached = getGearRecommendCache(cacheKey);
+  if (cached) {
+    req.log.debug({ cacheKey }, "gear/recommend: cache hit");
+    res.json({ items: cached });
+    return;
+  }
 
   try {
     const allProducts = await db
@@ -193,6 +206,8 @@ Return ONLY valid JSON. No markdown. No explanation outside the array.`;
       })
       .filter((item): item is GearItem => item !== null);
 
+    setGearRecommendCache(cacheKey, items);
+    req.log.debug({ cacheKey, count: items.length }, "gear/recommend: cache stored");
     res.json({ items });
   } catch (err) {
     req.log.error({ err }, "gear/recommend: failed");
