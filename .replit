@@ -45,6 +45,8 @@ externalPort = 4200
 EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_live_uHcBqIhlIh549Nl4yglJ49Bb00aqbdGedI"
 EXPO_PUBLIC_STRIPE_MERCHANT_ID = "merchant.com.coffeebrew.coach"
 AMAZON_AFFILIATE_TAG = "coffeebrew056-20"
+STRIPE_PRICE_ID_MONTHLY = "price_1TdYKLJ5T59WrplXByVJepQ1"
+STRIPE_PRICE_ID_YEARLY = "price_1TdYLLJ5T59WrplXzh2kOrvw"
 
 [nix]
 channel = "stable-25_05"
