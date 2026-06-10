@@ -29,6 +29,7 @@
  */
 
 import { Router } from "express";
+import { createHash } from "crypto";
 import { eq, and, desc, sql, inArray, isNull, lte, or } from "drizzle-orm";
 import { usdCentsToEurCents, isEuMemberState } from "../lib/compliance-utils";
 import { db, usersTable, gearProductsTable, GEAR_EXPERIENCE_LEVELS } from "@workspace/db";
@@ -55,17 +56,38 @@ const router = Router();
  *  1. X-Admin-Key header (existing API clients, curl)
  *  2. HTTP Basic Auth (browser form submissions — any username, password = ADMIN_KEY)
  */
-function parseAdminKey(req: import("express").Request): string | undefined {
-  const headerKey = req.headers["x-admin-key"] as string | undefined;
-  if (headerKey) return headerKey;
+/** Short-lived cookie token = first 24 chars of SHA-256(ADMIN_KEY). Not a secret, just a session marker. */
+function adminCookieToken(key: string): string {
+  return createHash("sha256").update(key).digest("hex").slice(0, 24);
+}
 
+function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+  if (!cookieHeader) return {};
+  return Object.fromEntries(
+    cookieHeader.split(";").map((c) => {
+      const idx = c.indexOf("=");
+      return idx === -1 ? [c.trim(), ""] : [c.slice(0, idx).trim(), c.slice(idx + 1).trim()];
+    }),
+  );
+}
+
+function parseAdminKey(req: import("express").Request, expected: string): boolean {
+  // 1. X-Admin-Key header (API clients / curl)
+  if (req.headers["x-admin-key"] === expected) return true;
+
+  // 2. HTTP Basic Auth (browser form login)
   const auth = req.headers["authorization"];
   if (auth?.startsWith("Basic ")) {
     const decoded = Buffer.from(auth.slice(6), "base64").toString("utf8");
     const colonIdx = decoded.indexOf(":");
-    if (colonIdx !== -1) return decoded.slice(colonIdx + 1);
+    if (colonIdx !== -1 && decoded.slice(colonIdx + 1) === expected) return true;
   }
-  return undefined;
+
+  // 3. Session cookie (set after Basic Auth; used by JS fetch calls on admin pages)
+  const cookies = parseCookies(req.headers["cookie"]);
+  if (cookies["admin_tok"] === adminCookieToken(expected)) return true;
+
+  return false;
 }
 
 router.use((req, res, next) => {
@@ -77,11 +99,11 @@ router.use((req, res, next) => {
     return;
   }
 
-  const key = parseAdminKey(req);
-  if (!key || key !== expected) {
-    // For HTML-producing routes (browser requests), send Basic Auth challenge
+  if (!parseAdminKey(req, expected)) {
+    // For browser page-loads without any credential, send Basic Auth challenge
     const acceptsHtml = req.headers["accept"]?.includes("text/html");
-    if (acceptsHtml && !key) {
+    const hasCred = req.headers["x-admin-key"] || req.headers["authorization"] || parseCookies(req.headers["cookie"])["admin_tok"];
+    if (acceptsHtml && !hasCred) {
       res.setHeader("WWW-Authenticate", 'Basic realm="Dial In Admin"');
       res.status(401).send("Authentication required. Enter your admin key as the password.");
       return;
@@ -89,6 +111,15 @@ router.use((req, res, next) => {
     res.status(401).json({ error: "unauthorized" });
     return;
   }
+
+  // Set/refresh session cookie so JS fetch calls on admin pages stay authenticated
+  res.cookie("admin_tok", adminCookieToken(expected), {
+    httpOnly: true,
+    sameSite: "strict",
+    path: "/api/admin",
+    maxAge: 4 * 60 * 60 * 1000, // 4 hours
+  });
+
   next();
 });
 
@@ -1552,6 +1583,7 @@ async function runGenerate() {
   try {
     const resp = await fetch('/api/admin/gear/generate', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ focus }),
     });
@@ -1617,6 +1649,7 @@ async function importSelected() {
   try {
     const resp = await fetch('/api/admin/gear/import', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(selected),
     });
@@ -1722,6 +1755,7 @@ function toggleProduct(slug, makeActive) {
   btn.disabled = true;
   fetch('/api/admin/gear/' + encodeURIComponent(slug), {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ active: makeActive })
   })
