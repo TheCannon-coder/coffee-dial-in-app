@@ -38,6 +38,7 @@ import {
   payoutBatchesTable,
   commissionPhasesTable,
 } from "@workspace/db";
+import { getStripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -893,6 +894,162 @@ router.post("/admin/payouts/:id/approve", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/payouts/:id/process
+ *
+ * Executes real Stripe Connect transfers for every approved ledger entry in a
+ * batch. Entries are grouped by affiliate; one transfer is created per affiliate
+ * (to minimise Stripe fees).
+ *
+ * Affiliates without a completed Connect account are skipped and left in
+ * "approved" status — call /complete afterward to mark the batch done after
+ * handling those manually.
+ *
+ * Idempotent: entries already in "paid" status are ignored.
+ */
+router.post("/admin/payouts/:id/process", async (req, res) => {
+  const id = Number(req.params["id"]);
+  try {
+    const stripe = getStripe();
+
+    const batch = await db.query.payoutBatchesTable.findFirst({
+      where: eq(payoutBatchesTable.id, id),
+    });
+    if (!batch) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+    if (batch.status !== "approved") {
+      res.status(409).json({ error: "batch_must_be_approved_first", status: batch.status });
+      return;
+    }
+
+    // Load approved ledger entries with affiliate Connect details
+    const entries = await db
+      .select({
+        ledgerId: commissionLedgerTable.id,
+        affiliateUserId: commissionLedgerTable.affiliateUserId,
+        amountCents: commissionLedgerTable.amountCents,
+        stripeConnectAccountId: affiliatesTable.stripeConnectAccountId,
+        connectOnboardingComplete: affiliatesTable.connectOnboardingComplete,
+      })
+      .from(commissionLedgerTable)
+      .innerJoin(
+        affiliatesTable,
+        eq(affiliatesTable.userId, commissionLedgerTable.affiliateUserId),
+      )
+      .where(
+        and(
+          eq(commissionLedgerTable.payoutBatchId, id),
+          eq(commissionLedgerTable.status, "approved"),
+        ),
+      );
+
+    // Group by affiliate user ID
+    const byAffiliate = new Map<
+      number,
+      {
+        stripeConnectAccountId: string | null;
+        connectOnboardingComplete: boolean;
+        ledgerIds: number[];
+        totalCents: number;
+      }
+    >();
+
+    for (const e of entries) {
+      const cur = byAffiliate.get(e.affiliateUserId) ?? {
+        stripeConnectAccountId: e.stripeConnectAccountId,
+        connectOnboardingComplete: e.connectOnboardingComplete,
+        ledgerIds: [],
+        totalCents: 0,
+      };
+      cur.ledgerIds.push(e.ledgerId);
+      cur.totalCents += e.amountCents;
+      byAffiliate.set(e.affiliateUserId, cur);
+    }
+
+    const results: {
+      affiliateUserId: number;
+      status: "transferred" | "skipped_no_connect" | "skipped_incomplete" | "failed";
+      transferId?: string;
+      amountCents?: number;
+      error?: string;
+    }[] = [];
+
+    const now = new Date();
+
+    for (const [affiliateUserId, group] of byAffiliate) {
+      if (!group.stripeConnectAccountId) {
+        results.push({ affiliateUserId, status: "skipped_no_connect" });
+        continue;
+      }
+      if (!group.connectOnboardingComplete) {
+        results.push({ affiliateUserId, status: "skipped_incomplete" });
+        continue;
+      }
+
+      try {
+        const transfer = await stripe.transfers.create({
+          amount: group.totalCents,
+          currency: "usd",
+          destination: group.stripeConnectAccountId,
+          metadata: {
+            batchId: String(id),
+            affiliateUserId: String(affiliateUserId),
+            periodMonth: batch.periodMonth,
+          },
+        });
+
+        await db
+          .update(commissionLedgerTable)
+          .set({ status: "paid", stripeTransferId: transfer.id, paidAt: now })
+          .where(inArray(commissionLedgerTable.id, group.ledgerIds));
+
+        results.push({
+          affiliateUserId,
+          status: "transferred",
+          transferId: transfer.id,
+          amountCents: group.totalCents,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error({ err, affiliateUserId, batchId: id }, "stripe transfer failed");
+        results.push({ affiliateUserId, status: "failed", error: message });
+      }
+    }
+
+    // Mark batch completed if all entries are now paid
+    const remainingApproved = await db.query.commissionLedgerTable.findFirst({
+      where: and(
+        eq(commissionLedgerTable.payoutBatchId, id),
+        eq(commissionLedgerTable.status, "approved"),
+      ),
+    });
+
+    let updatedBatch = batch;
+    if (!remainingApproved) {
+      const [b] = await db
+        .update(payoutBatchesTable)
+        .set({ status: "completed", completedAt: now })
+        .where(eq(payoutBatchesTable.id, id))
+        .returning();
+      updatedBatch = b;
+    }
+
+    logger.info({ batchId: id, results }, "payout batch processed");
+    res.json({ batch: updatedBatch, results });
+  } catch (err) {
+    logger.error({ err }, "admin/payouts process error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+/**
+ * POST /api/admin/payouts/:id/complete
+ *
+ * Manually marks any remaining approved entries as paid and closes the batch.
+ * Use this after handling non-Connect affiliates out-of-band (bank transfer, etc).
+ */
 router.post("/admin/payouts/:id/complete", async (req, res) => {
   const id = Number(req.params["id"]);
   try {

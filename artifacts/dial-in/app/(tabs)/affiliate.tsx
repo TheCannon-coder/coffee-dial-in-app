@@ -13,13 +13,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import * as WebBrowser from 'expo-web-browser';
 import { useColors } from '@/hooks/useColors';
 import { useUser } from '@/context/UserContext';
 import {
   getAffiliateStats,
   getAffiliateMetrics,
+  getConnectStatus,
+  startConnectOnboarding,
   AffiliateStats,
   AffiliateMonth,
+  ConnectStatusResult,
 } from '@/lib/api';
 
 // ── Calculator constants ─────────────────────────────────────────────────────
@@ -68,8 +72,21 @@ export default function AffiliateScreen() {
   const [months, setMonths] = useState<AffiliateMonth[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
 
+  const [connectStatus, setConnectStatus] = useState<ConnectStatusResult | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
+
   const [audienceIdx, setAudienceIdx] = useState(4); // default 50K
   const [copied, setCopied] = useState(false);
+
+  const refreshConnectStatus = useCallback(async () => {
+    if (!email) return;
+    try {
+      const s = await getConnectStatus(email);
+      setConnectStatus(s);
+    } catch {
+      // silently ignore
+    }
+  }, [email]);
 
   useEffect(() => {
     if (!email) return;
@@ -81,7 +98,29 @@ export default function AffiliateScreen() {
       })
       .catch(() => {})
       .finally(() => setLoadingStats(false));
-  }, [email]);
+    refreshConnectStatus();
+  }, [email, refreshConnectStatus]);
+
+  const handleConnectOnboard = useCallback(async () => {
+    if (!email) return;
+    setConnectLoading(true);
+    try {
+      const result = await startConnectOnboarding(email);
+      if (result.alreadyComplete) {
+        setConnectStatus({ status: 'complete', payoutsEnabled: true });
+        return;
+      }
+      if (result.url) {
+        await WebBrowser.openBrowserAsync(result.url);
+        // Re-check status after browser closes
+        await refreshConnectStatus();
+      }
+    } catch {
+      // silently ignore
+    } finally {
+      setConnectLoading(false);
+    }
+  }, [email, refreshConnectStatus]);
 
   const rateCents = stats?.isAffiliate && stats.monthlyRateCents
     ? stats.monthlyRateCents
@@ -251,6 +290,14 @@ export default function AffiliateScreen() {
             <Text style={[styles.rateNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
               Your rate: {fmtMoney(rateCents)}/active subscriber/month
             </Text>
+
+            {/* Payout setup */}
+            <PayoutSetupCard
+              connectStatus={connectStatus}
+              loading={connectLoading}
+              onPress={handleConnectOnboard}
+              colors={colors}
+            />
           </>
         ) : null}
 
@@ -350,6 +397,61 @@ function StatCard({ label, value, colors, highlight }: {
       ]}>
         {label}
       </Text>
+    </View>
+  );
+}
+
+function PayoutSetupCard({ connectStatus, loading, onPress, colors }: {
+  connectStatus: ConnectStatusResult | null;
+  loading: boolean;
+  onPress: () => void;
+  colors: Colors;
+}) {
+  const isComplete = connectStatus?.status === 'complete';
+
+  return (
+    <View style={[styles.payoutCard, { backgroundColor: colors.card, borderColor: isComplete ? colors.accent : colors.border }]}>
+      <View style={styles.payoutHeader}>
+        <Feather
+          name={isComplete ? 'check-circle' : 'credit-card'}
+          size={18}
+          color={isComplete ? colors.accent : colors.espresso}
+        />
+        <Text style={[styles.payoutTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+          Payout account
+        </Text>
+      </View>
+
+      {isComplete ? (
+        <Text style={[styles.payoutBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+          Your Stripe account is connected. We'll transfer your commissions directly to your bank.
+        </Text>
+      ) : (
+        <>
+          <Text style={[styles.payoutBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            Connect a Stripe account to receive commission payouts directly to your bank.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.payoutBtn,
+              { backgroundColor: colors.espresso, opacity: pressed || loading ? 0.7 : 1 },
+            ]}
+            onPress={onPress}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.cream} size="small" />
+            ) : (
+              <>
+                <Feather name="external-link" size={14} color={colors.cream} />
+                <Text style={[styles.payoutBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                  {connectStatus?.status === 'pending' ? 'Resume setup' : 'Set up payouts'}
+                </Text>
+              </>
+            )}
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }
@@ -549,5 +651,37 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     textAlign: 'center',
     marginTop: 4,
+  },
+  payoutCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+    marginBottom: 28,
+  },
+  payoutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  payoutTitle: {
+    fontSize: 15,
+  },
+  payoutBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  payoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 100,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    alignSelf: 'flex-start',
+  },
+  payoutBtnText: {
+    fontSize: 14,
   },
 });

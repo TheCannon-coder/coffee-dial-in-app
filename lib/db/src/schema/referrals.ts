@@ -30,6 +30,9 @@ export const affiliatesTable = pgTable("affiliates", {
   customMonthlyRateCents: integer("custom_monthly_rate_cents"),
   customAnnualRateCents: integer("custom_annual_rate_cents"),
   customLifetimeRateCents: integer("custom_lifetime_rate_cents"),
+  /** Stripe Connect Express account for automated payouts */
+  stripeConnectAccountId: text("stripe_connect_account_id"),
+  connectOnboardingComplete: boolean("connect_onboarding_complete").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -101,6 +104,8 @@ export const commissionLedgerTable = pgTable("commission_ledger", {
   amountCents: integer("amount_cents").notNull(),
   tier: text("tier").notNull(),
   status: text("status").notNull().default("pending"),
+  /** Stripe Transfer ID once the payout has been sent via Connect */
+  stripeTransferId: text("stripe_transfer_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   paidAt: timestamp("paid_at"),
 });

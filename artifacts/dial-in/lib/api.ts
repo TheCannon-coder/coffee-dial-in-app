@@ -128,6 +128,30 @@ export function getAffiliateMetrics(email: string): Promise<AffiliateMetrics> {
   return post<AffiliateMetrics>('/affiliate/me/metrics', { email });
 }
 
+export interface ConnectOnboardingResult {
+  url?: string;
+  accountId?: string;
+  alreadyComplete?: boolean;
+  error?: string;
+}
+
+export interface ConnectStatusResult {
+  status: 'not_started' | 'pending' | 'complete';
+  detailsSubmitted?: boolean;
+  payoutsEnabled?: boolean;
+  accountId?: string;
+  error?: string;
+}
+
+export function startConnectOnboarding(email: string): Promise<ConnectOnboardingResult> {
+  return post<ConnectOnboardingResult>('/affiliate/connect/onboard', { email });
+}
+
+export function getConnectStatus(email: string): Promise<ConnectStatusResult> {
+  const url = `${API_BASE}/affiliate/connect/status?email=${encodeURIComponent(email)}`;
+  return fetch(url).then((r) => r.json()) as Promise<ConnectStatusResult>;
+}
+
 export async function createPaymentIntent(email: string, plan: 'monthly' | 'yearly'): Promise<PaymentIntentResult> {
   const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
     method: 'POST',

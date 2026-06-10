@@ -4,6 +4,7 @@ import dialinRouter from "./dialin";
 import userRouter from "./user";
 import gearRouter from "./gear";
 import adminRouter from "./admin";
+import connectRouter from "./connect";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(dialinRouter);
 router.use(userRouter);
 router.use(gearRouter);
 router.use(adminRouter);
+router.use(connectRouter);
 
 export default router;
