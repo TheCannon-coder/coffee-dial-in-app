@@ -264,21 +264,35 @@ router.get("/affiliate/tax-status", async (req: Request, res: Response) => {
     const needsAbn = isAustralian(country);
     const needsSinOrBn = isCanadian(country);
 
+    // Tax compliance is satisfied by EITHER:
+    //  - Stripe Connect onboarding complete (Stripe collected W-9/W-8BEN)
+    //  - Our manual tax form (for Stage 1 PayPal affiliates)
+    const taxOk = affiliate.connectOnboardingComplete || affiliate.taxFormComplete;
     const payoutReady =
-      affiliate.taxFormComplete &&
+      taxOk &&
       affiliate.ftcDisclosureAccepted &&
       (!needsGdpr || affiliate.gdprConsent);
 
     res.json({
       country,
       requiredForm,
+      // Tax compliance path
+      taxCompliant: taxOk,
+      taxComplianceVia: affiliate.connectOnboardingComplete
+        ? "stripe_connect"         // Stripe collected W-9/W-8BEN during onboarding
+        : affiliate.taxFormComplete
+          ? "manual_form"          // We collected it via our API (Stage 1)
+          : "none",
       taxFormComplete: affiliate.taxFormComplete,
       taxFormType: affiliate.taxFormType,
+      stripeConnectOnboarded: affiliate.connectOnboardingComplete,
+      // FTC + GDPR — always our responsibility regardless of payment method
       ftcDisclosureAccepted: affiliate.ftcDisclosureAccepted,
       ftcAcceptedAt: affiliate.ftcAcceptedAt,
       needsGdprConsent: needsGdpr,
       gdprConsent: affiliate.gdprConsent,
       gdprConsentAt: affiliate.gdprConsentAt,
+      // Withholding — our obligation even for Stripe Connect users
       withholdTax: affiliate.withholdTax,
       withholdTaxRatePct: affiliate.withholdTaxRatePct,
       dac7Reportable: affiliate.dac7Reportable,

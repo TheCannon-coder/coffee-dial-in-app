@@ -38,6 +38,27 @@ An AI-powered coffee coaching iOS app that guides users to dial in their espress
 - AI coaching (dialin.ts): "Flat" espresso is intentionally ambiguous — resolved by cross-referencing note clusters, not treated as a single signal.
 - Colors via `useColors()`: espresso `#2C1A0E`, cream `#FAF7F2`. Fonts: `Fraunces_500Medium` (display), `DMSans_400Regular/500Medium` (body).
 
+### Affiliate payout architecture — Stripe owns money & tax; we own business logic
+
+**Stripe Connect handles (do not duplicate):**
+- W-9 / W-8BEN collection during affiliate onboarding
+- Bank account / identity verification
+- 1099-NEC generation and IRS filing (via Stripe's 1099 add-on)
+
+**We handle (Stripe cannot):**
+- FTC disclosure checkbox + timestamp — legal requirement, our responsibility
+- GDPR consent for EU/UK affiliates — our responsibility
+- Promo code generation + self-referral blocking
+- Conversion tracking (code → sale)
+- Commission tier logic (Standard/Silver/Gold/Platinum)
+- 30-day payout hold per conversion (refund fraud protection)
+- AU withholding at 47% for affiliates without ABN — ATO obligation stays with us even for Connect users
+- CA T4A slip generation (CRA obligation, not covered by Stripe)
+- EU DAC7 reporting (Stripe does not generate DAC7 reports)
+- $600 YTD flag — we track *why* the threshold was crossed
+
+**Tax compliance gate on payouts:** satisfied by EITHER `connectOnboardingComplete` (Stripe collected the forms) OR `taxFormComplete` (manual W-9/W-8BEN via our API for Stage 1 PayPal affiliates). FTC disclosure and GDPR consent are always required regardless of payout method.
+
 ## Product
 
 - Guided espresso tasting flow with AI-powered extraction diagnosis and adjustment recommendations

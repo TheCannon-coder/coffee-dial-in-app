@@ -1074,11 +1074,26 @@ router.post("/admin/payouts/:id/process", async (req, res) => {
     for (const [affiliateUserId, group] of byAffiliate) {
       const country = (group.country ?? "US").toUpperCase();
 
-      // Compliance gate: tax form + FTC disclosure must both be complete.
-      // EU/UK affiliates additionally require GDPR consent.
+      // Compliance gate.
+      //
+      // Tax compliance: satisfied by EITHER:
+      //   a) connectOnboardingComplete — Stripe collected W-9/W-8BEN, bank
+      //      details, and handles 1099-NEC. This is the preferred path for
+      //      Stage 2+ affiliates (30+ people).
+      //   b) taxFormComplete — manual W-9/W-8BEN form submitted via our API.
+      //      Used for Stage 1 PayPal affiliates before Stripe Connect is live.
+      //
+      // FTC disclosure and GDPR consent are always our responsibility —
+      // Stripe never collects these.
+      //
+      // AU withholding: applied independently of the tax compliance gate.
+      // For Connect users Stripe collects the W-8BEN, but does not apply
+      // ATO withholding — that obligation stays with us. Affiliates who have
+      // not submitted a manual form with an ABN retain withholdTax=true.
+      const taxOk = group.connectOnboardingComplete || group.taxFormComplete;
       const needsGdpr = isEuMemberState(country) || country === "GB";
       const complianceOk =
-        group.taxFormComplete &&
+        taxOk &&
         group.ftcDisclosureAccepted &&
         (!needsGdpr || group.gdprConsent);
 
