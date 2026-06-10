@@ -1561,7 +1561,7 @@ const GEAR_FORM_HTML = `<!DOCTYPE html>
     </div>
   </div>
   <div id="preview-table-wrap"></div>
-  <p class="hint" style="margin-top:8px">Verify Amazon links before importing — GPT occasionally produces an ASIN that has been delisted. Selected products that already exist in your catalogue will be updated.</p>
+  <p class="hint" style="margin-top:8px">Click <strong>Search ↗</strong> to verify each product exists on Amazon before importing. Links land on the Amazon search results for that product — your affiliate tag is added automatically when users click through from the app.</p>
 </div>
 </div>
 
@@ -1610,18 +1610,17 @@ async function runGenerate() {
 function renderPreview(products) {
   document.getElementById('preview-count').textContent = products.length + ' products generated — select which to import:';
   const rows = products.map((p, i) => {
-    const asin = p.amazonUrl.match(/\\/dp\\/([A-Z0-9]{10})/)?.[1] ?? '?';
     const methods = p.brewMethods.join(', ');
     return \`<tr>
       <td><input type="checkbox" id="chk-\${i}" checked></td>
       <td><strong>\${escHtml(p.name)}</strong><br><span class="methods-cell">\${escHtml(methods)}</span></td>
       <td>\${escHtml(p.priceLabel)}</td>
       <td>\${escHtml(p.experienceLevel)}</td>
-      <td><a class="asin-link" href="\${escHtml(p.amazonUrl)}" target="_blank">B\${escHtml(asin.slice(1))}</a></td>
+      <td><a class="asin-link" href="\${escHtml(p.amazonUrl)}" target="_blank">Search ↗</a></td>
     </tr>\`;
   }).join('');
   document.getElementById('preview-table-wrap').innerHTML =
-    '<table><thead><tr><th style="width:32px"></th><th>Product</th><th>Price</th><th>Level</th><th>ASIN</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    '<table><thead><tr><th style="width:32px"></th><th>Product</th><th>Price</th><th>Level</th><th>Amazon</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function escHtml(s) {
@@ -1946,21 +1945,21 @@ router.post("/admin/gear/generate", async (req, res) => {
     .catch(() => [] as { slug: string }[]);
   const existingSlugs = existingRows.map((r) => r.slug).join(", ") || "none";
 
-  const systemPrompt = `You are a coffee gear expert and Amazon affiliate specialist.
-Your job is to produce a JSON array of real, currently-sold coffee equipment products available on Amazon.com.
+  const systemPrompt = `You are a coffee gear expert producing a product catalogue for an AI espresso coaching app.
+Return a JSON array of coffee equipment sold on Amazon. Use Amazon search URLs — do NOT fabricate ASINs.
 
-Rules:
-- Only include products that are genuinely sold on Amazon.com and have a real ASIN (10-character code starting with B or a digit).
-- The amazonUrl must be exactly "https://www.amazon.com/dp/<ASIN>" — no query strings, no affiliate tags.
-- Every product must have a unique slug: lowercase, hyphens only, no spaces (e.g. "baratza-encore-esp").
-- brewMethods must be an array of values from: espresso, general, pour_over, v60, chemex, kalita, aeropress, french_press, cold_brew, moka_pot.
-  Use "general" for gear that benefits all brew styles (scales, storage, water filters, etc.).
-- experienceLevel: "beginner" (essentials anyone should own), "intermediate" (meaningful upgrade), "advanced" (high-end refinement).
-- descriptionHint: 1–2 sentences explaining exactly when the AI coaching system should recommend this product (what user gap it fills). Not shown to users.
-- priceLabel: approximate current retail price as a string like "~$79" or "~$1,200".
-- active: true for all.
-- Do NOT include these already-catalogued slugs: ${existingSlugs}.
-- Return ONLY a valid JSON array. No markdown fences, no commentary.`;
+Each object in the array must have EXACTLY these fields:
+- name: full product name string (e.g. "Hario V60 Plastic Coffee Dripper")
+- slug: unique, lowercase, hyphens only (e.g. "hario-v60-plastic"). No spaces or special chars.
+- amazonUrl: Amazon search URL — "https://www.amazon.com/s?k=<URL-encoded+product+name>". Do NOT use /dp/ URLs.
+- priceLabel: approximate retail price string like "~$79" or "~$1,200".
+- brewMethods: array of strings from: espresso, general, pour_over, v60, chemex, kalita, aeropress, french_press, cold_brew, moka_pot. Use "general" for gear that benefits all brew styles.
+- experienceLevel: exactly one of: "beginner", "intermediate", "advanced".
+- descriptionHint: 1–2 sentence string for the AI system explaining when to recommend this product.
+- active: true.
+
+Do NOT include these already-catalogued slugs: ${existingSlugs}.
+Return ONLY a valid JSON array. No markdown fences, no extra text, no commentary.`;
 
   const userPrompt = `Generate 30 coffee gear products for ${methodLabel}.
 
@@ -2005,19 +2004,44 @@ For each product include all brew methods it meaningfully serves.`;
       return;
     }
 
-    // Sanitise: enforce enum values, required fields
+    // Sanitise: enforce enum values, required fields, and ensure amazonUrl is a valid Amazon URL.
+    // GPT occasionally uses alias field names (productName, product_name) — normalise them.
     const clean = products
-      .filter((p) => p.slug && p.name && p.amazonUrl && p.priceLabel && Array.isArray(p.brewMethods))
+      .map((p) => {
+        // Normalise name field — GPT sometimes returns productName or product_name
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = p as any;
+        const name: string = String(raw.name ?? raw.productName ?? raw.product_name ?? "").trim();
+        const slug: string = String(raw.slug ?? "").trim();
+        const priceLabel: string = String(raw.priceLabel ?? raw.price_label ?? raw.price ?? "").trim();
+        const descriptionHint: string = String(raw.descriptionHint ?? raw.description_hint ?? raw.description ?? "").trim();
+        const rawUrl: string = String(raw.amazonUrl ?? raw.amazon_url ?? raw.url ?? "").trim();
+        const brewMethods: string[] = Array.isArray(raw.brewMethods) ? raw.brewMethods
+          : Array.isArray(raw.brew_methods) ? raw.brew_methods : [];
+
+        // Build search URL — accept search URLs; convert any stale /dp/ URL; construct from name as fallback
+        let amazonUrl = rawUrl;
+        if (!amazonUrl || amazonUrl.includes("/dp/")) {
+          amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(name || slug)}`;
+        }
+
+        return { name, slug, priceLabel, descriptionHint, amazonUrl, brewMethods,
+          experienceLevel: raw.experienceLevel ?? raw.experience_level ?? "beginner" };
+      })
+      .filter((p) => {
+        if (!p.slug || !p.name || !p.priceLabel || p.brewMethods.length === 0) return false;
+        try { return new URL(p.amazonUrl).hostname.includes("amazon."); } catch { return false; }
+      })
       .map((p) => ({
-        slug: String(p.slug).toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-"),
-        name: String(p.name),
-        amazonUrl: String(p.amazonUrl),
-        priceLabel: String(p.priceLabel),
-        brewMethods: (p.brewMethods as string[]).filter(Boolean),
+        slug: p.slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-"),
+        name: p.name,
+        amazonUrl: p.amazonUrl,
+        priceLabel: p.priceLabel,
+        brewMethods: p.brewMethods.filter(Boolean),
         experienceLevel: (["beginner", "intermediate", "advanced"] as const).includes(p.experienceLevel)
-          ? p.experienceLevel
+          ? p.experienceLevel as "beginner" | "intermediate" | "advanced"
           : "beginner" as const,
-        descriptionHint: String(p.descriptionHint ?? ""),
+        descriptionHint: p.descriptionHint,
         active: true,
       }));
 
