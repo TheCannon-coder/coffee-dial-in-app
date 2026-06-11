@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -14,20 +15,18 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { createCheckout } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
-
-const PLANS = {
-  yearly: { label: '$44.99 / year', amount: 4499, currency: 'USD' },
-  monthly: { label: '$4.99 / month', amount: 499, currency: 'USD' },
-};
+import { useSubscription } from '@/lib/revenuecat';
 
 export default function PaywallScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ resetsOn?: string; isAnonymous?: string }>();
   const { email } = useUser();
+  const { offerings, purchase, restore, isPurchasing, isRestoring, isLoading } = useSubscription();
 
   const [loading, setLoading] = useState<'yearly' | 'monthly' | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   const resetsOn = params.resetsOn ?? '';
   const isAnon = params.isAnonymous === '1';
@@ -40,7 +39,40 @@ export default function PaywallScreen() {
     } catch {}
   }
 
-  async function handleCheckout(plan: 'yearly' | 'monthly') {
+  const currentOffering = offerings?.current;
+  const monthlyPkg = currentOffering?.availablePackages.find(
+    (p) => p.packageType === 'MONTHLY' || p.identifier === '$rc_monthly',
+  );
+  const yearlyPkg = currentOffering?.availablePackages.find(
+    (p) => p.packageType === 'ANNUAL' || p.identifier === '$rc_annual',
+  );
+
+  const monthlyPrice = monthlyPkg?.product?.priceString ?? '$4.99';
+  const yearlyPrice  = yearlyPkg?.product?.priceString  ?? '$44.99';
+
+  async function handleIAP(plan: 'yearly' | 'monthly') {
+    const pkg = plan === 'yearly' ? yearlyPkg : monthlyPkg;
+    if (!pkg) {
+      setErrorMsg('Products unavailable. Please try again shortly.');
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLoading(plan);
+    setErrorMsg('');
+    try {
+      await purchase(pkg);
+      router.replace('/home');
+    } catch (e: unknown) {
+      const code = (e as { userCancelled?: boolean })?.userCancelled;
+      if (!code) {
+        setErrorMsg('Purchase failed. Please try again.');
+      }
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleStripeCheckout(plan: 'yearly' | 'monthly') {
     if (!email) {
       router.push('/onboarding');
       return;
@@ -56,6 +88,18 @@ export default function PaywallScreen() {
       setLoading(null);
     }
   }
+
+  async function handleRestore() {
+    setShowRestoreConfirm(false);
+    try {
+      await restore();
+      router.replace('/home');
+    } catch {
+      setErrorMsg('Could not restore purchases. Please try again.');
+    }
+  }
+
+  const isLoadingAny = loading !== null || isPurchasing || isRestoring;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -79,42 +123,50 @@ export default function PaywallScreen() {
           Upgrade for unlimited dial-ins and never stop improving your brew.
         </Text>
 
-        <View style={styles.plans}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.planCard,
-              { backgroundColor: colors.espresso, opacity: pressed ? 0.85 : 1 },
-            ]}
-            onPress={() => handleCheckout('yearly')}
-            disabled={!!loading}
-          >
-            <View style={[styles.bestValue, { backgroundColor: colors.accentLight }]}>
-              <Text style={[styles.bestValueText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                Best value — save 25%
+        {isLoading ? (
+          <ActivityIndicator color={colors.accent} size="large" style={{ marginVertical: 32 }} />
+        ) : (
+          <View style={styles.plans}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.planCard,
+                { backgroundColor: colors.espresso, opacity: pressed || isLoadingAny ? 0.85 : 1 },
+              ]}
+              onPress={() => handleIAP('yearly')}
+              disabled={isLoadingAny}
+            >
+              <View style={[styles.bestValue, { backgroundColor: colors.accentLight }]}>
+                <Text style={[styles.bestValueText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                  Best value — save 25%
+                </Text>
+              </View>
+              <Text style={[styles.planPrice, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
+                {yearlyPrice}
               </Text>
-            </View>
-            <Text style={[styles.planPrice, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>$44.99</Text>
-            <Text style={[styles.planPeriod, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>per year</Text>
-            {loading === 'yearly' && (
-              <ActivityIndicator color={colors.cream} size="small" style={{ marginTop: 8 }} />
-            )}
-          </Pressable>
+              <Text style={[styles.planPeriod, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>per year</Text>
+              {loading === 'yearly' && (
+                <ActivityIndicator color={colors.cream} size="small" style={{ marginTop: 8 }} />
+              )}
+            </Pressable>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.planCard,
-              { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1.5, opacity: pressed ? 0.85 : 1 },
-            ]}
-            onPress={() => handleCheckout('monthly')}
-            disabled={!!loading}
-          >
-            <Text style={[styles.planPrice, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>$4.99</Text>
-            <Text style={[styles.planPeriod, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>per month</Text>
-            {loading === 'monthly' && (
-              <ActivityIndicator color={colors.espresso} size="small" style={{ marginTop: 8 }} />
-            )}
-          </Pressable>
-        </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.planCard,
+                { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1.5, opacity: pressed || isLoadingAny ? 0.85 : 1 },
+              ]}
+              onPress={() => handleIAP('monthly')}
+              disabled={isLoadingAny}
+            >
+              <Text style={[styles.planPrice, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                {monthlyPrice}
+              </Text>
+              <Text style={[styles.planPeriod, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>per month</Text>
+              {loading === 'monthly' && (
+                <ActivityIndicator color={colors.espresso} size="small" style={{ marginTop: 8 }} />
+              )}
+            </Pressable>
+          </View>
+        )}
 
         {errorMsg ? (
           <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'DMSans_400Regular' }]}>
@@ -131,7 +183,43 @@ export default function PaywallScreen() {
         <Pressable onPress={() => router.push('/home')} style={styles.notNow}>
           <Text style={[styles.notNowText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Not now</Text>
         </Pressable>
+
+        <Pressable onPress={() => setShowRestoreConfirm(true)} style={styles.restoreBtn} disabled={isLoadingAny}>
+          <Text style={[styles.restoreBtnText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            {isRestoring ? 'Restoring…' : 'Restore purchases'}
+          </Text>
+        </Pressable>
       </View>
+
+      <Modal
+        visible={showRestoreConfirm}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowRestoreConfirm(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+              Restore purchases?
+            </Text>
+            <Text style={[styles.modalBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              This will restore any previous Pro subscription linked to your Apple ID.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                style={({ pressed }) => [styles.modalBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 }]}
+                onPress={handleRestore}
+              >
+                <Text style={[styles.modalBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Restore</Text>
+              </Pressable>
+              <Pressable onPress={() => setShowRestoreConfirm(false)} style={styles.modalCancel}>
+                <Text style={[styles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -216,4 +304,46 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textDecorationLine: 'underline',
   },
+  restoreBtn: {
+    paddingVertical: 8,
+  },
+  restoreBtnText: {
+    fontSize: 13,
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(42,26,14,0.45)',
+    paddingHorizontal: 32,
+  },
+  modalCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  modalBody: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  modalActions: {
+    gap: 10,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  modalBtn: {
+    width: '100%',
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalBtnText: { fontSize: 16 },
+  modalCancel: { paddingVertical: 8 },
+  modalCancelText: { fontSize: 14 },
 });

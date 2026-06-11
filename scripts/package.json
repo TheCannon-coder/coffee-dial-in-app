@@ -8,6 +8,7 @@
     "migrate-supabase-brews": "tsx ./src/migrate-supabase-brews.ts",
     "capture-screenshots": "tsx ./src/capture-screenshots.ts",
     "upscale-screenshots": "tsx ./src/upscale-screenshots.ts",
+    "seed-revenuecat": "tsx ./src/seedRevenueCat.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
@@ -15,6 +16,8 @@
     "tsx": "catalog:"
   },
   "dependencies": {
+    "@replit/connectors-sdk": "^0.4.1",
+    "@replit/revenuecat-sdk": "^4.2.0",
     "pg": "^8.20.0",
     "puppeteer": "^25.1.0"
   }

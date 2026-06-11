@@ -19,9 +19,17 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Alert } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { UserProvider } from '@/context/UserContext';
 import { AppStripeProvider } from '@/lib/stripe-provider';
+import { initializeRevenueCat, SubscriptionProvider } from '@/lib/revenuecat';
+
+try {
+  initializeRevenueCat();
+} catch (err: unknown) {
+  Alert.alert('RevenueCat Unavailable', (err as Error)?.message ?? 'Unknown error');
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -65,13 +73,15 @@ export default function RootLayout() {
       <ErrorBoundary>
         <AppStripeProvider>
           <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <UserProvider>
-                  <RootLayoutNav />
-                </UserProvider>
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+            <SubscriptionProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <UserProvider>
+                    <RootLayoutNav />
+                  </UserProvider>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </SubscriptionProvider>
           </QueryClientProvider>
         </AppStripeProvider>
       </ErrorBoundary>
