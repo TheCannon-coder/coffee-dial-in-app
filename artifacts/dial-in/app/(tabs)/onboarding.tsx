@@ -115,13 +115,13 @@ export default function OnboardingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await enable();
     setShowNotifPrompt(false);
-    router.replace('/home');
+    setTimeout(() => router.replace('/home'), 350);
   }
 
   function handleSkipNotifications() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowNotifPrompt(false);
-    router.replace('/home');
+    setTimeout(() => router.replace('/home'), 350);
   }
 
   return (
