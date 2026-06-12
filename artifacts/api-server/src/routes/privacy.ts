@@ -118,7 +118,7 @@ const html = `<!DOCTYPE html>
     </div>
 
     <h1>Privacy Policy</h1>
-    <p class="effective">Effective date: June 6, 2025</p>
+    <p class="effective">Effective date: June 12, 2026</p>
 
     <p>
       Coffee Brew Coach ("we", "our", or "us") operates the Coffee Brew Coach mobile application
@@ -137,15 +137,15 @@ const html = `<!DOCTYPE html>
     <ul>
       <li><strong>Device push token</strong> — collected only if you grant notification permission. Used solely to send you brew reminders you request in the app.</li>
       <li><strong>Brew timestamps</strong> — the date and time of each brew session, used to track monthly usage and award achievements.</li>
-      <li><strong>Referral codes</strong> — generated for your account when you share the app with a friend.</li>
     </ul>
 
     <p><strong>Payment information</strong></p>
     <p>
-      If you subscribe to Coffee Brew Coach Pro, payments are processed by
-      <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>.
-      We do not store your card number, expiry date, or CVV. We only retain a Stripe customer ID
-      and subscription status.
+      If you subscribe to Coffee Brew Coach Pro, payments are processed entirely by Apple through
+      the App Store's in-app purchase system. We do not collect or store any payment card details.
+      We receive only your subscription status from Apple via
+      <a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">RevenueCat</a>,
+      which we use to unlock Pro features.
     </p>
 
     <h2>2. How we use your information</h2>
@@ -154,7 +154,7 @@ const html = `<!DOCTYPE html>
       <li>To maintain your brew history and coffee folders</li>
       <li>To track your monthly brew count and manage subscription limits</li>
       <li>To send brew reminder notifications (only if you opt in)</li>
-      <li>To process payments and manage your Pro subscription</li>
+      <li>To manage your Pro subscription status via Apple in-app purchase</li>
       <li>To award achievements and track your progress</li>
       <li>To operate the referral programme</li>
     </ul>
@@ -163,7 +163,8 @@ const html = `<!DOCTYPE html>
 
     <h2>3. Third-party services</h2>
     <ul>
-      <li><strong>Stripe</strong> — payment processing. <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Privacy policy</a></li>
+      <li><strong>Apple App Store</strong> — in-app purchase and subscription management. <a href="https://www.apple.com/legal/privacy/" target="_blank" rel="noopener">Privacy policy</a></li>
+      <li><strong>RevenueCat</strong> — subscription status tracking. <a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">Privacy policy</a></li>
       <li><strong>Supabase</strong> — database and backend infrastructure. Data is stored on servers in the United States. <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Privacy policy</a></li>
       <li><strong>Expo / Expo Push</strong> — push notification delivery. <a href="https://expo.dev/privacy" target="_blank" rel="noopener">Privacy policy</a></li>
       <li><strong>Anthropic / OpenAI</strong> — AI brewing advice generation. Your brew parameters are sent to generate a response. No personally identifiable information is included in those requests.</li>
@@ -220,7 +221,7 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-router.get("/privacy", (_req, res) => {
+router.get("/api/privacy", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
 });
