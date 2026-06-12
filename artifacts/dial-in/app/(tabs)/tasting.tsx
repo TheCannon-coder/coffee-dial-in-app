@@ -20,7 +20,6 @@ import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
 import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
-import { recordBrewFields, getActiveRecommendations, type GearItem } from '@/lib/gear-tracker';
 import { ShareModal } from '@/components/ShareModal';
 import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
 
@@ -90,8 +89,6 @@ export default function TastingScreen() {
   const [saved, setSaved] = useState(false);
   const [saveEmail, setSaveEmail] = useState('');
   const [saving, setSaving] = useState(false);
-  const [gearItems, setGearItems] = useState<GearItem[]>([]);
-  const [gearCachedAt, setGearCachedAt] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingBadges, setPendingBadges] = useState<Badge[]>([]);
   const [badgeIndex, setBadgeIndex] = useState(0);
@@ -209,15 +206,6 @@ export default function TastingScreen() {
           setSaved(true);
         }
 
-        // Track missing fields and check for gear recommendations (fire and forget)
-        recordBrewFields({
-          dose: params.dose,
-          waterTemp: params.waterTemp,
-          grinderNotes: params.grinderNotes,
-          method: params.method,
-        }).then(() => getActiveRecommendations())
-          .then(({ items, cachedAt }) => { setGearItems(items); setGearCachedAt(cachedAt); })
-          .catch(() => {});
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStage('result');
@@ -377,36 +365,6 @@ export default function TastingScreen() {
               )}
             </View>
 
-            {gearItems.length > 0 && (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.gearTeaser,
-                  { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({
-                    pathname: '/gear-recommendations',
-                    params: { items: JSON.stringify(gearItems), cachedAt: gearCachedAt ?? '' },
-                  });
-                }}
-              >
-                <View style={styles.gearTeaserLeft}>
-                  <Text style={styles.gearTeaserEmojis}>
-                    {gearItems.map(g => g.emoji).join(' ')}
-                  </Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.gearTeaserTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                      Your advice could be more specific
-                    </Text>
-                    <Text style={[styles.gearTeaserSub, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]}>
-                      Missing: {gearItems.map(g => g.missingLabel).join(', ')}
-                    </Text>
-                  </View>
-                </View>
-                <Feather name="chevron-right" size={18} color={colors.textSoft} />
-              </Pressable>
-            )}
 
             {!isPro && usesRemaining !== null && email && (
               <Text style={[styles.usesText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
@@ -650,16 +608,4 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   shareOutlineBtnText: { fontSize: 15 },
-  gearTeaser: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    gap: 10,
-  },
-  gearTeaserLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  gearTeaserEmojis: { fontSize: 22 },
-  gearTeaserTitle: { fontSize: 15 },
-  gearTeaserSub: { fontSize: 13, marginTop: 2 },
 });
