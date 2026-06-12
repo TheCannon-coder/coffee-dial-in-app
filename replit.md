@@ -99,11 +99,19 @@ Higher launch rate attracts early advocates; steps down as the program becomes s
 
 **CAC advantage:** Referral commission payback vs. paid acquisition is ~7–8 months, after which it's cheaper indefinitely. Commission only accrues while the user is retained.
 
+**Geographic scope — payouts in US and CA only (v1):**
+- Anyone worldwide can use a referral code and receive the referred-user benefit
+- Only affiliates in the **United States** and **Canada** can sign up as referrers and receive payouts
+- Affiliate onboarding must include a country selector; show "coming soon in your region" to everyone else
+- Store `country` on the affiliate DB record; payout ledger queries must filter `WHERE country IN ('US', 'CA')`
+- Tax obligations in scope: W-9 + 1099-NEC (US); T4A slip (CA) — no EU DAC7, no AU withholding needed
+- Expand to other countries as a future phase once compliance is validated
+
 **To launch the referral program:**
 1. Set `REFERRAL_PROGRAM=true` in Replit Secrets
-2. Build the backend: affiliate code generation, conversion tracking, payout ledger (DB schema not yet written)
+2. Build the backend: affiliate code generation, conversion tracking, payout ledger (DB schema not yet written); enforce US/CA country gate at signup
 3. Wire the referral code into the app's share flow
-4. Connect a payout mechanism (Stripe Connect or manual CSV export initially)
+4. Connect a payout mechanism (Stripe Connect — available in both US and CA)
 
 **What's already built:**
 - `artifacts/api-server/src/routes/earn.ts` — standalone HTML earnings calculator widget at `/api/earn`
