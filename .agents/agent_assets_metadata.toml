@@ -66,3 +66,9 @@ id = "msSKaGlYlc-QM2Hqt9Kyu"
 uri = "file://dial-in-market-strategy.docx"
 type = "word_document"
 title = "Dial In — Market Domination Strategy (Word Doc)"
+
+[[outputs]]
+id = "9LekzQU4rLPvuSouwlLuy"
+uri = "file://.local/appstore-resubmission-checklist.md"
+type = "text"
+title = "App Store Resubmission Checklist"
