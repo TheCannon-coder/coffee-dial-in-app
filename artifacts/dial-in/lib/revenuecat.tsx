@@ -8,6 +8,8 @@ const REVENUECAT_TEST_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
 const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
 
+let _configured = false;
+
 export const REVENUECAT_ENTITLEMENT_IDENTIFIER = "pro";
 
 function getRevenueCatApiKey() {
@@ -33,6 +35,7 @@ export function initializeRevenueCat() {
   const apiKey = getRevenueCatApiKey();
   Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
   Purchases.configure({ apiKey });
+  _configured = true;
 }
 
 function useSubscriptionContext() {
@@ -40,12 +43,14 @@ function useSubscriptionContext() {
     queryKey: ["revenuecat", "customer-info"],
     queryFn: () => Purchases.getCustomerInfo(),
     staleTime: 60 * 1000,
+    enabled: _configured,
   });
 
   const offeringsQuery = useQuery({
     queryKey: ["revenuecat", "offerings"],
     queryFn: () => Purchases.getOfferings(),
     staleTime: 300 * 1000,
+    enabled: _configured,
   });
 
   const purchaseMutation = useMutation({
