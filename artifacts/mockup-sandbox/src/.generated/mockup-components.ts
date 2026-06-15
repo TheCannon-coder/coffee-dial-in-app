@@ -8,8 +8,8 @@ export const modules: ModuleMap = {
   "./components/mockups/affiliate/InviteCard.tsx": () => import("../components/mockups/affiliate/InviteCard.tsx"),
   "./components/mockups/affiliate/ReferralShare.tsx": () => import("../components/mockups/affiliate/ReferralShare.tsx"),
   "./components/mockups/affiliate/SetupSmartHints.tsx": () => import("../components/mockups/affiliate/SetupSmartHints.tsx"),
-  "./components/mockups/sharing/ShareCard.tsx": () => import("../components/mockups/sharing/ShareCard.tsx"),
-  "./components/mockups/sharing/ShareCardOnly.tsx": () => import("../components/mockups/sharing/ShareCardOnly.tsx"),
   "./components/mockups/referral/EarningsWidget.tsx": () => import("../components/mockups/referral/EarningsWidget.tsx"),
-  "./components/mockups/referral/ReferralFinancialModel.tsx": () => import("../components/mockups/referral/ReferralFinancialModel.tsx")
+  "./components/mockups/referral/ReferralFinancialModel.tsx": () => import("../components/mockups/referral/ReferralFinancialModel.tsx"),
+  "./components/mockups/sharing/ShareCard.tsx": () => import("../components/mockups/sharing/ShareCard.tsx"),
+  "./components/mockups/sharing/ShareCardOnly.tsx": () => import("../components/mockups/sharing/ShareCardOnly.tsx")
 };
