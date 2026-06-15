@@ -48,6 +48,7 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [navigateOnDismiss, setNavigateOnDismiss] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
@@ -114,14 +115,14 @@ export default function OnboardingScreen() {
   async function handleEnableNotifications() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await enable();
+    setNavigateOnDismiss(true);
     setShowNotifPrompt(false);
-    setTimeout(() => router.replace('/home'), 350);
   }
 
   function handleSkipNotifications() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNavigateOnDismiss(true);
     setShowNotifPrompt(false);
-    setTimeout(() => router.replace('/home'), 350);
   }
 
   return (
@@ -244,6 +245,7 @@ export default function OnboardingScreen() {
         transparent
         animationType="slide"
         statusBarTranslucent
+        onDismiss={() => { if (navigateOnDismiss) router.replace('/home'); }}
       >
         <View style={styles.modalBackdrop}>
           <View style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 24 }]}>
