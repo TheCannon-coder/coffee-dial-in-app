@@ -18,7 +18,7 @@ import { useColors } from '@/hooks/useColors';
 import { TasteChip } from '@/components/TasteChip';
 import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
-import { generateId, getBrewCount, incrementBrewCount, FREE_BREW_LIMIT } from '@/lib/storage';
+import { generateId, FREE_BREW_LIMIT } from '@/lib/storage';
 import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
 import { ShareModal } from '@/components/ShareModal';
 import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
@@ -116,25 +116,6 @@ export default function TastingScreen() {
     const tastingNotes = Array.from(selected).join(', ');
     const currentAnonId = email ? undefined : await ensureAnonId();
 
-    // Enforce local brew limit for non-pro users
-    if (!isPro) {
-      const count = await getBrewCount();
-      if (count >= FREE_BREW_LIMIT) {
-        const nextMonth = new Date();
-        nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
-        nextMonth.setHours(0, 0, 0, 0);
-        router.push({
-          pathname: '/paywall',
-          params: {
-            resetsOn: nextMonth.toISOString(),
-            isAnonymous: email ? '0' : '1',
-          },
-        });
-        setStage('selecting');
-        return;
-      }
-    }
-
     try {
       const result = await dialIn({
         email: email ?? undefined,
@@ -163,9 +144,6 @@ export default function TastingScreen() {
       }
 
       if ('advice' in result) {
-        // Increment local brew count on success
-        if (!isPro) await incrementBrewCount();
-
         // Check and award achievements — show modal after result screen renders
         checkAndAwardBadges({
           method: params.method,
