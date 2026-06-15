@@ -123,6 +123,12 @@ export default function PaywallScreen() {
           Upgrade for unlimited dial-ins and never stop improving your brew.
         </Text>
 
+        <View style={[styles.proLabel, { backgroundColor: colors.secondary }]}>
+          <Text style={[styles.proLabelText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+            Dial In Pro
+          </Text>
+        </View>
+
         {isLoading ? (
           <ActivityIndicator color={colors.accent} size="large" style={{ marginVertical: 32 }} />
         ) : (
@@ -189,6 +195,20 @@ export default function PaywallScreen() {
             {isRestoring ? 'Restoring…' : 'Restore purchases'}
           </Text>
         </Pressable>
+
+        <Text style={[styles.legalNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+          Dial In Pro subscription auto-renews monthly ({monthlyPrice}/mo) or annually ({yearlyPrice}/yr) until cancelled. Cancel anytime in App Store Settings.
+        </Text>
+
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => WebBrowser.openBrowserAsync('https://coffeebrew.coach/api/privacy')}>
+            <Text style={[styles.legalLink, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={[styles.legalSep, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>·</Text>
+          <Pressable onPress={() => WebBrowser.openBrowserAsync('https://coffeebrew.coach/api/terms')}>
+            <Text style={[styles.legalLink, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Terms of Use</Text>
+          </Pressable>
+        </View>
       </View>
 
       <Modal
@@ -309,6 +329,33 @@ const styles = StyleSheet.create({
   },
   restoreBtnText: {
     fontSize: 13,
+  },
+  proLabel: {
+    borderRadius: 100,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  proLabelText: {
+    fontSize: 13,
+  },
+  legalNote: {
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
+    maxWidth: 300,
+    marginTop: 4,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legalLink: {
+    fontSize: 11,
+    textDecorationLine: 'underline',
+  },
+  legalSep: {
+    fontSize: 11,
   },
   modalBackdrop: {
     flex: 1,

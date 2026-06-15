@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import privacyRouter from "./routes/privacy";
 import supportRouter from "./routes/support";
+import termsRouter from "./routes/terms";
 import screenshotsRouter from "./routes/screenshots";
 import webhookRouter from "./routes/webhook";
 import { logger } from "./lib/logger";
@@ -40,6 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(privacyRouter);
 app.use(supportRouter);
+app.use(termsRouter);
 app.use(screenshotsRouter);
 app.use("/api", screenshotsRouter);
 
