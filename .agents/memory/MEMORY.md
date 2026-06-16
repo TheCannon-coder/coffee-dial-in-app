@@ -1,0 +1,1 @@
+- [iOS 26 SDK 56 requirement](ios26-sdk56.md) — Apple reviewers run iOS 26; Expo SDK 56 is required for iOS 26 native module compatibility.
