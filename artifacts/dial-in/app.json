@@ -23,7 +23,7 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.dialin.coffeecoach",
-      "buildNumber": "13",
+      "buildNumber": "18",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "Coffee Brew Coach can remind you to brew and notify you about referral rewards.",

@@ -1,0 +1,14 @@
+diff --git a/build/serializer/packedMap.js b/build/serializer/packedMap.js
+index 40ea4da583a8010a1ceca2e3bf0b8718b3226c44..bbf441e4d3f7276ccd4742f96acd0a27351a9199 100644
+--- a/build/serializer/packedMap.js
++++ b/build/serializer/packedMap.js
+@@ -167,6 +167,9 @@ function wrapTransformResultMaps(result) {
+ // Idempotent: chaining is safe because `installPackedMap` only fires
+ // when `data.map` is still a `SerializableSourceMap`.
+ function patchTransformFileForPackedMaps(bundler) {
++    if (!bundler || typeof bundler.transformFile !== 'function') {
++        return;
++    }
+     const originalTransformFile = bundler.transformFile.bind(bundler);
+     bundler.transformFile = async (...args) => {
+         return wrapTransformResultMaps((await originalTransformFile(...args)));

@@ -1,0 +1,11 @@
+build:
+  name: iOS Production
+  steps:
+    - eas/checkout
+    - eas/install_node_modules
+    - eas/resolve_apple_team_id_from_credentials
+    - eas/prebuild
+    - eas/install_pods
+    - name: Apply Expo SDK 56 + Metro 0.84 compat patch
+      run: node scripts/src/patch-expo-sdk56-compat.cjs
+    - eas/run_fastlane

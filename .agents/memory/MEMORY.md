@@ -1,1 +1,1 @@
-- [iOS 26 SDK 56 requirement](ios26-sdk56.md) — Apple reviewers run iOS 26; Expo SDK 56 is required for iOS 26 native module compatibility.
+- [EAS SDK56 build setup](eas-sdk56-build.md) — custom workflow YAML patches Metro/CLI after pod install; config field is "config" (string), not "customBuildConfig"
