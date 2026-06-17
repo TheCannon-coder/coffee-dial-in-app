@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -15,48 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
-import { TasteChip } from '@/components/TasteChip';
 import { dialIn } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, FREE_BREW_LIMIT } from '@/lib/storage';
 import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
 import { ShareModal } from '@/components/ShareModal';
 import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
+import { TastingChips } from '@/components/TastingChips';
+import { TastingResult } from '@/components/TastingResult';
 
 type Stage = 'selecting' | 'loading' | 'result';
-
-const CHIP_GROUPS = [
-  {
-    label: 'Tasted good',
-    chips: ['Sweet', 'Bright', 'Juicy', 'Balanced', 'Clean', 'Smooth', 'Silky', 'Syrupy', 'Crisp', 'Tangy'],
-  },
-  {
-    label: 'Too sharp or sour',
-    chips: ['Sour', 'Sharp', 'Salty', 'Metallic', 'Tart', 'Green / grassy', 'Short finish', 'No sweetness'],
-  },
-  {
-    label: 'Too bitter or harsh',
-    chips: ['Bitter', 'Harsh', 'Dry', 'Astringent', 'Flat', 'Burnt', 'Chalky', 'Lingers too long'],
-  },
-  {
-    label: 'Strength & body',
-    chips: ['Watery', 'Weak', 'Thin', 'Tea-like', 'Heavy', 'Thick', 'Muddy', 'Sludgy'],
-  },
-  {
-    label: 'Flavour character',
-    chips: ['Fruity', 'Floral', 'Chocolate', 'Nutty', 'Caramel', 'Honey', 'Tropical', 'Funky', 'Winey', 'Earthy', 'Spicy'],
-  },
-];
-
-const ADJUSTMENT_LABELS: Record<string, string> = {
-  grind_finer: 'Grind finer',
-  grind_coarser: 'Grind coarser',
-  more_coffee: 'Use more coffee',
-  less_coffee: 'Use less coffee',
-  steep_longer: 'Steep longer',
-  steep_shorter: 'Steep shorter',
-  none: 'Leave it as-is',
-};
 
 export default function TastingScreen() {
   const colors = useColors();
@@ -144,7 +111,6 @@ export default function TastingScreen() {
       }
 
       if ('advice' in result) {
-        // Check and award achievements — show modal after result screen renders
         checkAndAwardBadges({
           method: params.method,
           coffeeName: params.coffeeName ?? '',
@@ -160,13 +126,12 @@ export default function TastingScreen() {
 
         setAdvice(result.advice);
         setAdjustment(result.adjustment);
-        const serverRemaining = result.usesRemaining;
-        setUsesRemaining(serverRemaining);
-        updateUserStats(result.isPro, FREE_BREW_LIMIT - serverRemaining, FREE_BREW_LIMIT);
+        setUsesRemaining(result.usesRemaining);
+        updateUserStats(result.isPro, FREE_BREW_LIMIT - result.usesRemaining, FREE_BREW_LIMIT);
 
         if (email) {
           const newHistory = [...adjustmentHistory, result.adjustment];
-          const coffee = {
+          addOrUpdateCoffee({
             id: generateId(),
             coffeeName: params.coffeeName ?? params.method,
             method: params.method,
@@ -179,11 +144,9 @@ export default function TastingScreen() {
             adjustment: result.adjustment,
             savedAt: new Date().toISOString(),
             adjustmentHistory: newHistory,
-          };
-          addOrUpdateCoffee(coffee);
+          });
           setSaved(true);
         }
-
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStage('result');
@@ -207,8 +170,6 @@ export default function TastingScreen() {
       setSaving(false);
     }
   }
-
-  const isAnon = !email;
 
   return (
     <KeyboardAvoidingView
@@ -238,6 +199,7 @@ export default function TastingScreen() {
           onClose={() => setPendingBadges([])}
         />
       )}
+
       <View style={[styles.topBar, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} disabled={stage === 'loading'}>
           <Feather name="arrow-left" size={22} color={colors.espresso} />
@@ -254,147 +216,31 @@ export default function TastingScreen() {
         showsVerticalScrollIndicator={false}
       >
         {stage !== 'result' && (
-          <>
-            {CHIP_GROUPS.map(group => (
-              <View key={group.label} style={styles.chipGroup}>
-                <Text style={[styles.groupLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-                  {group.label}
-                </Text>
-                <View style={styles.chips}>
-                  {group.chips.map(chip => (
-                    <TasteChip
-                      key={chip}
-                      label={chip}
-                      selected={selected.has(chip)}
-                      onToggle={() => toggle(chip)}
-                    />
-                  ))}
-                </View>
-              </View>
-            ))}
-
-            <View style={styles.freeTextGroup}>
-              <Text style={[styles.groupLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-                Anything else you noticed?
-              </Text>
-              <TextInput
-                style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
-                placeholder="e.g. looked really dark, smelled smoky, felt rough on my tongue..."
-                placeholderTextColor={colors.mutedForeground}
-                value={freeText}
-                onChangeText={setFreeText}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {adjustmentHistory.length > 0 && (
-              <View style={styles.comparisonGroup}>
-                <Text style={[styles.comparisonLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-                  The most important question: was this brew better or worse than the previous?
-                </Text>
-                <View style={styles.comparisonButtons}>
-                  {(['worse', 'same', 'better'] as const).map((option) => {
-                    const labels = { worse: '👎 Worse', same: '→ Same', better: '👍 Better' };
-                    const selected = brewComparison === option;
-                    return (
-                      <Pressable
-                        key={option}
-                        style={[
-                          styles.comparisonBtn,
-                          {
-                            backgroundColor: selected ? colors.espresso : colors.card,
-                            borderColor: selected ? colors.espresso : colors.border,
-                          },
-                        ]}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setBrewComparison(prev => prev === option ? null : option);
-                        }}
-                      >
-                        <Text style={[styles.comparisonBtnText, { color: selected ? colors.cream : colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                          {labels[option]}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-          </>
+          <TastingChips
+            selected={selected}
+            onToggle={toggle}
+            freeText={freeText}
+            onFreeTextChange={setFreeText}
+            brewComparison={brewComparison}
+            onBrewComparisonChange={setBrewComparison}
+            showComparison={adjustmentHistory.length > 0}
+          />
         )}
 
         {stage === 'result' && (
-          <View style={styles.resultSection}>
-            <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.resultLabel, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
-                Our next brew tip
-              </Text>
-              <Text style={[styles.resultAdvice, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-                {advice}
-              </Text>
-              {adjustment && adjustment !== 'none' && (
-                <View style={[styles.adjustmentPill, { backgroundColor: colors.espresso }]}>
-                  <Text style={[styles.adjustmentText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-                    → {ADJUSTMENT_LABELS[adjustment] ?? adjustment}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-
-            {!isPro && usesRemaining !== null && email && (
-              <Text style={[styles.usesText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                {usesRemaining} dial-in{usesRemaining !== 1 ? 's' : ''} remaining this month
-              </Text>
-            )}
-
-            {email && saved && (
-              <View style={[styles.savedRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Feather name="check-circle" size={16} color={colors.accent} />
-                <Text style={[styles.savedText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>Saved to your coffees</Text>
-              </View>
-            )}
-
-            {isAnon && !saved && (
-              <View style={[styles.anonPrompt, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.anonTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-                  {usesRemaining === 0
-                    ? "That was your last free brew"
-                    : "Save this brew and track your history"}
-                </Text>
-                <Text style={[styles.anonSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                  {usesRemaining === 0
-                    ? "Enter your email for 10 free dial-ins a month"
-                    : ""}
-                </Text>
-                <TextInput
-                  style={[styles.anonInput, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
-                  placeholder="Your email address"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={saveEmail}
-                  onChangeText={setSaveEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                <Pressable
-                  style={({ pressed }) => [styles.saveBtn, { backgroundColor: colors.espresso, opacity: pressed || saving ? 0.8 : 1 }]}
-                  onPress={handleSaveWithEmail}
-                  disabled={saving}
-                >
-                  <Text style={[styles.saveBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-                    {usesRemaining === 0 ? 'Get free access →' : 'Save →'}
-                  </Text>
-                </Pressable>
-                {usesRemaining !== 0 && (
-                  <Pressable onPress={() => router.push('/home')} style={styles.skipBtn}>
-                    <Text style={[styles.skipBtnText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Skip</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-          </View>
+          <TastingResult
+            advice={advice}
+            adjustment={adjustment}
+            isPro={isPro}
+            usesRemaining={usesRemaining}
+            email={email}
+            saved={saved}
+            saveEmail={saveEmail}
+            onSaveEmailChange={setSaveEmail}
+            onSaveWithEmail={handleSaveWithEmail}
+            saving={saving}
+            onShare={() => setShowShareModal(true)}
+          />
         )}
       </ScrollView>
 
@@ -402,16 +248,13 @@ export default function TastingScreen() {
         {stage === 'selecting' && (
           <Pressable
             style={({ pressed }) => [
-              styles.nextBtn,
-              {
-                backgroundColor: canSubmit ? colors.espresso : colors.muted,
-                opacity: pressed ? 0.85 : 1,
-              },
+              styles.primaryBtn,
+              { backgroundColor: canSubmit ? colors.espresso : colors.muted, opacity: pressed ? 0.85 : 1 },
             ]}
             onPress={handleDialIn}
-            disabled={!canSubmit || stage !== 'selecting'}
+            disabled={!canSubmit}
           >
-            <Text style={[styles.nextBtnText, { color: canSubmit ? colors.cream : colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>
+            <Text style={[styles.primaryBtnText, { color: canSubmit ? colors.cream : colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>
               Let's dial it in →
             </Text>
           </Pressable>
@@ -427,25 +270,22 @@ export default function TastingScreen() {
         {stage === 'result' && (
           <View style={styles.resultFooter}>
             <Pressable
-              style={({ pressed }) => [
-                styles.shareOutlineBtn,
-                { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-              ]}
+              style={({ pressed }) => [styles.shareBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setShowShareModal(true);
               }}
             >
               <Feather name="share-2" size={16} color={colors.espresso} />
-              <Text style={[styles.shareOutlineBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+              <Text style={[styles.shareBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
                 Share this tip
               </Text>
             </Pressable>
             <Pressable
-              style={({ pressed }) => [styles.nextBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.85 : 1, flex: 1 }]}
+              style={({ pressed }) => [styles.primaryBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.85 : 1, flex: 1 }]}
               onPress={() => router.push('/home')}
             >
-              <Text style={[styles.nextBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Done</Text>
+              <Text style={[styles.primaryBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Done</Text>
             </Pressable>
           </View>
         )}
@@ -463,90 +303,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   topTitle: { fontSize: 17 },
   scroll: {
     paddingHorizontal: 20,
     paddingTop: 20,
     gap: 24,
   },
-  chipGroup: { gap: 10 },
-  groupLabel: { fontSize: 16 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap' },
-  freeTextGroup: { gap: 10 },
-  comparisonGroup: { gap: 12, paddingTop: 4 },
-  comparisonLabel: { fontSize: 16, lineHeight: 22 },
-  comparisonButtons: { flexDirection: 'row', gap: 10 },
-  comparisonBtn: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  comparisonBtnText: { fontSize: 14 },
-  textarea: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-    minHeight: 80,
-  },
-  resultSection: { gap: 16 },
-  resultCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    gap: 14,
-  },
-  resultLabel: { fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 },
-  resultAdvice: { fontSize: 20, lineHeight: 28 },
-  adjustmentPill: {
-    borderRadius: 100,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    alignSelf: 'flex-start',
-  },
-  adjustmentText: { fontSize: 14 },
-  usesText: { fontSize: 14, textAlign: 'center' },
-  savedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-  },
-  savedText: { fontSize: 15 },
-  anonPrompt: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 18,
-    gap: 12,
-  },
-  anonTitle: { fontSize: 18, lineHeight: 24 },
-  anonSub: { fontSize: 14, marginTop: -4 },
-  anonInput: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  saveBtn: {
-    borderRadius: 100,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  saveBtnText: { fontSize: 16 },
-  skipBtn: { alignItems: 'center' },
-  skipBtnText: { fontSize: 14 },
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -556,12 +319,12 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
   },
-  nextBtn: {
+  primaryBtn: {
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  nextBtnText: { fontSize: 17 },
+  primaryBtnText: { fontSize: 17 },
   loadingRow: {
     borderRadius: 100,
     paddingVertical: 16,
@@ -571,12 +334,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: { fontSize: 16 },
-  resultFooter: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  shareOutlineBtn: {
+  resultFooter: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  shareBtn: {
     borderRadius: 100,
     paddingVertical: 16,
     paddingHorizontal: 18,
@@ -585,5 +344,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
   },
-  shareOutlineBtnText: { fontSize: 15 },
+  shareBtnText: { fontSize: 15 },
 });

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { FormField } from '@/components/FormField';
 
 export default function PostBrewDetailsScreen() {
   const colors = useColors();
@@ -50,7 +51,9 @@ export default function PostBrewDetailsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.espresso} />
         </Pressable>
-        <Text style={[styles.topTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>Brew details</Text>
+        <Text style={[styles.topTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+          Brew details
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -75,7 +78,7 @@ export default function PostBrewDetailsScreen() {
           </View>
         ) : null}
 
-        <Field label="Coffee name or origin" colors={colors}>
+        <FormField label="Coffee name or origin">
           <TextInput
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
             placeholder="e.g. Ethiopian Yirgacheffe"
@@ -83,10 +86,10 @@ export default function PostBrewDetailsScreen() {
             value={coffeeName}
             onChangeText={setCoffeeName}
           />
-        </Field>
+        </FormField>
 
         <View style={styles.row}>
-          <Field label="Dose (g)" colors={colors} style={{ flex: 1 }}>
+          <FormField label="Dose (g)" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               placeholder="e.g. 15g"
@@ -94,8 +97,8 @@ export default function PostBrewDetailsScreen() {
               value={dose}
               onChangeText={setDose}
             />
-          </Field>
-          <Field label="Water (ml)" colors={colors} style={{ flex: 1 }}>
+          </FormField>
+          <FormField label="Water (ml)" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               placeholder="e.g. 250"
@@ -104,11 +107,11 @@ export default function PostBrewDetailsScreen() {
               onChangeText={setWater}
               keyboardType="numeric"
             />
-          </Field>
+          </FormField>
         </View>
 
         <View style={styles.row}>
-          <Field label="Brew time" colors={colors} style={{ flex: 1 }}>
+          <FormField label="Brew time" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               value={brewTime}
@@ -116,8 +119,8 @@ export default function PostBrewDetailsScreen() {
               placeholder="3:00"
               placeholderTextColor={colors.mutedForeground}
             />
-          </Field>
-          <Field label="Water temp" colors={colors} style={{ flex: 1 }}>
+          </FormField>
+          <FormField label="Water temp" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               value={waterTemp}
@@ -125,10 +128,10 @@ export default function PostBrewDetailsScreen() {
               placeholder="93°C"
               placeholderTextColor={colors.mutedForeground}
             />
-          </Field>
+          </FormField>
         </View>
 
-        <Field label="Notes (optional)" colors={colors}>
+        <FormField label="Notes (optional)">
           <TextInput
             style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
             placeholder="Grinder setting, any other notes..."
@@ -139,7 +142,7 @@ export default function PostBrewDetailsScreen() {
             numberOfLines={3}
             textAlignVertical="top"
           />
-        </Field>
+        </FormField>
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
@@ -156,73 +159,19 @@ export default function PostBrewDetailsScreen() {
   );
 }
 
-function Field({ label, children, style, colors }: { label: string; children: React.ReactNode; style?: object; colors: any }) {
-  return (
-    <View style={[fieldStyles.field, style]}>
-      <Text style={[fieldStyles.label, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const fieldStyles = StyleSheet.create({
-  field: { gap: 6 },
-  label: { fontSize: 14 },
-});
-
 const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   topTitle: { fontSize: 17 },
-  scroll: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    gap: 16,
-  },
+  scroll: { paddingHorizontal: 20, paddingTop: 24, gap: 16 },
   headline: { fontSize: 26, lineHeight: 32 },
   sub: { fontSize: 15, lineHeight: 22, marginTop: -4 },
-  autofill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
+  autofill: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   autofillText: { fontSize: 13, flex: 1 },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-  },
+  input: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16 },
   row: { flexDirection: 'row', gap: 12 },
-  textarea: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-    minHeight: 80,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
+  textarea: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, minHeight: 80 },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1 },
   nextBtn: { borderRadius: 100, paddingVertical: 16, alignItems: 'center' },
   nextBtnText: { fontSize: 17 },
 });

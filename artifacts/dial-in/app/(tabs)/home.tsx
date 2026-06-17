@@ -276,19 +276,6 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        {email && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/affiliate');
-            }}
-            style={styles.manageLink}
-          >
-            <Text style={[styles.manageLinkText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Affiliate dashboard
-            </Text>
-          </Pressable>
-        )}
       </ScrollView>
     </View>
   );

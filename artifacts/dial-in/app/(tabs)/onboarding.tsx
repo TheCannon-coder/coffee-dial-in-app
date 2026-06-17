@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import { useColors } from '@/hooks/useColors';
 import { useUser } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { signInWithApple } from '@/lib/api';
+import { NotificationSheet } from '@/components/NotificationSheet';
 
 const FEATURES = [
   {
@@ -90,10 +90,7 @@ export default function OnboardingScreen() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      const result = await signInWithApple(
-        credential.user,
-        credential.email ?? undefined,
-      );
+      const result = await signInWithApple(credential.user, credential.email ?? undefined);
       await setEmail(result.email);
       setShowNotifPrompt(true);
     } catch (e: unknown) {
@@ -182,7 +179,6 @@ export default function OnboardingScreen() {
                   style={styles.appleBtn}
                   onPress={handleAppleSignIn}
                 />
-
                 <View style={styles.divider}>
                   <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
                   <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
@@ -214,7 +210,9 @@ export default function OnboardingScreen() {
               onSubmitEditing={handleStart}
             />
             {error ? (
-              <Text style={[styles.error, { color: colors.destructive, fontFamily: 'DMSans_400Regular' }]}>{error}</Text>
+              <Text style={[styles.error, { color: colors.destructive, fontFamily: 'DMSans_400Regular' }]}>
+                {error}
+              </Text>
             ) : null}
 
             <Pressable
@@ -240,222 +238,40 @@ export default function OnboardingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal
+      <NotificationSheet
         visible={showNotifPrompt}
-        transparent
-        animationType="slide"
-        statusBarTranslucent
+        onEnable={handleEnableNotifications}
+        onSkip={handleSkipNotifications}
         onDismiss={() => { if (navigateOnDismiss) router.replace('/home'); }}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 24 }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
-
-            <View style={[styles.bellCircle, { backgroundColor: colors.secondary }]}>
-              <Feather name="bell" size={28} color={colors.accent} />
-            </View>
-
-            <Text style={[styles.sheetTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-              Never miss a reset
-            </Text>
-            <Text style={[styles.sheetBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Get a nudge on the 1st of each month when your free dial-ins reset, and a gentle reminder to brew on Saturdays.
-            </Text>
-
-            <View style={styles.sheetActions}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.sheetCta,
-                  { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 },
-                ]}
-                onPress={handleEnableNotifications}
-              >
-                <Feather name="bell" size={16} color={colors.cream} style={{ marginRight: 8 }} />
-                <Text style={[styles.sheetCtaText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-                  Turn on reminders
-                </Text>
-              </Pressable>
-
-              <Pressable onPress={handleSkipNotifications} style={styles.sheetSkip}>
-                <Text style={[styles.sheetSkipText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                  Not now
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    paddingHorizontal: 24,
-    gap: 0,
-  },
-  hero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 28,
-  },
-  wordmark: {
-    fontSize: 28,
-  },
-  badge: {
-    borderRadius: 100,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  badgeText: {
-    fontSize: 12,
-  },
-  headline: {
-    fontSize: 32,
-    lineHeight: 40,
-    marginBottom: 12,
-  },
-  subheading: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 28,
-  },
-  features: {
-    gap: 16,
-    marginBottom: 32,
-  },
-  feature: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'flex-start',
-  },
-  featureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  featureText: {
-    flex: 1,
-    gap: 2,
-  },
-  featureTitle: {
-    fontSize: 15,
-  },
-  featureDesc: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  form: {
-    gap: 12,
-    marginBottom: 16,
-  },
-  appleBtn: {
-    height: 52,
-    width: '100%',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 13,
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-  },
-  error: {
-    fontSize: 13,
-    marginTop: -4,
-  },
-  cta: {
-    borderRadius: 100,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  ctaText: {
-    fontSize: 17,
-  },
-  footnote: {
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  skip: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  skipText: {
-    fontSize: 14,
-  },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(42,26,14,0.35)',
-  },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 12,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: 28,
-  },
-  bellCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  sheetTitle: {
-    fontSize: 24,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  sheetBody: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: 28,
-  },
-  sheetActions: {
-    width: '100%',
-    gap: 12,
-    alignItems: 'center',
-  },
-  sheetCta: {
-    width: '100%',
-    borderRadius: 100,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetCtaText: {
-    fontSize: 17,
-  },
-  sheetSkip: {
-    paddingVertical: 8,
-  },
-  sheetSkipText: {
-    fontSize: 14,
-  },
+  scroll: { paddingHorizontal: 24, gap: 0 },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 28 },
+  wordmark: { fontSize: 28 },
+  badge: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeText: { fontSize: 12 },
+  headline: { fontSize: 32, lineHeight: 40, marginBottom: 12 },
+  subheading: { fontSize: 16, lineHeight: 24, marginBottom: 28 },
+  features: { gap: 16, marginBottom: 32 },
+  feature: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  featureIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  featureText: { flex: 1, gap: 2 },
+  featureTitle: { fontSize: 15 },
+  featureDesc: { fontSize: 13, lineHeight: 18 },
+  form: { gap: 12, marginBottom: 16 },
+  appleBtn: { height: 52, width: '100%' },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 13 },
+  input: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16 },
+  error: { fontSize: 13, marginTop: -4 },
+  cta: { borderRadius: 100, paddingVertical: 16, alignItems: 'center' },
+  ctaText: { fontSize: 17 },
+  footnote: { fontSize: 13, textAlign: 'center' },
+  skip: { alignItems: 'center', paddingVertical: 8 },
+  skipText: { fontSize: 14 },
 });

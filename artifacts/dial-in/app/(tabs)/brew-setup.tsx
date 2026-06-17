@@ -7,7 +7,6 @@ import {
   Text,
   TextInput,
   View,
-  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { BrewTimer } from '@/components/BrewTimer';
+import { FormField } from '@/components/FormField';
 
 const BREW_METHODS = [
   'Pour over', 'V60', 'Chemex', 'Kalita Wave',
@@ -73,7 +73,9 @@ export default function BrewSetupScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.espresso} />
         </Pressable>
-        <Text style={[styles.topTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>Brew setup</Text>
+        <Text style={[styles.topTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+          Brew setup
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -82,7 +84,7 @@ export default function BrewSetupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Field label="Coffee name or origin">
+        <FormField label="Coffee name or origin">
           <TextInput
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
             placeholder="e.g. Ethiopian Yirgacheffe"
@@ -90,14 +92,14 @@ export default function BrewSetupScreen() {
             value={coffeeName}
             onChangeText={setCoffeeName}
           />
-        </Field>
+        </FormField>
 
-        <Field label="Brew method">
+        <FormField label="Brew method">
           <Pressable
             style={[styles.input, styles.selector, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setShowMethodPicker(!showMethodPicker)}
           >
-            <Text style={[{ color: colors.espresso, fontFamily: 'DMSans_400Regular', fontSize: 16 }]}>{method}</Text>
+            <Text style={{ color: colors.espresso, fontFamily: 'DMSans_400Regular', fontSize: 16 }}>{method}</Text>
             <Feather name="chevron-down" size={18} color={colors.mutedForeground} />
           </Pressable>
           {showMethodPicker && (
@@ -108,39 +110,44 @@ export default function BrewSetupScreen() {
                   style={[styles.pickerItem, { borderBottomColor: colors.border }]}
                   onPress={() => { setMethod(m); setShowMethodPicker(false); }}
                 >
-                  <Text style={[styles.pickerItemText, { color: m === method ? colors.accent : colors.espresso, fontFamily: m === method ? 'DMSans_500Medium' : 'DMSans_400Regular' }]}>{m}</Text>
+                  <Text style={[styles.pickerItemText, { color: m === method ? colors.accent : colors.espresso, fontFamily: m === method ? 'DMSans_500Medium' : 'DMSans_400Regular' }]}>
+                    {m}
+                  </Text>
                   {m === method && <Feather name="check" size={16} color={colors.accent} />}
                 </Pressable>
               ))}
             </View>
           )}
-        </Field>
+        </FormField>
 
         <View style={[styles.toggleRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View>
-            <Text style={[styles.toggleLabel, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>Brew along with me</Text>
-            <Text style={[styles.toggleSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Get a starting recipe</Text>
+            <Text style={[styles.toggleLabel, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+              Brew along with me
+            </Text>
+            <Text style={[styles.toggleSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              Get a starting recipe
+            </Text>
           </View>
           <Switch
             value={brewAlong}
             onValueChange={v => { setBrewAlong(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             trackColor={{ false: colors.border, true: colors.accent }}
-            thumbColor={'#fff'}
+            thumbColor="#fff"
           />
         </View>
 
         <View style={styles.row}>
-          <Field label="Dose (g)" style={{ flex: 1 }}>
+          <FormField label="Dose (g)" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               placeholder="e.g. 15g"
               placeholderTextColor={colors.mutedForeground}
               value={dose}
               onChangeText={setDose}
-              keyboardType="default"
             />
-          </Field>
-          <Field label="Water (ml)" style={{ flex: 1 }}>
+          </FormField>
+          <FormField label="Water (ml)" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               placeholder="e.g. 250"
@@ -149,11 +156,11 @@ export default function BrewSetupScreen() {
               onChangeText={setWater}
               keyboardType="numeric"
             />
-          </Field>
+          </FormField>
         </View>
 
         <View style={styles.row}>
-          <Field label="Brew time" style={{ flex: 1 }}>
+          <FormField label="Brew time" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               placeholder="e.g. 3:00"
@@ -161,8 +168,8 @@ export default function BrewSetupScreen() {
               value={brewTime}
               onChangeText={setBrewTime}
             />
-          </Field>
-          <Field label="Water temp" style={{ flex: 1 }}>
+          </FormField>
+          <FormField label="Water temp" style={{ flex: 1 }}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
               placeholder="e.g. 93°C"
@@ -170,14 +177,11 @@ export default function BrewSetupScreen() {
               value={waterTemp}
               onChangeText={setWaterTemp}
             />
-          </Field>
+          </FormField>
         </View>
 
         <View style={styles.timerToggleRow}>
-          <Pressable
-            onPress={() => setShowTimer(!showTimer)}
-            style={styles.timerToggle}
-          >
+          <Pressable onPress={() => setShowTimer(!showTimer)} style={styles.timerToggle}>
             <Feather name="clock" size={15} color={colors.accent} />
             <Text style={[styles.timerToggleText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
               {showTimer ? 'Hide timer' : 'Use brew timer'}
@@ -186,7 +190,7 @@ export default function BrewSetupScreen() {
         </View>
         {showTimer && <BrewTimer onUseTime={t => setBrewTime(t)} />}
 
-        <Field label="Grinder setting / notes (optional)">
+        <FormField label="Grinder setting / notes (optional)">
           <TextInput
             style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
             placeholder="Grinder setting, any other notes..."
@@ -197,7 +201,7 @@ export default function BrewSetupScreen() {
             numberOfLines={3}
             textAlignVertical="top"
           />
-        </Field>
+        </FormField>
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
@@ -214,16 +218,6 @@ export default function BrewSetupScreen() {
   );
 }
 
-function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: object }) {
-  const colors = useColors();
-  return (
-    <View style={[styles.field, style]}>
-      <Text style={[styles.fieldLabel, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
@@ -233,109 +227,23 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topTitle: {
-    fontSize: 17,
-  },
-  scroll: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 16,
-  },
-  field: {
-    gap: 6,
-  },
-  fieldLabel: {
-    fontSize: 14,
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-  },
-  selector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  picker: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginTop: 4,
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  pickerItemText: {
-    fontSize: 15,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  toggleLabel: {
-    fontSize: 15,
-  },
-  toggleSub: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  timerToggleRow: {
-    marginTop: -4,
-  },
-  timerToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  timerToggleText: {
-    fontSize: 14,
-  },
-  textarea: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-    minHeight: 80,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  nextBtn: {
-    borderRadius: 100,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  nextBtnText: {
-    fontSize: 17,
-  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  topTitle: { fontSize: 17 },
+  scroll: { paddingHorizontal: 20, paddingTop: 20, gap: 16 },
+  input: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16 },
+  selector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  picker: { borderRadius: 12, borderWidth: 1, overflow: 'hidden', marginTop: 4 },
+  pickerItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
+  pickerItemText: { fontSize: 15 },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12 },
+  toggleLabel: { fontSize: 15 },
+  toggleSub: { fontSize: 13, marginTop: 2 },
+  row: { flexDirection: 'row', gap: 12 },
+  timerToggleRow: { marginTop: -4 },
+  timerToggle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  timerToggleText: { fontSize: 14 },
+  textarea: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, minHeight: 80 },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1 },
+  nextBtn: { borderRadius: 100, paddingVertical: 16, alignItems: 'center' },
+  nextBtnText: { fontSize: 17 },
 });
