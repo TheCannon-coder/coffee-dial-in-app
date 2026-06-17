@@ -32,22 +32,34 @@ When `eas-build-post-install` runs from `artifacts/dial-in/`, `process.cwd()` is
 - After running `pnpm install` locally (to regenerate the lockfile hash), BOTH the patch file AND pnpm-lock.yaml must be committed
 
 ## How EAS resolves @expo/cli
-The expo binary at `artifacts/dial-in/node_modules/.bin/expo` → `expo/bin/cli` → `require('@expo/cli')`. The `expo@56.0.12_a4fc3917` pnpm instance symlinks its `@expo/cli` to the PATCHED `@expo+cli@56.1.16_patch_hash=91240e1b...` instance. The Xcode build phase also resolves `CLI_PATH` via `require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })` which follows the same symlink.
+The expo binary at `artifacts/dial-in/node_modules/.bin/expo` → `expo/bin/cli` → `require('@expo/cli')`. The `expo@56.0.12_a4fc3917` pnpm instance symlinks its `@expo/cli` to the PATCHED `@expo+cli@56.1.16_patch_hash=26f2255...` instance. The Xcode build phase also resolves `CLI_PATH` via `require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })` which follows the same symlink.
 
 ## pnpm patch caveat
 `pnpm patchedDependencies` only patches ONE peer-dep variant of the package (the one whose peer deps match the patched lockfile entry). Other peer-dep variants of the same version remain unpatched. The `eas-build-post-install` postinstall covers ALL variants by iterating `node_modules/.pnpm` entries.
 
 ## Sentinel note
-The current sentinel is `/* SDK56_COMPAT_PATCH */`. Older patch attempts used `/* SDK56_COMPAT_PATCH_2 */`. These are DIFFERENT strings — `includes()` won't match cross-generation. On a fresh EAS install the sentinel is absent and patterns apply cleanly.
+Three sentinels are in use:
+- `/* SDK56_COMPAT_PATCH */` — `instantiateMetro.js` (dev server path)
+- `/* SDK56_COMPAT_VIRTUAL */` — `metroVirtualModules.js` (virtual modules path)
+- `/* SDK56_COMPAT_EMBED */` — `exportEmbedAsync.js` (export:embed path — THE ACTUAL CRASH SITE)
 
-## Build #31 still failed — `if (_innerBundler)` guard was not sufficient
+## THE REAL CRASH SITE (found after build #31)
 
-Build #31 (commit b535cbf, patch hash 91240e1b) still crashed with:
-`Cannot read properties of undefined (reading 'transformFile')`
+Builds #28–#31 all crashed with `Cannot read properties of undefined (reading 'transformFile')`.
 
-This means EITHER:
-1. The crash is at a DIFFERENT callsite than the one we guarded — there may be another place in `@expo/cli` or Metro that calls `.transformFile` on an undefined value
-2. The guard is correct but another peer-dep variant of `@expo/cli` is NOT being patched (pnpm patch only covers one variant; postinstall script may not have run or may not have found all instances)
-3. The patch file is committed but for some reason pnpm is not applying it on EAS
+The actual crash was in `exportEmbedAsync.js` (the `expo export:embed` Xcode bundle phase), NOT in `instantiateMetro.js` (the dev server path). Earlier patches only fixed the dev server path.
 
-**Next step when resuming:** Pull the FULL EAS build log (not just the summary screen) to get the actual stack trace. The stack trace will show exactly which file and line is calling `.transformFile` — that's the real crash site. Command: `eas build:view` or check the EAS dashboard build #31 logs. Look for lines above "Cannot read properties of undefined" to find the call stack.
+**Crash location:** `build/src/export/embed/exportEmbedAsync.js` ~line 436:
+```js
+(0, _packedMap().patchTransformFileForPackedMaps)(metro.getBundler().getBundler());
+```
+This is called with ZERO null guards. When Metro 0.84's `metro.getBundler().getBundler()` returns `undefined`, `patchTransformFileForPackedMaps(undefined)` tries to access `undefined.transformFile` → crash.
+
+**Fix (build #32, patch hash 26f2255...):**
+```js
+const _embedBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function'
+  ? metro.getBundler().getBundler() : null;
+if (_embedBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);
+```
+
+**Why `instantiateMetro.js` guards didn't help:** `exportEmbedAsync.js` uses a DIFFERENT code path — it calls `new Server(config, { watch: false })` directly, then immediately calls `patchTransformFileForPackedMaps` without going through `instantiateMetroAsync` at all.

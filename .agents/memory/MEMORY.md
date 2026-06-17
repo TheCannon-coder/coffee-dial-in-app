@@ -1,2 +1,2 @@
-- [EAS build patch strategy](eas-patch-strategy.md) — pnpm patches + postinstall script guard Metro bundler; ALL fix files must be committed before EAS submit or builds use stale HEAD.
+- [EAS patch strategy](eas-patch-strategy.md) — SDK56/Metro 0.84 real crash is exportEmbedAsync.js (export:embed path); patch hash 26f2255, build #32. ALL fix files must be committed together.
 - [Expo SDK56 Metro crash fix](expo-sdk56-metro-patch.md) — two-pronged fix for "Cannot read properties of undefined (reading 'transformFile')".

@@ -31,6 +31,7 @@ console.log('[SDK56 compat] EAS_BUILD_WORKINGDIR:', process.env.EAS_BUILD_WORKIN
 
 const SENTINEL_PATCH   = '/* SDK56_COMPAT_PATCH */';
 const SENTINEL_VIRTUAL = '/* SDK56_COMPAT_VIRTUAL */';
+const SENTINEL_EMBED   = '/* SDK56_COMPAT_EMBED */';
 
 function patchFile(filePath, sentinel, replacements) {
   let content;
@@ -179,6 +180,34 @@ console.log('[SDK56 compat] metroVirtualModules.js candidates:', virtualFiles.le
 for (const f of virtualFiles) {
   patchFile(f, SENTINEL_VIRTUAL, [
     [VIRTUAL_FROM, VIRTUAL_TO],
+  ]);
+}
+
+// ── Patch 4: exportEmbedAsync.js ─────────────────────────────────────────────
+// Guard patchTransformFileForPackedMaps call in the export:embed path (Xcode build).
+// This is the ACTUAL crash site for EAS builds — exportEmbedAsync.js calls
+// metro.getBundler().getBundler() without any null check before passing to
+// patchTransformFileForPackedMaps, which crashes when Metro 0.84 returns undefined.
+
+const EMBED_FROM =
+  '    // The dev server applies the same patch from `instantiateMetro.ts`;\n' +
+  '    // this is the export-embed / `expo-updates` path, where `data.map`\n' +
+  '    // would otherwise reach Metro\'s readers in the unwrapped wire shape.\n' +
+  '    (0, _packedMap().patchTransformFileForPackedMaps)(metro.getBundler().getBundler());';
+
+const EMBED_TO =
+  `    // The dev server applies the same patch from \`instantiateMetro.ts\`;\n` +
+  `    // this is the export-embed / \`expo-updates\` path, where \`data.map\`\n` +
+  `    // would otherwise reach Metro's readers in the unwrapped wire shape.\n` +
+  `    ${SENTINEL_EMBED}\n` +
+  `    const _embedBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function' ? metro.getBundler().getBundler() : null;\n` +
+  `    if (_embedBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);`;
+
+const embedFiles = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/export/embed/exportEmbedAsync.js');
+console.log('[SDK56 compat] exportEmbedAsync.js candidates:', embedFiles.length);
+for (const f of embedFiles) {
+  patchFile(f, SENTINEL_EMBED, [
+    [EMBED_FROM, EMBED_TO],
   ]);
 }
 

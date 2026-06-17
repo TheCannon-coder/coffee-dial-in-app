@@ -1,5 +1,20 @@
+diff --git a/build/src/export/embed/exportEmbedAsync.js b/build/src/export/embed/exportEmbedAsync.js
+index e820df6d4d69003a44bb3e7d84d938dc30f3f030..da4e880f492d389ee26fdf0667fa9c828c4293e0 100644
+--- a/build/src/export/embed/exportEmbedAsync.js
++++ b/build/src/export/embed/exportEmbedAsync.js
+@@ -433,7 +433,9 @@ async function createMetroServerAndBundleRequestAsync(projectRoot, options) {
+     // The dev server applies the same patch from `instantiateMetro.ts`;
+     // this is the export-embed / `expo-updates` path, where `data.map`
+     // would otherwise reach Metro's readers in the unwrapped wire shape.
+-    (0, _packedMap().patchTransformFileForPackedMaps)(metro.getBundler().getBundler());
++    /* SDK56_COMPAT_EMBED */
++    const _embedBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function' ? metro.getBundler().getBundler() : null;
++    if (_embedBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);
+     (0, _sourceMap().patchMetroSourceMapStringForPackedMaps)();
+     return {
+         server: metro,
 diff --git a/build/src/start/server/metro/instantiateMetro.js b/build/src/start/server/metro/instantiateMetro.js
-index 589990fb228170723e0703dca3fb0dde7f96b900..d6b6863bcdb07abbb45bbb0ce3f6a2d4f9507ebd 100644
+index 589990fb228170723e0703dca3fb0dde7f96b900..4c5301be50987171bab55ab44a2927898c9df64b 100644
 --- a/build/src/start/server/metro/instantiateMetro.js
 +++ b/build/src/start/server/metro/instantiateMetro.js
 @@ -316,7 +316,7 @@ async function instantiateMetroAsync(metroBundler, options, { isExporting, exp =
