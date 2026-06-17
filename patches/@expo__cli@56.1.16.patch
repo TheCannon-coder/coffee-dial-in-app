@@ -1,0 +1,57 @@
+diff --git a/build/src/start/server/metro/instantiateMetro.js b/build/src/start/server/metro/instantiateMetro.js
+index 589990fb228170723e0703dca3fb0dde7f96b900..d6b6863bcdb07abbb45bbb0ce3f6a2d4f9507ebd 100644
+--- a/build/src/start/server/metro/instantiateMetro.js
++++ b/build/src/start/server/metro/instantiateMetro.js
+@@ -316,7 +316,7 @@ async function instantiateMetroAsync(metroBundler, options, { isExporting, exp =
+ }).exp }) {
+     var _metroConfig_server;
+     const projectRoot = metroBundler.projectRoot;
+-    const getMetroBundler = ()=>metro.getBundler().getBundler();
++    const getMetroBundler = ()=>{ const ob = metro.getBundler(); return ob && typeof ob.getBundler === 'function' ? ob.getBundler() : undefined; };
+     const { config: metroConfig, setEventReporter, reporter } = await loadMetroConfigAsync(projectRoot, options, {
+         exp,
+         isExporting,
+@@ -395,8 +395,11 @@ async function instantiateMetroAsync(metroBundler, options, { isExporting, exp =
+         port: (address == null ? void 0 : address.port) ?? null
+     });
+     // Patch transform file to remove inconvenient customTransformOptions which are only used in single well-known files.
+-    const originalTransformFile = metro.getBundler().getBundler().transformFile.bind(metro.getBundler().getBundler());
+-    metro.getBundler().getBundler().transformFile = async function(filePath, transformOptions, fileBuffer) {
++    /* SDK56_COMPAT_PATCH */
++    const _innerBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function' ? metro.getBundler().getBundler() : null;
++    if (_innerBundler && typeof _innerBundler.transformFile === 'function') {
++    const originalTransformFile = _innerBundler.transformFile.bind(_innerBundler);
++    _innerBundler.transformFile = async function(filePath, transformOptions, fileBuffer) {
+         return originalTransformFile(filePath, pruneCustomTransformOptions(projectRoot, filePath, // Clone the options so we don't mutate the original.
+         {
+             ...transformOptions,
+@@ -406,10 +409,11 @@ async function instantiateMetroAsync(metroBundler, options, { isExporting, exp =
+             }
+         }), fileBuffer);
+     };
++    }
+     // Layered on top of the prune patch above. Both fresh worker results
+     // and cache hits flow through `Bundler.transformFile`, so wrapping
+     // here covers both.
+-    (0, _packedMap().patchTransformFileForPackedMaps)(metro.getBundler().getBundler());
++    (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);
+     (0, _sourceMap().patchMetroSourceMapStringForPackedMaps)();
+     setEventReporter(eventsSocket.reportMetroEvent);
+     // This function ensures that modules in source maps are sorted in the same
+diff --git a/build/src/start/server/metro/metroVirtualModules.js b/build/src/start/server/metro/metroVirtualModules.js
+index 81c30df9e8a7846359dbdfd4e082f425cd780b93..08f1897c58da1d41939c7986169ea467adb21903 100644
+--- a/build/src/start/server/metro/metroVirtualModules.js
++++ b/build/src/start/server/metro/metroVirtualModules.js
+@@ -48,6 +48,12 @@ function ensureStartsWithNullByte(id) {
+     return id;
+ }
+ function getMetroBundlerWithVirtualModules(bundler) {
++    /* SDK56_COMPAT_VIRTUAL */ if (!bundler || typeof bundler.transformFile !== 'function') {
++        // Bundler not yet initialized (production export / mock-server mode) — return a no-op
++        // so callers don't crash. Virtual modules will be absent but the bundle will still emit.
++        const noop = { setVirtualModule: function() {}, hasVirtualModule: function() { return false; } };
++        return ensureMetroBundlerPatchedWithSetVirtualModule(bundler || noop);
++    }
+     if (!bundler.transformFile.__patched) {
+         const originalTransformFile = bundler.transformFile.bind(bundler);
+         bundler.transformFile = async function(filePath, transformOptions, /** Optionally provide the file contents, this can be used to provide virtual contents for a file. */ fileBuffer) {

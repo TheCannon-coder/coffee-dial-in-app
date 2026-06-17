@@ -1,1 +1,2 @@
 - [EAS SDK56 build setup](eas-sdk56-build.md) — custom workflow YAML patches Metro/CLI after pod install; config field is "config" (string), not "customBuildConfig"
+- [Expo SDK 56 Metro 0.84 crash fix](expo-sdk56-metro-patch.md) — three crash sites in @expo/cli@56.1.16 for production export builds; pnpm patch is primary, postinstall is fallback.

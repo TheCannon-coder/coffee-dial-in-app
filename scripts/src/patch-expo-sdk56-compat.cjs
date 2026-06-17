@@ -1,20 +1,22 @@
 /**
- * Patches @expo/cli and @expo/metro-config for Expo SDK 56 + Metro 0.84 compatibility.
+ * Patches @expo/cli for Expo SDK 56 + Metro 0.84 compatibility.
  *
- * Root cause: Metro 0.84's IncrementalBundler.getBundler() can return undefined in
- * certain init sequences. Two call sites in @expo/cli call
- * `.getBundler().getBundler()` without null-checking the result and then access
- * `.transformFile` on it, crashing with:
- *   "Cannot read properties of undefined (reading 'transformFile')"
+ * Root cause: Metro 0.84's IncrementalBundler.getBundler() can return undefined
+ * in production export / mock-server mode. @expo/cli@56.1.16 calls into this
+ * bundler without guarding, causing crashes:
  *
- * pnpm's patchedDependencies mechanism is not applied by EAS Build (it skips the
- * workspace-root install step), so we patch the files directly here via postinstall.
+ *   1. instantiateMetro.js — getMetroBundler closure: metro.getBundler().getBundler()
+ *      returns undefined → downstream crash
+ *   2. instantiateMetro.js — transformFile section: direct getBundler().getBundler()
+ *      calls with no null check
+ *   3. metroVirtualModules.js — getMetroBundlerWithVirtualModules(bundler):
+ *      bundler.transformFile.__patched crashes when bundler is undefined
  *
- * Patches applied (idempotent):
- *   1. @expo/metro-config  build/serializer/packedMap.js
- *      patchTransformFileForPackedMaps() — guard undefined bundler argument
- *   2. @expo/cli  build/src/start/server/metro/instantiateMetro.js
- *      Direct .transformFile.bind() call — guard undefined inner bundler
+ * This script is a postinstall fallback. pnpm patchedDependencies is the primary
+ * fix (patches/@expo__cli@56.1.16.patch). This script applies if the pnpm patch
+ * somehow didn't take (idempotent via sentinel markers).
+ *
+ * Note: @expo/metro-config's packedMap.js already has a null-check in v56.0.14+.
  */
 
 'use strict';
@@ -22,26 +24,39 @@
 const fs = require('fs');
 const path = require('path');
 
-const SENTINEL_1 = '/* SDK56_COMPAT_PATCH_1 */';
-const SENTINEL_2 = '/* SDK56_COMPAT_PATCH_2 */';
+const SENTINEL_PATCH   = '/* SDK56_COMPAT_PATCH */';
+const SENTINEL_VIRTUAL = '/* SDK56_COMPAT_VIRTUAL */';
 
-function patch(filePath, fromStr, toStr, sentinel) {
+function patchFile(filePath, sentinel, replacements) {
   let content;
   try {
     content = fs.readFileSync(filePath, 'utf8');
   } catch {
     return;
   }
-  if (content.includes(sentinel)) return; // already patched
-  if (!content.includes(fromStr)) {
-    console.warn('[SDK56 compat] Pattern not found, skipping:', filePath);
-    return;
+  if (content.includes(sentinel)) return;
+
+  let modified = content;
+  let anyApplied = false;
+  for (const [fromStr, toStr] of replacements) {
+    if (!modified.includes(fromStr)) {
+      console.warn('[SDK56 compat] Pattern not found, skipping:', filePath);
+    } else {
+      modified = modified.replace(fromStr, toStr);
+      anyApplied = true;
+    }
   }
-  fs.writeFileSync(filePath, content.replace(fromStr, toStr), 'utf8');
-  console.log('[SDK56 compat] Patched:', filePath);
+  if (anyApplied) {
+    fs.writeFileSync(filePath, modified, 'utf8');
+    console.log('[SDK56 compat] Patched:', filePath);
+  }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const PNPM_STORE = (function () {
+  const cwdBased = path.resolve(process.cwd(), 'node_modules/.pnpm');
+  if (fs.existsSync(cwdBased)) return cwdBased;
+  return path.resolve(__dirname, '../../node_modules/.pnpm');
+}());
 
 function findFiles(baseDir, relPath) {
   const results = [];
@@ -53,41 +68,17 @@ function findFiles(baseDir, relPath) {
   return results;
 }
 
-// Support two calling conventions:
-// 1. As a postinstall (CWD = workspace root, __dirname = scripts/src)
-// 2. As an EAS custom build step (CWD = workspace root / checkout dir)
-const PNPM_STORE = (function () {
-  // Prefer CWD-relative path (works in both EAS build step and postinstall)
-  const cwdBased = path.resolve(process.cwd(), 'node_modules/.pnpm');
-  if (fs.existsSync(cwdBased)) return cwdBased;
-  // Fallback: relative to this script file (scripts/src/ → workspace root)
-  return path.resolve(__dirname, '../../node_modules/.pnpm');
-}());
+// ── Patch 1 + 2: instantiateMetro.js ─────────────────────────────────────────
+// Fix 1: guard getMetroBundler closure (line ~319)
+// Fix 2: guard transformFile section against undefined bundler
 
-// ── Patch 1: packedMap.js ─────────────────────────────────────────────────────
-// Add guard so patchTransformFileForPackedMaps() is a safe no-op when the
-// Metro inner bundler is undefined (Metro 0.84+ init-sequence change).
+const INSTANTIATE_FROM_BUNDLER =
+  '    const getMetroBundler = ()=>metro.getBundler().getBundler();';
 
-const PACKED_MAP_FROM =
-  'function patchTransformFileForPackedMaps(bundler) {\n' +
-  '    const originalTransformFile = bundler.transformFile.bind(bundler);';
+const INSTANTIATE_TO_BUNDLER =
+  `    const getMetroBundler = ()=>{ const ob = metro.getBundler(); return ob && typeof ob.getBundler === 'function' ? ob.getBundler() : undefined; };`;
 
-const PACKED_MAP_TO =
-  `function patchTransformFileForPackedMaps(bundler) {\n` +
-  `    ${SENTINEL_1}\n` +
-  `    if (!bundler || typeof bundler.transformFile !== 'function') return;\n` +
-  `    const originalTransformFile = bundler.transformFile.bind(bundler);`;
-
-for (const f of findFiles(PNPM_STORE, 'node_modules/@expo/metro-config/build/serializer/packedMap.js')) {
-  patch(f, PACKED_MAP_FROM, PACKED_MAP_TO, SENTINEL_1);
-}
-
-// ── Patch 2: instantiateMetro.js ──────────────────────────────────────────────
-// Guard the direct metro.getBundler().getBundler().transformFile.bind() call that
-// is NOT inside patchTransformFileForPackedMaps and therefore not covered by
-// Patch 1 above.
-
-const INSTANTIATE_FROM =
+const INSTANTIATE_FROM_TRANSFORM =
   '    // Patch transform file to remove inconvenient customTransformOptions which are only used in single well-known files.\n' +
   '    const originalTransformFile = metro.getBundler().getBundler().transformFile.bind(metro.getBundler().getBundler());\n' +
   '    metro.getBundler().getBundler().transformFile = async function(filePath, transformOptions, fileBuffer) {\n' +
@@ -105,10 +96,10 @@ const INSTANTIATE_FROM =
   '    // here covers both.\n' +
   '    (0, _packedMap().patchTransformFileForPackedMaps)(metro.getBundler().getBundler());';
 
-const INSTANTIATE_TO =
+const INSTANTIATE_TO_TRANSFORM =
   `    // Patch transform file to remove inconvenient customTransformOptions which are only used in single well-known files.\n` +
-  `    ${SENTINEL_2}\n` +
-  `    const _innerBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function' && metro.getBundler().getBundler();\n` +
+  `    ${SENTINEL_PATCH}\n` +
+  `    const _innerBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function' ? metro.getBundler().getBundler() : null;\n` +
   `    if (_innerBundler && typeof _innerBundler.transformFile === 'function') {\n` +
   `    const originalTransformFile = _innerBundler.transformFile.bind(_innerBundler);\n` +
   `    _innerBundler.transformFile = async function(filePath, transformOptions, fileBuffer) {\n` +
@@ -125,10 +116,34 @@ const INSTANTIATE_TO =
   `    // Layered on top of the prune patch above. Both fresh worker results\n` +
   `    // and cache hits flow through \`Bundler.transformFile\`, so wrapping\n` +
   `    // here covers both.\n` +
-  `    (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler || metro.getBundler() && metro.getBundler().getBundler && metro.getBundler().getBundler());`;
+  `    (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);`;
 
 for (const f of findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/instantiateMetro.js')) {
-  patch(f, INSTANTIATE_FROM, INSTANTIATE_TO, SENTINEL_2);
+  patchFile(f, SENTINEL_PATCH, [
+    [INSTANTIATE_FROM_BUNDLER, INSTANTIATE_TO_BUNDLER],
+    [INSTANTIATE_FROM_TRANSFORM, INSTANTIATE_TO_TRANSFORM],
+  ]);
+}
+
+// ── Patch 3: metroVirtualModules.js ──────────────────────────────────────────
+// Guard getMetroBundlerWithVirtualModules against undefined bundler (mock-server mode).
+
+const VIRTUAL_FROM =
+  'function getMetroBundlerWithVirtualModules(bundler) {\n' +
+  '    if (!bundler.transformFile.__patched) {';
+
+const VIRTUAL_TO =
+  `function getMetroBundlerWithVirtualModules(bundler) {\n` +
+  `    ${SENTINEL_VIRTUAL} if (!bundler || typeof bundler.transformFile !== 'function') {\n` +
+  `        const noop = { setVirtualModule: function() {}, hasVirtualModule: function() { return false; } };\n` +
+  `        return ensureMetroBundlerPatchedWithSetVirtualModule(bundler || noop);\n` +
+  `    }\n` +
+  `    if (!bundler.transformFile.__patched) {`;
+
+for (const f of findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/metroVirtualModules.js')) {
+  patchFile(f, SENTINEL_VIRTUAL, [
+    [VIRTUAL_FROM, VIRTUAL_TO],
+  ]);
 }
 
 console.log('[SDK56 compat] Done.');

@@ -7,5 +7,5 @@ build:
     - eas/prebuild
     - eas/install_pods
     - name: Apply Expo SDK 56 + Metro 0.84 compat patch
-      run: node scripts/src/patch-expo-sdk56-compat.cjs
+      run: node $EAS_BUILD_WORKINGDIR/scripts/src/patch-expo-sdk56-compat.cjs
     - eas/run_fastlane

@@ -16,7 +16,6 @@
     },
     "production": {
       "autoIncrement": false,
-      "config": "ios-production.yml",
       "ios": {
         "resourceClass": "m-medium"
       }
