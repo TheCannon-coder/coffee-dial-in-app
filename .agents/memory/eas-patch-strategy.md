@@ -39,3 +39,15 @@ The expo binary at `artifacts/dial-in/node_modules/.bin/expo` → `expo/bin/cli`
 
 ## Sentinel note
 The current sentinel is `/* SDK56_COMPAT_PATCH */`. Older patch attempts used `/* SDK56_COMPAT_PATCH_2 */`. These are DIFFERENT strings — `includes()` won't match cross-generation. On a fresh EAS install the sentinel is absent and patterns apply cleanly.
+
+## Build #31 still failed — `if (_innerBundler)` guard was not sufficient
+
+Build #31 (commit b535cbf, patch hash 91240e1b) still crashed with:
+`Cannot read properties of undefined (reading 'transformFile')`
+
+This means EITHER:
+1. The crash is at a DIFFERENT callsite than the one we guarded — there may be another place in `@expo/cli` or Metro that calls `.transformFile` on an undefined value
+2. The guard is correct but another peer-dep variant of `@expo/cli` is NOT being patched (pnpm patch only covers one variant; postinstall script may not have run or may not have found all instances)
+3. The patch file is committed but for some reason pnpm is not applying it on EAS
+
+**Next step when resuming:** Pull the FULL EAS build log (not just the summary screen) to get the actual stack trace. The stack trace will show exactly which file and line is calling `.transformFile` — that's the real crash site. Command: `eas build:view` or check the EAS dashboard build #31 logs. Look for lines above "Cannot read properties of undefined" to find the call stack.
