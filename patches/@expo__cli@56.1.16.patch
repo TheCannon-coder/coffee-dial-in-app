@@ -34,7 +34,7 @@ index 589990fb228170723e0703dca3fb0dde7f96b900..d6b6863bcdb07abbb45bbb0ce3f6a2d4
      // and cache hits flow through `Bundler.transformFile`, so wrapping
      // here covers both.
 -    (0, _packedMap().patchTransformFileForPackedMaps)(metro.getBundler().getBundler());
-+    (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);
++    if (_innerBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);
      (0, _sourceMap().patchMetroSourceMapStringForPackedMaps)();
      setEventReporter(eventsSocket.reportMetroEvent);
      // This function ensures that modules in source maps are sorted in the same

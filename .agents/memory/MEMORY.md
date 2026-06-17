@@ -1,2 +1,2 @@
-- [EAS SDK56 build setup](eas-sdk56-build.md) — custom workflow YAML patches Metro/CLI after pod install; config field is "config" (string), not "customBuildConfig"
-- [Expo SDK 56 Metro 0.84 crash fix](expo-sdk56-metro-patch.md) — three crash sites in @expo/cli@56.1.16 for production export builds; pnpm patch is primary, postinstall is fallback.
+- [EAS build patch strategy](eas-patch-strategy.md) — pnpm patches + postinstall script guard Metro bundler; ALL fix files must be committed before EAS submit or builds use stale HEAD.
+- [Expo SDK56 Metro crash fix](expo-sdk56-metro-patch.md) — two-pronged fix for "Cannot read properties of undefined (reading 'transformFile')".

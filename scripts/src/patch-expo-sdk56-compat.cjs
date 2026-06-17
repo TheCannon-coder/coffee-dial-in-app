@@ -12,17 +12,22 @@
  *   3. metroVirtualModules.js — getMetroBundlerWithVirtualModules(bundler):
  *      bundler.transformFile.__patched crashes when bundler is undefined
  *
- * This script is a postinstall fallback. pnpm patchedDependencies is the primary
- * fix (patches/@expo__cli@56.1.16.patch). This script applies if the pnpm patch
- * somehow didn't take (idempotent via sentinel markers).
+ * This script runs as both:
+ *   - root postinstall (may be skipped if EAS uses --ignore-scripts)
+ *   - eas-build-post-install hook in artifacts/dial-in/package.json (always runs on EAS)
  *
- * Note: @expo/metro-config's packedMap.js already has a null-check in v56.0.14+.
+ * Patches are idempotent via sentinel markers.
  */
 
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
+
+console.log('[SDK56 compat] Starting patch script');
+console.log('[SDK56 compat] process.cwd():', process.cwd());
+console.log('[SDK56 compat] __dirname:', __dirname);
+console.log('[SDK56 compat] EAS_BUILD_WORKINGDIR:', process.env.EAS_BUILD_WORKINGDIR || '(not set)');
 
 const SENTINEL_PATCH   = '/* SDK56_COMPAT_PATCH */';
 const SENTINEL_VIRTUAL = '/* SDK56_COMPAT_VIRTUAL */';
@@ -34,13 +39,17 @@ function patchFile(filePath, sentinel, replacements) {
   } catch {
     return;
   }
-  if (content.includes(sentinel)) return;
+  if (content.includes(sentinel)) {
+    console.log('[SDK56 compat] Already patched (sentinel found):', filePath);
+    return;
+  }
 
   let modified = content;
   let anyApplied = false;
   for (const [fromStr, toStr] of replacements) {
     if (!modified.includes(fromStr)) {
       console.warn('[SDK56 compat] Pattern not found, skipping:', filePath);
+      console.warn('[SDK56 compat]   Expected to find:', JSON.stringify(fromStr.slice(0, 80)));
     } else {
       modified = modified.replace(fromStr, toStr);
       anyApplied = true;
@@ -49,18 +58,41 @@ function patchFile(filePath, sentinel, replacements) {
   if (anyApplied) {
     fs.writeFileSync(filePath, modified, 'utf8');
     console.log('[SDK56 compat] Patched:', filePath);
+  } else {
+    console.warn('[SDK56 compat] Nothing applied to:', filePath);
   }
 }
 
 const PNPM_STORE = (function () {
+  // Try CWD-relative first (normal local install)
   const cwdBased = path.resolve(process.cwd(), 'node_modules/.pnpm');
-  if (fs.existsSync(cwdBased)) return cwdBased;
-  return path.resolve(__dirname, '../../node_modules/.pnpm');
+  if (fs.existsSync(cwdBased)) {
+    console.log('[SDK56 compat] Using CWD-based PNPM_STORE:', cwdBased);
+    return cwdBased;
+  }
+
+  // On EAS, CWD is the app dir (artifacts/dial-in) — use EAS_BUILD_WORKINGDIR
+  const easWorkdir = process.env.EAS_BUILD_WORKINGDIR;
+  if (easWorkdir) {
+    const easBased = path.join(easWorkdir, 'node_modules/.pnpm');
+    if (fs.existsSync(easBased)) {
+      console.log('[SDK56 compat] Using EAS_BUILD_WORKINGDIR-based PNPM_STORE:', easBased);
+      return easBased;
+    }
+  }
+
+  // Fallback: relative to this script (scripts/src/ → monorepo root)
+  const scriptBased = path.resolve(__dirname, '../../node_modules/.pnpm');
+  console.log('[SDK56 compat] Using script-relative PNPM_STORE:', scriptBased, 'exists:', fs.existsSync(scriptBased));
+  return scriptBased;
 }());
 
 function findFiles(baseDir, relPath) {
   const results = [];
-  if (!fs.existsSync(baseDir)) return results;
+  if (!fs.existsSync(baseDir)) {
+    console.warn('[SDK56 compat] PNPM_STORE does not exist:', baseDir);
+    return results;
+  }
   for (const entry of fs.readdirSync(baseDir)) {
     const candidate = path.join(baseDir, entry, relPath);
     if (fs.existsSync(candidate)) results.push(candidate);
@@ -116,9 +148,11 @@ const INSTANTIATE_TO_TRANSFORM =
   `    // Layered on top of the prune patch above. Both fresh worker results\n` +
   `    // and cache hits flow through \`Bundler.transformFile\`, so wrapping\n` +
   `    // here covers both.\n` +
-  `    (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);`;
+  `    if (_innerBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);`;
 
-for (const f of findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/instantiateMetro.js')) {
+const instantiateFiles = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/instantiateMetro.js');
+console.log('[SDK56 compat] instantiateMetro.js candidates:', instantiateFiles.length);
+for (const f of instantiateFiles) {
   patchFile(f, SENTINEL_PATCH, [
     [INSTANTIATE_FROM_BUNDLER, INSTANTIATE_TO_BUNDLER],
     [INSTANTIATE_FROM_TRANSFORM, INSTANTIATE_TO_TRANSFORM],
@@ -140,7 +174,9 @@ const VIRTUAL_TO =
   `    }\n` +
   `    if (!bundler.transformFile.__patched) {`;
 
-for (const f of findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/metroVirtualModules.js')) {
+const virtualFiles = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/metroVirtualModules.js');
+console.log('[SDK56 compat] metroVirtualModules.js candidates:', virtualFiles.length);
+for (const f of virtualFiles) {
   patchFile(f, SENTINEL_VIRTUAL, [
     [VIRTUAL_FROM, VIRTUAL_TO],
   ]);
