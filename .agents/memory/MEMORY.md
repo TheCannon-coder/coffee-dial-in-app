@@ -1,2 +1,1 @@
-- [EAS patch strategy](eas-patch-strategy.md) — SDK56/Metro 0.84 real crash is exportEmbedAsync.js (export:embed path); patch hash 26f2255, build #32. ALL fix files must be committed together.
-- [Expo SDK56 Metro crash fix](expo-sdk56-metro-patch.md) — two-pronged fix for "Cannot read properties of undefined (reading 'transformFile')".
+- [EAS babel-preset-expo fix](eas-babel-preset-expo-fix.md) — pnpm doesn't hoist transitive deps; babel-preset-expo MUST be direct devDep in dial-in/package.json or EAS builds fail with obscure metro crash

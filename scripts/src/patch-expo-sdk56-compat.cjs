@@ -149,7 +149,7 @@ const INSTANTIATE_TO_TRANSFORM =
   `    // Layered on top of the prune patch above. Both fresh worker results\n` +
   `    // and cache hits flow through \`Bundler.transformFile\`, so wrapping\n` +
   `    // here covers both.\n` +
-  `    if (_innerBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);`;
+  `    if (_innerBundler && typeof _innerBundler.transformFile === 'function') (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);`;
 
 const instantiateFiles = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/instantiateMetro.js');
 console.log('[SDK56 compat] instantiateMetro.js candidates:', instantiateFiles.length);
@@ -201,13 +201,169 @@ const EMBED_TO =
   `    // would otherwise reach Metro's readers in the unwrapped wire shape.\n` +
   `    ${SENTINEL_EMBED}\n` +
   `    const _embedBundler = metro.getBundler() && typeof metro.getBundler().getBundler === 'function' ? metro.getBundler().getBundler() : null;\n` +
-  `    if (_embedBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);`;
+  `    if (_embedBundler && typeof _embedBundler.transformFile === 'function') (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);`;
 
 const embedFiles = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/export/embed/exportEmbedAsync.js');
 console.log('[SDK56 compat] exportEmbedAsync.js candidates:', embedFiles.length);
 for (const f of embedFiles) {
   patchFile(f, SENTINEL_EMBED, [
     [EMBED_FROM, EMBED_TO],
+  ]);
+}
+
+// ── Patch 5 (V2): crash-stack logging in exportEmbedBundleAndAssetsAsync ─────
+// Emit each stack frame as an Xcode-style "error:" line so EAS surfaces the
+// full JS stack in its error summary (plain console.error lines are present in
+// the raw Xcode log but EAS only promotes lines that start with "error:").
+//
+// The unique anchor (finally + devServerManager.stopAsync) is present ONLY in
+// exportEmbedBundleAndAssetsAsync — not in exportEmbedAssetsAsync — so the
+// match is unambiguous even across multiple file variants.
+
+const SENTINEL_STACK_V2 = '/* SDK56_COMPAT_STACK_V2 */';
+
+const STACK_V2_FROM =
+  '        throw error;\n' +
+  '    } finally{\n' +
+  '        devServerManager.stopAsync();';
+
+const STACK_V2_TO =
+  `        ${SENTINEL_STACK_V2} (function() { var _sl = (error && error.stack ? error.stack : String(error)).split('\\n'); _sl.slice(0, 10).forEach(function(l, i) { process.stderr.write('/bundle:' + i + ': error: [SDK56_STACK_' + i + '] ' + l.trim() + '\\n'); }); }());\n` +
+  `        throw error;\n` +
+  `    } finally{\n` +
+  `        devServerManager.stopAsync();`;
+
+const stackV2Files = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/export/embed/exportEmbedAsync.js');
+console.log('[SDK56 compat] exportEmbedAsync.js (stack-v2) candidates:', stackV2Files.length);
+for (const f of stackV2Files) {
+  patchFile(f, SENTINEL_STACK_V2, [
+    [STACK_V2_FROM, STACK_V2_TO],
+  ]);
+}
+
+// ── Patch 6: tighten patchTransformFileForPackedMaps guard in instantiateMetro ─
+// The primary @expo/cli variant already has SENTINEL_PATCH from the pnpm patch,
+// so Patch 1+2 skip it — but the pnpm patch still emits the weaker
+// `if (_innerBundler)` guard.  This patch tightens it to also verify that
+// transformFile is actually a function before calling patchTransformFileForPackedMaps.
+
+const SENTINEL_TRANSFORM_GUARD = '/* SDK56_COMPAT_TRANSFORM_GUARD */';
+
+const TRANSFORM_GUARD_FROM =
+  '    if (_innerBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);';
+
+const TRANSFORM_GUARD_TO =
+  `    ${SENTINEL_TRANSFORM_GUARD} if (_innerBundler && typeof _innerBundler.transformFile === 'function') (0, _packedMap().patchTransformFileForPackedMaps)(_innerBundler);`;
+
+const instantiateFiles2 = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/start/server/metro/instantiateMetro.js');
+console.log('[SDK56 compat] instantiateMetro.js (transform-guard) candidates:', instantiateFiles2.length);
+for (const f of instantiateFiles2) {
+  patchFile(f, SENTINEL_TRANSFORM_GUARD, [
+    [TRANSFORM_GUARD_FROM, TRANSFORM_GUARD_TO],
+  ]);
+}
+
+// ── Patch 7: null guard in @expo/metro-config packedMap.js ───────────────────
+// The @expo/metro-config used by the patched @expo/cli variant resolves to the
+// UNPATCHED peer variant (no patch_hash) which ships from npm WITHOUT any null
+// guard on patchTransformFileForPackedMaps.  The pnpm patch for @expo/metro-config
+// creates a separate patch_hash variant that IS guarded, but the patched @expo/cli
+// does NOT resolve to that variant — it resolves to the plain peer.
+//
+// This patch adds the same guard that the pnpm patch adds (SDK56_COMPAT_PATCH_1)
+// to ALL packedMap.js variants that don't already have it.
+
+const SENTINEL_PACKED_MAP = '/* SDK56_COMPAT_PACKED_MAP */';
+
+const PACKED_MAP_FROM =
+  'function patchTransformFileForPackedMaps(bundler) {\n' +
+  '    const originalTransformFile = bundler.transformFile.bind(bundler);';
+
+const PACKED_MAP_TO =
+  `function patchTransformFileForPackedMaps(bundler) {\n` +
+  `    ${SENTINEL_PACKED_MAP} if (!bundler || typeof bundler.transformFile !== 'function') return;\n` +
+  `    const originalTransformFile = bundler.transformFile.bind(bundler);`;
+
+const packedMapFiles = findFiles(PNPM_STORE, 'node_modules/@expo/metro-config/build/serializer/packedMap.js');
+console.log('[SDK56 compat] packedMap.js candidates:', packedMapFiles.length);
+for (const f of packedMapFiles) {
+  patchFile(f, SENTINEL_PACKED_MAP, [
+    [PACKED_MAP_FROM, PACKED_MAP_TO],
+  ]);
+}
+
+// ── Patch 8: tighten patchTransformFileForPackedMaps guard in exportEmbedAsync ─
+// Same as Patch 6 but for the embed export path.  The pnpm patch emits
+// `if (_embedBundler)` without checking that transformFile is a function.
+
+const SENTINEL_EMBED_GUARD = '/* SDK56_COMPAT_EMBED_GUARD */';
+
+const EMBED_GUARD_FROM =
+  '    if (_embedBundler) (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);';
+
+const EMBED_GUARD_TO =
+  `    ${SENTINEL_EMBED_GUARD} if (_embedBundler && typeof _embedBundler.transformFile === 'function') (0, _packedMap().patchTransformFileForPackedMaps)(_embedBundler);`;
+
+const embedFiles2 = findFiles(PNPM_STORE, 'node_modules/@expo/cli/build/src/export/embed/exportEmbedAsync.js');
+console.log('[SDK56 compat] exportEmbedAsync.js (embed-guard) candidates:', embedFiles2.length);
+for (const f of embedFiles2) {
+  patchFile(f, SENTINEL_EMBED_GUARD, [
+    [EMBED_GUARD_FROM, EMBED_GUARD_TO],
+  ]);
+}
+
+// ── Patch 9: surface metro Bundler._transformer init errors ──────────────────
+// Root cause confirmed by build #34 stack trace: metro@0.84.4 Bundler constructor
+// initialises _transformer asynchronously inside `_depGraph.ready().then(...)`.
+// If that .then() throws (e.g. Transformer constructor crash, watchFolder missing,
+// WorkerFarm failure), the .catch() swallows the error — _transformer stays
+// undefined.  When bundling starts, `Bundler.transformFile` calls
+// `this._transformer.transformFile(...)` → "Cannot read properties of undefined
+// (reading 'transformFile')".
+//
+// This patch:
+//   a) Stores the init error on `this._initError` inside the catch block.
+//   b) Emits it as Xcode `error:` lines so EAS surfaces the ACTUAL root cause.
+//   c) Re-throws `this._initError` inside `transformFile` instead of the
+//      misleading `reading 'transformFile'` crash.
+
+const SENTINEL_BUNDLER_INIT = '/* SDK56_COMPAT_BUNDLER_INIT */';
+
+// (a)+(b): store + log the init error in the .catch() block
+const BUNDLER_CATCH_FROM =
+  '      .catch((error) => {\n' +
+  '        console.error("Failed to construct transformer: ", error);\n' +
+  '        config.reporter.update({';
+
+const BUNDLER_CATCH_TO =
+  `      .catch((error) => {\n` +
+  `        ${SENTINEL_BUNDLER_INIT} this._initError = error;\n` +
+  `        console.error("Failed to construct transformer: ", error);\n` +
+  `        (function(e) { var _sl = (e && e.stack ? e.stack : String(e)).split('\\n'); _sl.slice(0, 8).forEach(function(l, i) { process.stderr.write('/bundler:' + i + ': error: [SDK56_INIT_' + i + '] ' + l.trim() + '\\n'); }); }(error));\n` +
+  `        config.reporter.update({`;
+
+// (c): re-throw _initError in transformFile before accessing _transformer
+const BUNDLER_XFORM_FROM =
+  '    return this._transformer.transformFile(\n' +
+  '      filePath,\n' +
+  '      transformOptions,\n' +
+  '      fileBuffer,\n' +
+  '    );';
+
+const BUNDLER_XFORM_TO =
+  `    if (!this._transformer) { throw this._initError || new Error('SDK56: metro Bundler._transformer not initialized (transformer_load_failed)'); } /* SDK56_COMPAT_BUNDLER_XFORM */\n` +
+  `    return this._transformer.transformFile(\n` +
+  `      filePath,\n` +
+  `      transformOptions,\n` +
+  `      fileBuffer,\n` +
+  `    );`;
+
+const bundlerFiles = findFiles(PNPM_STORE, 'node_modules/metro/src/Bundler.js');
+console.log('[SDK56 compat] metro Bundler.js candidates:', bundlerFiles.length);
+for (const f of bundlerFiles) {
+  patchFile(f, SENTINEL_BUNDLER_INIT, [
+    [BUNDLER_CATCH_FROM, BUNDLER_CATCH_TO],
+    [BUNDLER_XFORM_FROM, BUNDLER_XFORM_TO],
   ]);
 }
 
