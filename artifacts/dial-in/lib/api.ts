@@ -50,7 +50,12 @@ async function post<T>(path: string, body: object): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`Server error (${response.status})`);
+  }
 }
 
 export function dialIn(params: DialInParams): Promise<DialInResponse> {

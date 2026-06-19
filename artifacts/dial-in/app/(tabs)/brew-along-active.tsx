@@ -42,6 +42,12 @@ export default function BrewAlongActiveScreen() {
 
   const currentStep = steps[stepIndex];
   const isLastStep = stepIndex === steps.length - 1;
+
+  if (!currentStep) {
+    router.replace('/(tabs)/tasting');
+    return null;
+  }
+
   // Last step is always manual — user taps when brew is done
   const hasDuration = currentStep.duration > 0 && !isLastStep;
 

@@ -60,9 +60,13 @@ export default function TastingScreen() {
   const [pendingBadges, setPendingBadges] = useState<Badge[]>([]);
   const [badgeIndex, setBadgeIndex] = useState(0);
 
-  const adjustmentHistory: string[] = params.adjustmentHistory
-    ? JSON.parse(params.adjustmentHistory)
-    : [];
+  const adjustmentHistory: string[] = (() => {
+    try {
+      return params.adjustmentHistory ? JSON.parse(params.adjustmentHistory) : [];
+    } catch {
+      return [];
+    }
+  })();
 
   function toggle(chip: string) {
     setSelected(prev => {
