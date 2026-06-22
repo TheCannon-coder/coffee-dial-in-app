@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -22,11 +23,12 @@ export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ resetsOn?: string; isAnonymous?: string }>();
   const { email } = useUser();
-  const { offerings, purchase, restore, isPurchasing, isRestoring, isLoading } = useSubscription();
+  const { offerings, purchase, restore, isPurchasing, isRestoring, isLoading, offeringsError, refetchOfferings } = useSubscription();
 
   const [loading, setLoading] = useState<'yearly' | 'monthly' | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const resetsOn = params.resetsOn ?? '';
   const isAnon = params.isAnonymous === '1';
@@ -49,6 +51,19 @@ export default function PaywallScreen() {
 
   const monthlyPrice = monthlyPkg?.product?.priceString ?? '$4.99';
   const yearlyPrice  = yearlyPkg?.product?.priceString  ?? '$44.99';
+
+  const productsReady = !isLoading && (!!monthlyPkg || !!yearlyPkg);
+  const productsFailedToLoad = !isLoading && !monthlyPkg && !yearlyPkg;
+
+  async function handleRetry() {
+    setIsRetrying(true);
+    setErrorMsg('');
+    try {
+      await refetchOfferings();
+    } finally {
+      setIsRetrying(false);
+    }
+  }
 
   async function handleIAP(plan: 'yearly' | 'monthly') {
     const pkg = plan === 'yearly' ? yearlyPkg : monthlyPkg;
@@ -111,7 +126,11 @@ export default function PaywallScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={[styles.content, { paddingTop: 32, paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: 32, paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={false}
+      >
         <View style={[styles.iconWrap, { backgroundColor: colors.secondary }]}>
           <Feather name="coffee" size={28} color={colors.accent} />
         </View>
@@ -131,6 +150,30 @@ export default function PaywallScreen() {
 
         {isLoading ? (
           <ActivityIndicator color={colors.accent} size="large" style={{ marginVertical: 32 }} />
+        ) : productsFailedToLoad ? (
+          <View style={styles.retryContainer}>
+            <Text style={[styles.retryMessage, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              {offeringsError
+                ? 'Could not load subscription options. Please check your connection and try again.'
+                : 'Subscription options are temporarily unavailable. Please try again.'}
+            </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.retryBtn,
+                { backgroundColor: colors.espresso, opacity: pressed || isRetrying ? 0.8 : 1 },
+              ]}
+              onPress={handleRetry}
+              disabled={isRetrying}
+            >
+              {isRetrying ? (
+                <ActivityIndicator color={colors.cream} size="small" />
+              ) : (
+                <Text style={[styles.retryBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                  Try Again
+                </Text>
+              )}
+            </Pressable>
+          </View>
         ) : (
           <View style={styles.plans}>
             <Pressable
@@ -209,7 +252,7 @@ export default function PaywallScreen() {
             <Text style={[styles.legalLink, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Terms of Use</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
 
       <Modal
         visible={showRestoreConfirm}
@@ -261,7 +304,6 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 17 },
   content: {
-    flex: 1,
     paddingHorizontal: 24,
     alignItems: 'center',
     gap: 14,
@@ -306,6 +348,26 @@ const styles = StyleSheet.create({
   bestValueText: { fontSize: 12 },
   planPrice: { fontSize: 32 },
   planPeriod: { fontSize: 15 },
+  retryContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 16,
+    marginVertical: 16,
+    paddingHorizontal: 8,
+  },
+  retryMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  retryBtn: {
+    borderRadius: 100,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    minWidth: 140,
+    alignItems: 'center',
+  },
+  retryBtnText: { fontSize: 15 },
   errorText: {
     fontSize: 13,
     textAlign: 'center',

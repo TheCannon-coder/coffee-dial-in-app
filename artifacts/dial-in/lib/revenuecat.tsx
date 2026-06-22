@@ -74,6 +74,8 @@ function useSubscriptionContext() {
     offerings: offeringsQuery.data,
     isSubscribed,
     isLoading: customerInfoQuery.isLoading || offeringsQuery.isLoading,
+    offeringsError: offeringsQuery.error,
+    refetchOfferings: offeringsQuery.refetch,
     purchase: purchaseMutation.mutateAsync,
     restore: restoreMutation.mutateAsync,
     isPurchasing: purchaseMutation.isPending,
