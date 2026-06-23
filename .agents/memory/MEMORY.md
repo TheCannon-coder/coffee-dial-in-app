@@ -1,1 +1,3 @@
 - [EAS babel-preset-expo fix](eas-babel-preset-expo-fix.md) — pnpm doesn't hoist transitive deps; babel-preset-expo MUST be direct devDep in dial-in/package.json or EAS builds fail with obscure metro crash
+- [IAP Paid Apps Agreement](iap-paid-apps-agreement.md) — RevenueCat offerings fail to load in Apple sandbox if the Paid Apps Agreement isn't accepted in App Store Connect.
+- [EAS build number burn](eas-build-number-burn.md) — EAS Submit timeouts still register the build number with Apple; use Transporter + autoIncrement:true to avoid conflicts.
