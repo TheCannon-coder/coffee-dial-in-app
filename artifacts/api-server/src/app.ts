@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import landingRouter from "./routes/landing";
 import privacyRouter from "./routes/privacy";
 import supportRouter from "./routes/support";
 import termsRouter from "./routes/terms";
@@ -39,6 +40,7 @@ app.use("/api", webhookRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(landingRouter);
 app.use(privacyRouter);
 app.use(supportRouter);
 app.use(termsRouter);
