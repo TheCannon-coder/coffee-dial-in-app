@@ -283,8 +283,8 @@ router.get("/admin", async (_req, res) => {
 
     const fmt = (d: string) => {
       const dt = new Date(d);
-      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
-        " " + dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) +
+        " " + dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/New_York" });
     };
 
     const rows = users.map(u => {
