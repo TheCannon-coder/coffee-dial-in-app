@@ -250,6 +250,145 @@ async function ensureRatesLocked(
   return updated;
 }
 
+// ── Dashboard HTML ─────────────────────────────────────────────────────────────
+
+router.get("/admin", async (_req, res) => {
+  try {
+    const [statsRows, todayRows, recentUsers] = await Promise.all([
+      db.execute(sql`
+        SELECT
+          COUNT(*)::int                                          AS total_users,
+          COUNT(*) FILTER (WHERE is_pro)::int                   AS pro_users,
+          COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE)::int AS today_users
+        FROM users
+      `),
+      db.execute(sql`
+        SELECT COUNT(*)::int AS today_brews
+        FROM brews
+        WHERE created_at >= CURRENT_DATE
+      `),
+      db.execute(sql`
+        SELECT id, email, apple_user_id, is_pro, uses_this_month, created_at
+        FROM users
+        ORDER BY created_at DESC
+        LIMIT 200
+      `),
+    ]);
+
+    const stats = (statsRows.rows[0] ?? {}) as Record<string, number>;
+    const brews = (todayRows.rows[0] ?? {}) as Record<string, number>;
+
+    type UserRow = { id: number; email: string | null; apple_user_id: string | null; is_pro: boolean; uses_this_month: number; created_at: string };
+    const users = recentUsers.rows as UserRow[];
+
+    const fmt = (d: string) => {
+      const dt = new Date(d);
+      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+        " " + dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    };
+
+    const rows = users.map(u => {
+      const isAppleRelay = (u.email ?? "").includes("privaterelay.appleid.com");
+      const displayEmail = isAppleRelay ? `<span style="color:#A89080;font-style:italic">Private relay</span>` : (u.email ?? "—");
+      const proTag = u.is_pro
+        ? `<span style="background:#3D6B3E;color:#C8F0C8;padding:2px 10px;border-radius:100px;font-size:11px;font-weight:600">PRO</span>`
+        : `<span style="background:#3D2410;color:#A89080;padding:2px 10px;border-radius:100px;font-size:11px">free</span>`;
+      return `<tr>
+        <td style="padding:12px 16px;color:#A89080;font-size:13px">${u.id}</td>
+        <td style="padding:12px 16px;font-size:14px">${displayEmail}</td>
+        <td style="padding:12px 16px;font-size:13px;color:#A89080;font-family:monospace;font-size:11px">${u.apple_user_id ? u.apple_user_id.slice(0, 20) + "…" : "—"}</td>
+        <td style="padding:12px 16px">${proTag}</td>
+        <td style="padding:12px 16px;color:#A89080;text-align:right">${u.uses_this_month}</td>
+        <td style="padding:12px 16px;color:#A89080;white-space:nowrap">${fmt(u.created_at)}</td>
+      </tr>`;
+    }).join("\n");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dial In — Admin</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,"DM Sans",system-ui,sans-serif;background:#1A100A;color:#FAF7F2;min-height:100vh}
+    header{padding:24px 32px;border-bottom:1px solid #3D2410;display:flex;align-items:center;justify-content:space-between}
+    .wordmark{font-family:Georgia,serif;font-style:italic;font-size:15px;color:#8B6347}
+    .wordmark strong{color:#FAF7F2;font-style:normal}
+    .refresh{font-size:12px;color:#6B5040}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;padding:28px 32px}
+    .stat{background:#2C1A0E;border-radius:16px;padding:20px 24px}
+    .stat-val{font-family:Georgia,serif;font-size:40px;color:#FAF7F2;line-height:1}
+    .stat-label{font-size:12px;color:#8B6347;margin-top:8px;text-transform:uppercase;letter-spacing:.06em}
+    .section{padding:0 32px 32px}
+    h2{font-family:Georgia,serif;font-size:18px;font-weight:500;color:#FAF7F2;margin-bottom:16px}
+    .table-wrap{border-radius:16px;overflow:hidden;border:1px solid #3D2410}
+    table{width:100%;border-collapse:collapse;background:#2C1A0E}
+    thead{background:#3D2410}
+    th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#8B6347;text-transform:uppercase;letter-spacing:.06em}
+    th:last-child{text-align:right}
+    tr+tr{border-top:1px solid #3D2410}
+    tr:hover td{background:#321c0f}
+    .empty{padding:40px;text-align:center;color:#6B5040}
+  </style>
+  <meta http-equiv="refresh" content="60"/>
+</head>
+<body>
+  <header>
+    <div class="wordmark"><strong>Dial In</strong> — Admin</div>
+    <span class="refresh">Auto-refreshes every 60 s</span>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">${stats["total_users"] ?? 0}</div>
+      <div class="stat-label">Total users</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${stats["today_users"] ?? 0}</div>
+      <div class="stat-label">Signed up today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${stats["pro_users"] ?? 0}</div>
+      <div class="stat-label">Pro subscribers</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${brews["today_brews"] ?? 0}</div>
+      <div class="stat-label">Brews today</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Recent sign-ups <span style="font-family:system-ui;font-size:13px;color:#6B5040;font-weight:400">(last 200)</span></h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Email</th>
+            <th>Apple ID</th>
+            <th>Plan</th>
+            <th style="text-align:right">Brews this month</th>
+            <th>Joined</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.length ? rows : `<tr><td colspan="6" class="empty">No users yet</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch (err) {
+    logger.error({ err }, "admin dashboard error");
+    res.status(500).send("Internal error — check server logs.");
+  }
+});
+
 // ── Affiliates ─────────────────────────────────────────────────────────────────
 
 router.get("/admin/affiliates", async (req, res) => {
