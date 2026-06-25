@@ -257,15 +257,15 @@ router.get("/admin", async (_req, res) => {
     const [statsRows, todayRows, recentUsers] = await Promise.all([
       db.execute(sql`
         SELECT
-          COUNT(*)::int                                                        AS total_users,
-          COUNT(*) FILTER (WHERE is_pro)::int                                  AS pro_users,
-          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS today_users
+          COUNT(*)::int AS total_users,
+          COUNT(*) FILTER (WHERE is_pro)::int AS pro_users,
+          COUNT(*) FILTER (WHERE created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York')::int AS today_users
         FROM users
       `),
       db.execute(sql`
         SELECT COUNT(*)::int AS today_brews
         FROM brews
-        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        WHERE created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York'
       `),
       db.execute(sql`
         SELECT id, email, apple_user_id, is_pro, uses_this_month, created_at
@@ -346,7 +346,7 @@ router.get("/admin", async (_req, res) => {
     </div>
     <div class="stat">
       <div class="stat-val">${stats["today_users"] ?? 0}</div>
-      <div class="stat-label">Last 24 hours</div>
+      <div class="stat-label">Signed up today</div>
     </div>
     <div class="stat">
       <div class="stat-val">${stats["pro_users"] ?? 0}</div>
