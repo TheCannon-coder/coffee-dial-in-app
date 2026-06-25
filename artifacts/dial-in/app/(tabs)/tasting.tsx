@@ -13,13 +13,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as StoreReview from 'expo-store-review';
 import { useColors } from '@/hooks/useColors';
-import { dialIn } from '@/lib/api';
+import { dialIn, submitFeedback } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, FREE_BREW_LIMIT } from '@/lib/storage';
 import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
 import { ShareModal } from '@/components/ShareModal';
 import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
+import { FeedbackModal } from '@/components/FeedbackModal';
 import { TastingChips } from '@/components/TastingChips';
 import { TastingResult } from '@/components/TastingResult';
 
@@ -59,6 +61,8 @@ export default function TastingScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingBadges, setPendingBadges] = useState<Badge[]>([]);
   const [badgeIndex, setBadgeIndex] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [resultSessionId, setResultSessionId] = useState<string | null>(null);
 
   const adjustmentHistory: string[] = (() => {
     try {
@@ -131,6 +135,7 @@ export default function TastingScreen() {
         setAdvice(result.advice);
         setAdjustment(result.adjustment);
         setUsesRemaining(result.usesRemaining);
+        setResultSessionId(result.sessionId);
         updateUserStats(result.isPro, FREE_BREW_LIMIT - result.usesRemaining, FREE_BREW_LIMIT);
 
         if (email) {
@@ -154,10 +159,24 @@ export default function TastingScreen() {
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStage('result');
+        setTimeout(() => setShowFeedback(true), 700);
       }
     } catch {
       setStage('selecting');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  }
+
+  async function handleFeedback(helpful: boolean) {
+    setShowFeedback(false);
+    if (resultSessionId) {
+      submitFeedback(resultSessionId, helpful).catch(() => {});
+    }
+    if (helpful) {
+      const available = await StoreReview.isAvailableAsync();
+      if (available) {
+        setTimeout(() => StoreReview.requestReview(), 800);
+      }
     }
   }
 
@@ -194,6 +213,10 @@ export default function TastingScreen() {
             setPendingBadges([badge]);
           }, 400);
         }}
+      />
+      <FeedbackModal
+        visible={showFeedback}
+        onFeedback={handleFeedback}
       />
       {pendingBadges.length > 0 && (
         <BadgeEarnedModal

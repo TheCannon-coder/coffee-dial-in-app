@@ -61,15 +61,16 @@
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/fraunces": "^0.4.1",
+    "expo": "~56.0.12",
     "expo-apple-authentication": "~56.0.4",
     "expo-clipboard": "~56.0.4",
     "expo-media-library": "~56.0.7",
     "expo-notifications": "~56.0.18",
     "expo-sharing": "~56.0.18",
-    "react-native-purchases": "^10.2.2",
-    "react-native-view-shot": "~5.1.0",
-    "expo": "~56.0.12",
+    "expo-store-review": "^56.0.3",
     "react": "19.2.3",
-    "react-native": "0.85.3"
+    "react-native": "0.85.3",
+    "react-native-purchases": "^10.2.2",
+    "react-native-view-shot": "~5.1.0"
   }
 }

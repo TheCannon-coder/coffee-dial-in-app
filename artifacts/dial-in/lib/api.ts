@@ -150,3 +150,7 @@ export function getConnectStatus(email: string): Promise<ConnectStatusResult> {
   return fetch(url).then((r) => r.json()) as Promise<ConnectStatusResult>;
 }
 
+export function submitFeedback(sessionId: string, wasHelpful: boolean): Promise<{ ok: boolean }> {
+  return post<{ ok: boolean }>('/feedback', { sessionId, wasHelpful });
+}
+

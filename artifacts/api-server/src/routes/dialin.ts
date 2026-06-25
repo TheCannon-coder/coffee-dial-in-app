@@ -302,4 +302,22 @@ Respond ONLY with valid JSON, no markdown:
   }
 });
 
+router.post("/feedback", async (req, res) => {
+  const { sessionId, wasHelpful } = req.body as { sessionId?: string; wasHelpful?: boolean };
+  if (!sessionId || wasHelpful === undefined) {
+    res.status(400).json({ error: "sessionId and wasHelpful required" });
+    return;
+  }
+  try {
+    await db
+      .update(brewsTable)
+      .set({ wasHelpful })
+      .where(eq(brewsTable.sessionId, sessionId));
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "feedback error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
 export default router;
