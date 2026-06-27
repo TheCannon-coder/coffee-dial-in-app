@@ -8,6 +8,7 @@ import supportRouter from "./routes/support";
 import termsRouter from "./routes/terms";
 import screenshotsRouter from "./routes/screenshots";
 import webhookRouter from "./routes/webhook";
+import sitemapRouter from "./routes/sitemap";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -41,6 +42,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(landingRouter);
+app.use(sitemapRouter);
 app.use(privacyRouter);
 app.use(supportRouter);
 app.use(termsRouter);
