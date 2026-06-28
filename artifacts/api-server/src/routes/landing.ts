@@ -139,6 +139,77 @@ const html = `<!DOCTYPE html>
     }
     .step p { font-size: 15px; line-height: 1.75; color: #6B4226; }
 
+    /* ── Screenshots ─── */
+    .shots {
+      background: #1A100A;
+      padding: 72px 24px 64px;
+    }
+    .shots-inner { max-width: 900px; margin: 0 auto; }
+    .shots .section-label { color: #6B5040; text-align: center; margin-bottom: 48px; }
+    .shots-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+    }
+    .shots-row::-webkit-scrollbar { display: none; }
+    .phone-frame {
+      flex: 0 0 200px;
+      scroll-snap-align: center;
+      background: #0E0806;
+      border-radius: 36px;
+      border: 1.5px solid #3D2410;
+      height: 420px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+    }
+    .phone-notch {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 70px; height: 22px;
+      background: #0E0806; border-radius: 100px; z-index: 2;
+    }
+    .phone-screen {
+      width: 100%; height: 100%; background: #2A1A0E;
+      padding: 48px 14px 20px; box-sizing: border-box;
+      display: flex; flex-direction: column;
+    }
+    .pscr-eyebrow {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #C07A30; margin-bottom: 6px;
+    }
+    .pscr-heading {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 500; font-size: 18px; color: #FAF7F2;
+      line-height: 1.2; margin-bottom: 14px;
+    }
+    .pscr-body { font-size: 10px; color: #A89080; line-height: 1.6; margin-bottom: 14px; }
+    .pscr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .pscr-chip {
+      background: #3D2410; border: 1px solid #5A3820;
+      border-radius: 100px; padding: 4px 10px;
+      font-size: 10px; color: #D4B99A; font-weight: 500;
+    }
+    .pscr-chip--on { background: #C07A30; border-color: #C07A30; color: #FAF7F2; }
+    .pscr-btn {
+      margin-top: auto; background: #C07A30; border-radius: 10px;
+      padding: 10px; font-size: 12px; color: #FAF7F2; font-weight: 600; text-align: center;
+    }
+    .pscr-fix-card { background: #3D2410; border-radius: 10px; padding: 12px; margin-top: auto; }
+    .pscr-fix-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #C07A30; margin-bottom: 4px; }
+    .pscr-fix-txt { font-size: 11px; color: #FAF7F2; line-height: 1.55; }
+    .pscr-log { display: flex; flex-direction: column; gap: 10px; }
+    .pscr-log-row { display: flex; gap: 10px; align-items: flex-start; }
+    .pscr-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+    .pscr-dot--g { background: #5CB85C; }
+    .pscr-dot--a { background: #C07A30; }
+    .pscr-log-ttl { font-size: 11px; color: #FAF7F2; font-weight: 500; margin-bottom: 2px; }
+    .pscr-log-sub { font-size: 10px; color: #A89080; }
+
     /* ── Brew methods ─── */
     .methods {
       background: #1A100A;
@@ -162,7 +233,10 @@ const html = `<!DOCTYPE html>
       font-size: 14px;
       color: #D4B99A;
       font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
     }
+    a.method-pill:hover { background: #3A2214; border-color: #5A3820; }
 
     /* ── Free tier ─── */
     .free-tier {
@@ -288,20 +362,85 @@ ${renderNav()}
   </div>
 </section>
 
+<!-- Screenshots -->
+<section class="shots" aria-labelledby="shots-label">
+  <div class="shots-inner">
+    <p class="section-label" id="shots-label">See it in action</p>
+    <div class="shots-row">
+
+      <!-- Screen 1: Taste selector -->
+      <div class="phone-frame" aria-hidden="true">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <p class="pscr-eyebrow">New session</p>
+          <p class="pscr-heading">How does it taste?</p>
+          <div class="pscr-chips">
+            <span class="pscr-chip pscr-chip--on">Too bitter</span>
+            <span class="pscr-chip">Sour / sharp</span>
+            <span class="pscr-chip">Weak</span>
+            <span class="pscr-chip">Flat</span>
+            <span class="pscr-chip">Harsh</span>
+            <span class="pscr-chip">Astringent</span>
+          </div>
+          <div class="pscr-btn">Get my fix &rarr;</div>
+        </div>
+      </div>
+
+      <!-- Screen 2: Diagnosis -->
+      <div class="phone-frame" aria-hidden="true">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <p class="pscr-eyebrow">Your diagnosis</p>
+          <p class="pscr-heading">Grind coarser.</p>
+          <p class="pscr-body">Your espresso is over-extracted. The bitter, dry finish confirms it. One change will fix it.</p>
+          <div class="pscr-fix-card">
+            <p class="pscr-fix-lbl">Try this next brew</p>
+            <p class="pscr-fix-txt">Move your grind 2 clicks coarser. Keep everything else exactly the same.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen 3: Brew log -->
+      <div class="phone-frame" aria-hidden="true">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <p class="pscr-eyebrow">Brew history</p>
+          <p class="pscr-heading">Your progress.</p>
+          <div class="pscr-log">
+            <div class="pscr-log-row">
+              <span class="pscr-dot pscr-dot--g"></span>
+              <div><p class="pscr-log-ttl">Espresso &middot; Today</p><p class="pscr-log-sub">Fix applied — tasting much better</p></div>
+            </div>
+            <div class="pscr-log-row">
+              <span class="pscr-dot pscr-dot--a"></span>
+              <div><p class="pscr-log-ttl">V60 &middot; Yesterday</p><p class="pscr-log-sub">Slightly under-extracted</p></div>
+            </div>
+            <div class="pscr-log-row">
+              <span class="pscr-dot pscr-dot--g"></span>
+              <div><p class="pscr-log-ttl">AeroPress &middot; Jun 25</p><p class="pscr-log-sub">Great extraction</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- Brew methods -->
 <section class="methods" aria-label="Supported brew methods">
   <div>
     <p class="section-label">Works with every brew method</p>
     <div class="methods-list" role="list">
-      <span class="method-pill" role="listitem">Espresso</span>
-      <span class="method-pill" role="listitem">V60</span>
-      <span class="method-pill" role="listitem">AeroPress</span>
+      <a class="method-pill" href="/how-to-dial-in-espresso" role="listitem">Espresso</a>
+      <a class="method-pill" href="/coffee-grind-size-guide" role="listitem">V60</a>
+      <a class="method-pill" href="/aeropress-too-weak" role="listitem">AeroPress</a>
       <span class="method-pill" role="listitem">French Press</span>
-      <span class="method-pill" role="listitem">Chemex</span>
-      <span class="method-pill" role="listitem">Kalita Wave</span>
-      <span class="method-pill" role="listitem">Moka Pot</span>
-      <span class="method-pill" role="listitem">Cold Brew</span>
-      <span class="method-pill" role="listitem">Drip Machine</span>
+      <a class="method-pill" href="/chemex" role="listitem">Chemex</a>
+      <a class="method-pill" href="/kalita-wave" role="listitem">Kalita Wave</a>
+      <a class="method-pill" href="/moka-pot" role="listitem">Moka Pot</a>
+      <a class="method-pill" href="/cold-brew" role="listitem">Cold Brew</a>
+      <a class="method-pill" href="/drip-machine" role="listitem">Drip Machine</a>
     </div>
   </div>
 </section>
@@ -315,7 +454,7 @@ ${renderNav()}
       <span class="perk-chip">10 free coaching sessions/month</span>
       <span class="perk-chip">All brew methods included</span>
       <span class="perk-chip">No credit card required</span>
-      <span class="perk-chip">iOS &amp; Android</span>
+      <span class="perk-chip">iOS &middot; Android coming soon</span>
     </div>
   </div>
 </section>

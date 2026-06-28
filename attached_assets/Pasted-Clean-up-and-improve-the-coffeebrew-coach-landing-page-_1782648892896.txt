@@ -1,0 +1,32 @@
+Clean up and improve the coffeebrew.coach landing page. Here are the specific changes needed:
+
+1. Branding consistency
+Audit every page on the site. Replace any instance of "Dial In" with "Coffee Brew Coach." The app name is Coffee Brew Coach everywhere — title tags, H1s, meta descriptions, body copy, footer, and all page content.
+
+2. Add app screenshots
+Add a screenshots section to the homepage between the "How it works" section and the brew methods section. Show 2-3 iPhone screenshots of the app UI. If real screenshots aren't available yet, use placeholder mockup frames in the app's dark espresso color scheme (#2A1A0E background, white text, caramel accent #C07A30). Label the section "See it in action."
+
+3. Android waitlist form
+Make sure the Android waitlist email form is connected to a real backend. When someone submits their email, it should be saved to the Supabase users table with a field android_waitlist: true and the email address. Return a success message: "You're on the list — we'll notify you when Android launches."
+
+4. Build and verify these SEO pages exist and return 200 (not 404)
+Each page needs a proper H1, at least 300 words of helpful content about that topic, a mention of Coffee Brew Coach, and an App Store download button at the bottom:
+
+/chemex
+/kalita-wave
+/moka-pot
+/cold-brew
+/drip-machine
+/why-does-my-coffee-taste-bitter
+/espresso-pulling-too-fast
+/coffee-grind-size-guide
+/how-to-dial-in-espresso
+/aeropress-too-weak
+5. Internal links
+On the homepage, each brew method name (Espresso, V60, AeroPress, etc.) should be a clickable link to its corresponding page. Each brew method page should link back to the homepage and to 2 related pages.
+
+6. Update sitemap.xml
+Add all 10 new pages to sitemap.xml. Use today's date as lastmod. Set priority to 0.8 for all content pages, 1.0 for homepage.
+
+7. Page speed — mobile first
+The App Store download button must be visible on mobile without scrolling. If it is currently below the fold on a 375px wide screen, move it above the fold in the hero section.

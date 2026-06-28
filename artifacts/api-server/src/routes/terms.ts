@@ -114,14 +114,14 @@ const html = `<!DOCTYPE html>
     <h2>1. Acceptance of Terms</h2>
     <p>By accessing or using Coffee Brew Coach, you confirm that you are at least 13 years of age and agree to be bound by these Terms of Use and our <a href="/api/privacy">Privacy Policy</a>.</p>
 
-    <h2>2. Dial In Pro — Auto-Renewing Subscription</h2>
-    <p>Coffee Brew Coach offers an optional paid subscription called <strong>Dial In Pro</strong> that unlocks unlimited coffee coaching sessions.</p>
+    <h2>2. Coffee Brew Coach Pro — Auto-Renewing Subscription</h2>
+    <p>Coffee Brew Coach offers an optional paid subscription called <strong>Coffee Brew Coach Pro</strong> that unlocks unlimited coffee coaching sessions.</p>
 
     <ul>
-      <li><strong>Subscription name:</strong> Dial In Pro</li>
+      <li><strong>Subscription name:</strong> Coffee Brew Coach Pro</li>
       <li><strong>Monthly plan:</strong> $4.99 per month</li>
       <li><strong>Annual plan:</strong> $44.99 per year (~$3.75/month, save 25%)</li>
-      <li><strong>Free tier:</strong> 10 dial-in sessions per month, no payment required</li>
+      <li><strong>Free tier:</strong> 10 coaching sessions per month, no payment required</li>
     </ul>
 
     <p>Subscriptions automatically renew at the end of each billing period (monthly or annually) unless cancelled at least 24 hours before the renewal date. Your Apple ID account will be charged upon confirmation of purchase and at the start of each renewal period.</p>

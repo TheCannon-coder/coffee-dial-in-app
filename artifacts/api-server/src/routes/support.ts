@@ -133,8 +133,8 @@ const html = `<!DOCTYPE html>
     <h2>Frequently asked questions</h2>
 
     <div class="faq-item">
-      <div class="faq-q">How do free dial-ins work?</div>
-      <div class="faq-a">Every account gets 10 free dial-ins per month. Your count resets on the 1st of each month. Upgrade to Pro for unlimited dial-ins.</div>
+      <div class="faq-q">How do free coaching sessions work?</div>
+      <div class="faq-a">Every account gets 10 free coaching sessions per month. Your count resets on the 1st of each month. Upgrade to Pro for unlimited sessions.</div>
     </div>
 
     <div class="faq-item">

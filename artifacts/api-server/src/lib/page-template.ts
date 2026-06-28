@@ -263,7 +263,7 @@ export const WAITLIST_MODAL = `
       <input class="wl-input" type="email" name="email" placeholder="your@email.com" required autocomplete="email" />
       <button class="wl-submit" type="submit">Join the waitlist</button>
     </form>
-    <p class="wl-success" hidden>You&rsquo;re on the list! We&rsquo;ll email you when Android is ready.</p>
+    <p class="wl-success" hidden>You&rsquo;re on the list &mdash; we&rsquo;ll notify you when Android launches.</p>
     <p class="wl-error" hidden></p>
   </div>
 </div>
