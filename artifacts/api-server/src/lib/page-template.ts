@@ -127,14 +127,25 @@ export const COMMON_CSS = `
     text-decoration: none;
     transition: opacity 0.15s, transform 0.1s;
     min-width: 160px;
+    border: none;
   }
   .store-btn:hover { opacity: 0.88; transform: translateY(-1px); }
-  .store-btn-ios { background: #000; color: #fff; }
-  .store-btn-android { background: #01875f; color: #fff; }
+  .store-btn-ios { background: #000; color: #fff; cursor: pointer; }
   .store-btn-icon { width: 22px; height: 22px; flex-shrink: 0; }
   .store-btn-text { display: flex; flex-direction: column; align-items: flex-start; }
   .store-btn-sub { font-size: 10px; opacity: 0.72; line-height: 1; margin-bottom: 2px; font-weight: 400; }
   .store-btn-main { font-size: 15px; font-weight: 600; line-height: 1.2; }
+
+  /* Coming-soon Android button */
+  .store-btn-cs {
+    background: #2A2018;
+    color: #7A6050;
+    border: 1.5px solid #3D2E20;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .store-btn-cs:hover { background: #3A2E20; color: #D4B99A; opacity: 1; transform: translateY(-1px); }
+  .store-btn-cs .store-btn-main { color: inherit; }
 
   /* ── Page CTA ─── */
   .cta-section { background: #FAF7F2; padding: 72px 24px; text-align: center; }
@@ -156,6 +167,68 @@ export const COMMON_CSS = `
   .footer-links a { color: #6B5040; font-size: 12px; text-decoration: none; }
   .footer-links a:hover { color: #A89080; }
   .footer-copy { font-size: 11px; color: #3D2410; }
+
+  /* ── Waitlist modal ─── */
+  .wl-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,5,2,0.72);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 24px;
+    backdrop-filter: blur(3px);
+  }
+  .wl-card {
+    background: #FAF7F2; border-radius: 20px;
+    padding: 36px 32px; max-width: 420px; width: 100%;
+    position: relative;
+    box-shadow: 0 28px 80px rgba(0,0,0,0.5);
+    animation: wlSlideUp 0.2s ease;
+  }
+  @keyframes wlSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .wl-close {
+    position: absolute; top: 14px; right: 14px;
+    background: none; border: none; cursor: pointer;
+    color: #A89080; padding: 6px;
+    display: flex; align-items: center; border-radius: 6px;
+    transition: color 0.15s;
+  }
+  .wl-close:hover { color: #2C1A0E; }
+  .wl-eyebrow {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: #A89080; margin-bottom: 10px;
+  }
+  .wl-heading {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500; font-size: 24px;
+    line-height: 1.25; color: #2C1A0E; margin-bottom: 12px;
+  }
+  .wl-desc { font-size: 15px; color: #6B4226; line-height: 1.65; margin-bottom: 24px; }
+  .wl-form { display: flex; flex-direction: column; gap: 10px; }
+  .wl-input {
+    border: 1.5px solid #E0D5C8; border-radius: 8px;
+    padding: 12px 14px; font-size: 15px; color: #2C1A0E;
+    background: #fff; font-family: inherit;
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .wl-input:focus { border-color: #8B6347; box-shadow: 0 0 0 3px rgba(139,99,71,0.12); }
+  .wl-submit {
+    background: #2C1A0E; color: #FAF7F2;
+    border: none; border-radius: 8px;
+    padding: 13px 20px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s;
+  }
+  .wl-submit:hover { background: #3D2410; }
+  .wl-submit:disabled { opacity: 0.55; cursor: default; }
+  .wl-success {
+    font-size: 15px; color: #1B6B3A;
+    background: #E8F5EE; border-radius: 10px;
+    padding: 16px; text-align: center; line-height: 1.55;
+  }
+  .wl-error { font-size: 14px; color: #B91C1C; margin-top: 8px; }
 `;
 
 export const DOWNLOAD_BTNS = `
@@ -167,14 +240,99 @@ export const DOWNLOAD_BTNS = `
       <span class="store-btn-main">App Store</span>
     </span>
   </a>
-  <a class="store-btn store-btn-android" href="https://play.google.com/store/apps/details?id=com.dialin.coffeecoach" target="_blank" rel="noopener" aria-label="Get Coffee Brew Coach on Google Play">
-    <svg class="store-btn-icon" viewBox="0 0 24 24" fill="white"><path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.36.6 1.24 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/></svg>
+  <button class="store-btn store-btn-cs" type="button" data-waitlist aria-label="Android coming soon — join the waitlist">
+    <svg class="store-btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.36.6 1.24 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/></svg>
     <span class="store-btn-text">
-      <span class="store-btn-sub">Get it on</span>
-      <span class="store-btn-main">Google Play</span>
+      <span class="store-btn-sub">Google Play</span>
+      <span class="store-btn-main">Coming Soon</span>
     </span>
-  </a>
+  </button>
 </div>`;
+
+export const WAITLIST_MODAL = `
+<div id="wl-overlay" class="wl-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="wl-heading">
+  <div class="wl-card">
+    <button class="wl-close" type="button" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <p class="wl-eyebrow">Android &middot; Coming soon</p>
+    <h2 class="wl-heading" id="wl-heading">Be first to know when we launch on Android.</h2>
+    <p class="wl-desc">Drop your email and we&rsquo;ll send you one message the day it&rsquo;s live. No spam, ever.</p>
+    <form class="wl-form" id="wl-form" novalidate>
+      <input class="wl-input" type="email" name="email" placeholder="your@email.com" required autocomplete="email" />
+      <button class="wl-submit" type="submit">Join the waitlist</button>
+    </form>
+    <p class="wl-success" hidden>You&rsquo;re on the list! We&rsquo;ll email you when Android is ready.</p>
+    <p class="wl-error" hidden></p>
+  </div>
+</div>
+<script>
+(function () {
+  var overlay = document.getElementById("wl-overlay");
+  if (!overlay) return;
+  var form = document.getElementById("wl-form");
+  var input = form.querySelector("input");
+  var submitBtn = form.querySelector(".wl-submit");
+  var successEl = overlay.querySelector(".wl-success");
+  var errorEl = overlay.querySelector(".wl-error");
+
+  function open() {
+    overlay.hidden = false;
+    document.body.style.overflow = "hidden";
+    setTimeout(function () { input.focus(); }, 60);
+  }
+  function close() {
+    overlay.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  overlay.querySelector(".wl-close").addEventListener("click", close);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) close(); });
+
+  document.querySelectorAll("[data-waitlist]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      open();
+    });
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = input.value.trim();
+    if (!email) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Joining\u2026";
+    errorEl.hidden = true;
+
+    fetch("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, platform: "android" }),
+    })
+      .then(function (res) {
+        return res.json().then(function (d) { return { ok: res.ok, data: d }; });
+      })
+      .then(function (r) {
+        if (r.ok) {
+          form.hidden = true;
+          successEl.hidden = false;
+          if (r.data.alreadyJoined) {
+            successEl.textContent = "You\u2019re already on the list \u2014 we\u2019ll be in touch!";
+          }
+        } else {
+          throw new Error(r.data.error || "error");
+        }
+      })
+      .catch(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Join the waitlist";
+        errorEl.textContent = "Something went wrong. Please try again.";
+        errorEl.hidden = false;
+      });
+  });
+})();
+</script>`;
 
 export function renderNav(): string {
   return `
@@ -197,7 +355,7 @@ export function renderFooter(): string {
       <a href="/api/privacy">Privacy</a>
       <a href="/api/terms">Terms</a>
     </div>
-    <p class="footer-copy">© ${new Date().getFullYear()} Coffee Brew Coach</p>
+    <p class="footer-copy">&copy; ${new Date().getFullYear()} Coffee Brew Coach</p>
   </div>
 </footer>`;
 }
@@ -248,6 +406,7 @@ export function buildPage({
 <body>
 ${renderNav()}
 ${bodyHtml}
+${WAITLIST_MODAL}
 ${renderFooter()}
 </body>
 </html>`;

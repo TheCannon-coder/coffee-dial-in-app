@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, renderFooter, renderNav } from "../lib/page-template.js";
+import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, WAITLIST_MODAL, renderFooter, renderNav } from "../lib/page-template.js";
 
 const router = Router();
 
@@ -261,7 +261,7 @@ ${renderNav()}
   <h1>AI coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
   <p class="hero-sub">Describe your brew. Get one specific fix. Better coffee on the next cup.</p>
   ${DOWNLOAD_BTNS}
-  <p class="hero-fine">Free · iOS &amp; Android · No credit card required</p>
+  <p class="hero-fine">Free · iOS · Android coming soon · No credit card required</p>
 </section>
 
 <!-- How it works -->
@@ -338,6 +338,7 @@ ${renderNav()}
   ${DOWNLOAD_BTNS}
 </section>
 
+${WAITLIST_MODAL}
 ${renderFooter()}
 
 </body>

@@ -22,3 +22,4 @@ export * from "./gear-clicks";
 export * from "./gear-products";
 export * from "./brews";
 export * from "./referrals";
+export * from "./waitlist";
