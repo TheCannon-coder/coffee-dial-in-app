@@ -176,6 +176,7 @@ export const COMMON_CSS = `
     z-index: 9999; padding: 24px;
     backdrop-filter: blur(3px);
   }
+  .wl-overlay[hidden] { display: none !important; }
   .wl-card {
     background: #FAF7F2; border-radius: 20px;
     padding: 36px 32px; max-width: 420px; width: 100%;
