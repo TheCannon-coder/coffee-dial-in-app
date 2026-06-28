@@ -30,16 +30,16 @@ const html = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Coffee Brew Coach — AI Coffee Coaching App for Espresso &amp; Pour Over</title>
+  <title>Coffee Brew Coach — Coffee Coaching App for Espresso &amp; Pour Over</title>
   <meta name="description" content="Coffee Brew Coach tells you exactly why your coffee tastes wrong and gives you one specific fix. Free app for espresso, V60, AeroPress, French press and more." />
-  <meta name="keywords" content="coffee coaching app, coffee brew coach, espresso dialling in, pour over guide, coffee taste fix, AI coffee coach, coffee brewing app, espresso pull, V60 guide" />
+  <meta name="keywords" content="coffee coaching app, coffee brew coach, espresso dialling in, pour over guide, coffee taste fix, coffee brewing app, espresso pull, V60 guide" />
   <link rel="canonical" href="https://www.coffeebrew.coach/" />
   <meta name="robots" content="index, follow" />
   <meta name="apple-itunes-app" content="app-id=6777418888" />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.coffeebrew.coach/" />
-  <meta property="og:title" content="Coffee Brew Coach — AI Coffee Coaching App" />
+  <meta property="og:title" content="Coffee Brew Coach — Coffee Coaching App" />
   <meta property="og:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup. Free for iOS and Android." />
   <meta property="og:image" content="https://www.coffeebrew.coach/screenshots/og" />
   <meta property="og:image:width" content="1200" />
@@ -48,7 +48,7 @@ const html = `<!DOCTYPE html>
   <meta property="og:locale" content="en_US" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Coffee Brew Coach — AI Coffee Coaching App" />
+  <meta name="twitter:title" content="Coffee Brew Coach — Coffee Coaching App" />
   <meta name="twitter:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup." />
   <meta name="twitter:image" content="https://www.coffeebrew.coach/screenshots/og" />
 
@@ -258,7 +258,7 @@ ${renderNav()}
 <!-- Hero -->
 <section class="hero">
   <p class="hero-eyebrow">Coffee Brew Coach</p>
-  <h1>AI coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
+  <h1>Coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
   <p class="hero-sub">Describe your brew. Get one specific fix. Better coffee on the next cup.</p>
   ${DOWNLOAD_BTNS}
   <p class="hero-fine">Free · iOS · Android coming soon · No credit card required</p>
@@ -276,7 +276,7 @@ ${renderNav()}
       </div>
       <div class="step">
         <p class="step-num">2</p>
-        <h3>AI diagnoses your brew.</h3>
+        <h3>Coach diagnoses your brew.</h3>
         <p>Coffee Brew Coach cross-references your tasting notes against your brew method, dose, grind, and extraction time to pinpoint the problem.</p>
       </div>
       <div class="step">
