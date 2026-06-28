@@ -147,7 +147,7 @@ export default function AffiliateScreen() {
     if (!referralLink) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({
-      message: `I've been using Dial In to dial in my espresso — give it a try: ${referralLink}`,
+      message: `I've been using Coffee Brew Coach to perfect my espresso — give it a try: ${referralLink}`,
       url: referralLink,
     });
   }, [referralLink]);
@@ -178,7 +178,7 @@ export default function AffiliateScreen() {
           Refer {'&'} Earn
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Share Dial In and earn a monthly commission for every Pro subscriber you bring in.
+          Share Coffee Brew Coach and earn a monthly commission for every Pro subscriber you bring in.
         </Text>
 
         {/* Referral link row */}

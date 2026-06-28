@@ -139,12 +139,12 @@ export default function PaywallScreen() {
           {isAnon ? "You've used your free trial" : 'Monthly limit reached'}
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Upgrade for unlimited dial-ins and never stop improving your brew.
+          Upgrade for unlimited coaching sessions and never stop improving your brew.
         </Text>
 
         <View style={[styles.proLabel, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.proLabelText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
-            Dial In Pro
+            Coffee Brew Coach Pro
           </Text>
         </View>
 
@@ -225,7 +225,7 @@ export default function PaywallScreen() {
 
         {resetLabel ? (
           <Text style={[styles.resetText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            Or wait until {resetLabel} — your free dial-ins reset then.
+            Or wait until {resetLabel} — your free coaching sessions reset then.
           </Text>
         ) : null}
 
@@ -240,7 +240,7 @@ export default function PaywallScreen() {
         </Pressable>
 
         <Text style={[styles.legalNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Dial In Pro subscription auto-renews monthly ({monthlyPrice}/mo) or annually ({yearlyPrice}/yr) until cancelled. Cancel anytime in App Store Settings.
+          Coffee Brew Coach Pro subscription auto-renews monthly ({monthlyPrice}/mo) or annually ({yearlyPrice}/yr) until cancelled. Cancel anytime in App Store Settings.
         </Text>
 
         <View style={styles.legalLinks}>

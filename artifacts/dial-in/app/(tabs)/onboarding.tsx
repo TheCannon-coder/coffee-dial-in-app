@@ -226,7 +226,7 @@ export default function OnboardingScreen() {
             </Pressable>
 
             <Text style={[styles.footnote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              10 free dial-ins every month. No password needed.
+              10 free coaching sessions every month. No password needed.
             </Text>
           </View>
 

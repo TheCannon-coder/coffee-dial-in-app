@@ -133,7 +133,7 @@ export default function HomeScreen() {
                 Brew a new coffee
               </Text>
               <Text style={[styles.brewCardSub, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
-                Dial in your next cup
+                Perfect your next cup
               </Text>
             </View>
             <View style={[styles.brewArrow, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>

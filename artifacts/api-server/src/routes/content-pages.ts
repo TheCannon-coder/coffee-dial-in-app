@@ -156,7 +156,7 @@ const kalitaHtml = page({
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
-  ctaHeading: "Dial in your Kalita Wave.",
+  ctaHeading: "Perfect your Kalita Wave.",
 });
 
 /* ─── 3. Moka Pot ────────────────────────────────────────────────────────── */
@@ -365,7 +365,7 @@ const espressoFastHtml = page({
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
-  ctaHeading: "Dial in your espresso shot.",
+  ctaHeading: "Perfect your espresso shot.",
 });
 
 /* ─── 8. Coffee grind size guide ─────────────────────────────────────────── */
@@ -478,7 +478,7 @@ const dialInEspressoHtml = page({
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
-  ctaHeading: "Dial in your espresso faster.",
+  ctaHeading: "Pull better espresso, faster.",
 });
 
 /* ─── 10. AeroPress too weak ─────────────────────────────────────────────── */
