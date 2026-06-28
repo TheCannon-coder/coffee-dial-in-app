@@ -1,160 +1,28 @@
 import { Router } from "express";
+import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, renderFooter, renderNav } from "../lib/page-template.js";
 
 const router = Router();
 
-const SCALE = 0.5;
-
-const features = [
-  {
-    n: 1,
-    heading: "Tell us how it tasted.",
-    body: "Too bitter, too sour, weak or flat — just pick what you noticed. No technical knowledge needed.",
-    bg: "#2C1A0E",
-    headingColor: "#FAF7F2",
-    bodyColor: "#A89080",
-    align: "left",
-  },
-  {
-    n: 4,
-    heading: "One clear fix. Every time.",
-    body: "Get one precise coaching note based on exactly what you tasted. Not a list of possibilities — one thing to change next brew.",
-    bg: "#FAF7F2",
-    headingColor: "#2C1A0E",
-    bodyColor: "#6B4226",
-    align: "right",
-  },
-  {
-    n: 2,
-    heading: "Guided brew-alongs.",
-    body: "Timed step-by-step guides for V60, AeroPress, French press and more. Just follow along.",
-    bg: "#1A100A",
-    headingColor: "#FAF7F2",
-    bodyColor: "#A89080",
-    align: "left",
-  },
-  {
-    n: 3,
-    heading: "Every coffee remembered.",
-    body: "Your brewing history grouped by bean. See how each coffee improved over time and where you landed.",
-    bg: "#FAF7F2",
-    headingColor: "#2C1A0E",
-    bodyColor: "#6B4226",
-    align: "right",
-  },
-  {
-    n: 5,
-    heading: "Level up your craft.",
-    body: "Earn badges as you improve. Work towards becoming a master brewer, one cup at a time.",
-    bg: "#2C1A0E",
-    headingColor: "#FAF7F2",
-    bodyColor: "#A89080",
-    align: "left",
-  },
+const BREW_GUIDES = [
+  { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
+  { href: "/espresso-pulling-too-fast", label: "Espresso pulling too fast — how to fix it" },
+  { href: "/aeropress-too-weak", label: "AeroPress coffee too weak — fix it" },
+  { href: "/chemex", label: "How to brew Chemex coffee" },
+  { href: "/kalita-wave", label: "Kalita Wave brewing guide" },
+  { href: "/moka-pot", label: "Moka pot coffee too bitter — fix it" },
+  { href: "/cold-brew", label: "Cold brew coffee ratio guide" },
+  { href: "/drip-machine", label: "Drip coffee maker tips" },
+  { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
+  { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
 ];
 
-const phoneWidth = Math.round(430 * SCALE);
-const phoneHeight = Math.round(932 * SCALE);
-
-const phoneMockup = (n: number) => `
-  <div class="phone-shell">
-    <iframe
-      src="/screenshots/${n}"
-      width="430"
-      height="932"
-      scrolling="no"
-      loading="lazy"
-      title="App screenshot ${n}"
-    ></iframe>
-  </div>`;
-
-const featureSections = features.map(f => {
-  const isRight = f.align === "right";
-  const phoneSide = `<div class="feature-phone ${isRight ? "order-last-desktop" : ""}">${phoneMockup(f.n)}</div>`;
-  const textSide = `
-    <div class="feature-text ${isRight ? "order-first-desktop" : ""}">
-      <h2>${f.heading}</h2>
-      <p>${f.body}</p>
-    </div>`;
-  return `
-  <section class="feature" style="background:${f.bg};--h:${f.headingColor};--b:${f.bodyColor}">
-    <div class="feature-inner">
-      ${isRight ? `${textSide}${phoneSide}` : `${phoneSide}${textSide}`}
-    </div>
-  </section>`;
-}).join("\n");
-
-const faqs = [
-  {
-    q: "What is Dial In — Coffee Brew Coach?",
-    a: "Dial In is a free iOS app that acts as your personal coffee coach. You describe how your cup tasted — bitter, sour, weak, flat — and the app gives you one precise adjustment to make on your next brew. No barista knowledge needed.",
-  },
-  {
-    q: "Which brew methods does the app support?",
-    a: "Dial In works with every common home brewing method: espresso, V60, AeroPress, Chemex, Kalita Wave, French press, Moka pot, cold brew, and drip machines.",
-  },
-  {
-    q: "How do I dial in my espresso?",
-    a: "Open the app, select Espresso as your brew method, enter your dose and shot time, then tap the tasting notes that describe your cup. The app diagnoses your extraction and tells you exactly whether to grind finer or coarser, adjust your dose, or change your ratio.",
-  },
-  {
-    q: "Does it work for pour over coffee like V60?",
-    a: "Yes. Dial In supports V60, Chemex, Kalita Wave, and any other pour-over method. Just select your method, describe the taste, and get a targeted adjustment.",
-  },
-  {
-    q: "Is the app free?",
-    a: "Yes — Dial In is free to download with 10 coaching sessions per month included. A Pro upgrade is available for unlimited sessions.",
-  },
-  {
-    q: "Do I need coffee expertise to use it?",
-    a: "No. The whole point is that you don't. You just describe what you taste in plain language — sour, bitter, weak, watery — and the app translates that into a specific technical fix.",
-  },
-];
-
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": faqs.map(f => ({
-    "@type": "Question",
-    "name": f.q,
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": f.a,
-    },
-  })),
-};
-
-const appSchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Dial In — Coffee Brew Coach",
-  "operatingSystem": "iOS",
-  "applicationCategory": "LifestyleApplication",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD",
-  },
-  "description": "AI-powered coffee coaching app. Describe how your espresso or pour over tasted and get one precise adjustment to make next brew.",
-  "url": "https://coffeebrew.coach",
-  "downloadUrl": "https://apps.apple.com/app/id6777418888",
-  "screenshot": "https://coffeebrew.coach/screenshots/1",
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "5",
-    "ratingCount": "12",
-  },
-};
-
-const faqItems = faqs.map(f => `
-  <div class="faq-item">
-    <button class="faq-q" aria-expanded="false">
-      <span>${f.q}</span>
-      <svg class="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div class="faq-a" hidden>
-      <p>${f.a}</p>
-    </div>
-  </div>`).join("\n");
+const guideCards = BREW_GUIDES.map(
+  g =>
+    `<a class="guide-card" href="${g.href}">
+      <span class="guide-card-label">${g.label}</span>
+      <svg class="guide-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>`,
+).join("\n");
 
 const html = `<!DOCTYPE html>
 <html lang="en">
@@ -162,461 +30,315 @@ const html = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Primary SEO -->
-  <title>Dial In — Coffee Coaching App | Espresso & Pour Over Dialling In</title>
-  <meta name="description" content="Dial In is a free iOS coffee coaching app. Describe how your espresso, V60 or AeroPress tasted — get one precise adjustment to make next brew. No barista knowledge needed." />
-  <meta name="keywords" content="coffee coaching app, dial in espresso, pour over coffee guide, V60 app, AeroPress guide, coffee tasting app, espresso dialling in, home coffee brewing, coffee brew coach, coffee adjustment" />
-  <meta name="author" content="Coffee Brew Coach" />
-  <link rel="canonical" href="https://coffeebrew.coach/" />
+  <title>Coffee Brew Coach — AI Coffee Coaching App for Espresso &amp; Pour Over</title>
+  <meta name="description" content="Coffee Brew Coach tells you exactly why your coffee tastes wrong and gives you one specific fix. Free app for espresso, V60, AeroPress, French press and more." />
+  <meta name="keywords" content="coffee coaching app, coffee brew coach, espresso dialling in, pour over guide, coffee taste fix, AI coffee coach, coffee brewing app, espresso pull, V60 guide" />
+  <link rel="canonical" href="https://www.coffeebrew.coach/" />
   <meta name="robots" content="index, follow" />
-
-  <!-- iOS Smart App Banner -->
   <meta name="apple-itunes-app" content="app-id=6777418888" />
 
-  <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://coffeebrew.coach/" />
-  <meta property="og:title" content="Dial In — Coffee Coaching App" />
-  <meta property="og:description" content="Describe how your espresso or pour over tasted. Get one precise adjustment to make next brew. Free iOS app." />
-  <meta property="og:image" content="https://coffeebrew.coach/screenshots/og" />
+  <meta property="og:url" content="https://www.coffeebrew.coach/" />
+  <meta property="og:title" content="Coffee Brew Coach — AI Coffee Coaching App" />
+  <meta property="og:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup. Free for iOS and Android." />
+  <meta property="og:image" content="https://www.coffeebrew.coach/screenshots/og" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Coffee Brew Coach" />
   <meta property="og:locale" content="en_US" />
 
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Dial In — Coffee Coaching App" />
-  <meta name="twitter:description" content="Describe how your espresso or pour over tasted. Get one precise adjustment to make next brew. Free iOS app." />
-  <meta name="twitter:image" content="https://coffeebrew.coach/screenshots/og" />
+  <meta name="twitter:title" content="Coffee Brew Coach — AI Coffee Coaching App" />
+  <meta name="twitter:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup." />
+  <meta name="twitter:image" content="https://www.coffeebrew.coach/screenshots/og" />
 
-  <!-- Structured data -->
-  <script type="application/ld+json">${JSON.stringify(appSchema)}</script>
-  <script type="application/ld+json">${JSON.stringify(faqSchema)}</script>
+  <script type="application/ld+json">${JSON.stringify(APP_SCHEMA)}</script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300;1,9..144,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    ${COMMON_CSS}
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: "DM Sans", -apple-system, system-ui, sans-serif;
-      background: #FAF7F2;
-      color: #2C1A0E;
-    }
-
-    /* ── Hero ─────────────────────────────────────────── */
+    /* ── Hero ─── */
     .hero {
       background: #2C1A0E;
-      padding: 80px 24px 96px;
+      padding: 48px 24px 56px;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 0;
     }
-
-    .app-icon {
-      width: 88px;
-      height: 88px;
-      border-radius: 20px;
-      background: #111;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-      margin-bottom: 24px;
-    }
-
-    .hero-wordmark {
-      font-family: "Fraunces", Georgia, serif;
+    .hero-eyebrow {
+      font-family: 'Fraunces', Georgia, serif;
       font-style: italic;
       font-weight: 300;
-      font-size: 14px;
+      font-size: 13px;
       color: #A89080;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-
     .hero h1 {
-      font-family: "Fraunces", Georgia, serif;
+      font-family: 'Fraunces', Georgia, serif;
       font-weight: 500;
-      font-size: clamp(40px, 8vw, 64px);
+      font-size: clamp(30px, 7vw, 56px);
       line-height: 1.1;
       color: #FAF7F2;
-      margin-bottom: 20px;
+      max-width: 700px;
+      margin-bottom: 18px;
     }
-
-    .hero-tagline {
+    .hero-sub {
       font-size: 18px;
       line-height: 1.65;
       color: #A89080;
-      max-width: 400px;
-      margin-bottom: 40px;
+      max-width: 420px;
+      margin-bottom: 36px;
     }
-
-    .badge-link {
-      display: inline-block;
-      transition: opacity 0.15s;
-    }
-    .badge-link:hover { opacity: 0.8; }
-    .badge-link img { height: 54px; display: block; }
-
-    .hero-sub {
+    .hero-fine {
       font-size: 13px;
       color: #6B5040;
       margin-top: 14px;
     }
 
-    /* ── Feature sections ─────────────────────────────── */
-    .feature {
+    /* ── How it works ─── */
+    .hiw {
+      background: #FAF7F2;
       padding: 72px 24px;
     }
-
-    .feature-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 48px;
-    }
-
-    @media (min-width: 680px) {
-      .feature-inner {
-        flex-direction: row;
-        gap: 64px;
-        align-items: center;
-      }
-      .order-first-desktop  { order: -1; }
-      .order-last-desktop   { order: 1; }
-    }
-
-    .feature-phone {
-      flex-shrink: 0;
-    }
-
-    .phone-shell {
-      width: ${phoneWidth}px;
-      height: ${phoneHeight}px;
-      border-radius: ${Math.round(38 * SCALE)}px;
-      overflow: hidden;
-      box-shadow: 0 24px 72px rgba(0,0,0,0.35);
-      position: relative;
-    }
-
-    .phone-shell iframe {
-      width: 430px;
-      height: 932px;
-      border: none;
-      transform: scale(${SCALE});
-      transform-origin: 0 0;
-      pointer-events: none;
-    }
-
-    .feature-text {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .feature-text h2 {
-      font-family: "Fraunces", Georgia, serif;
-      font-weight: 500;
-      font-size: clamp(28px, 5vw, 40px);
-      line-height: 1.2;
-      color: var(--h);
-      margin-bottom: 16px;
-    }
-
-    .feature-text p {
-      font-size: 17px;
-      line-height: 1.7;
-      color: var(--b);
-      max-width: 380px;
-    }
-
-    /* ── Brew methods strip ───────────────────────────── */
-    .methods {
-      background: #FAF7F2;
-      padding: 56px 24px;
-      text-align: center;
-    }
-
-    .methods-label {
+    .hiw-inner { max-width: 860px; margin: 0 auto; }
+    .section-label {
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: #A89080;
-      margin-bottom: 20px;
+      text-align: center;
+      margin-bottom: 48px;
     }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 40px;
+    }
+    .step-num {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 40px;
+      font-weight: 500;
+      color: #E0D5C8;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .step h3 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 500;
+      font-size: 22px;
+      color: #2C1A0E;
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .step p { font-size: 15px; line-height: 1.75; color: #6B4226; }
 
+    /* ── Brew methods ─── */
+    .methods {
+      background: #1A100A;
+      padding: 64px 24px;
+      text-align: center;
+    }
+    .methods .section-label { color: #6B5040; }
     .methods-list {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      max-width: 640px;
+      max-width: 680px;
       margin: 0 auto;
     }
-
     .method-pill {
+      background: #2C1A0E;
+      border: 1px solid #3D2410;
+      border-radius: 100px;
+      padding: 8px 18px;
+      font-size: 14px;
+      color: #D4B99A;
+      font-weight: 500;
+    }
+
+    /* ── Free tier ─── */
+    .free-tier {
+      background: #FAF7F2;
+      padding: 72px 24px;
+    }
+    .free-tier-inner { max-width: 680px; margin: 0 auto; text-align: center; }
+    .free-tier h2 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(28px, 5vw, 42px);
+      line-height: 1.15;
+      color: #2C1A0E;
+      margin-bottom: 16px;
+    }
+    .free-tier p { font-size: 17px; line-height: 1.7; color: #6B4226; max-width: 480px; margin: 0 auto 20px; }
+    .free-tier-perks {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    .perk-chip {
       background: #F0EBE3;
       border: 1px solid #E0D5C8;
       border-radius: 100px;
-      padding: 8px 18px;
+      padding: 8px 16px;
       font-size: 14px;
       color: #6B4226;
       font-weight: 500;
     }
 
-    /* ── FAQ ──────────────────────────────────────────── */
-    .faq {
-      background: #1A100A;
+    /* ── Brew guides grid ─── */
+    .guides {
+      background: #2C1A0E;
       padding: 72px 24px;
     }
-
-    .faq-inner {
-      max-width: 680px;
-      margin: 0 auto;
-    }
-
-    .faq-heading {
-      font-family: "Fraunces", Georgia, serif;
+    .guides-inner { max-width: 860px; margin: 0 auto; }
+    .guides .section-label { color: #6B5040; text-align: left; margin-bottom: 28px; }
+    .guides-heading {
+      font-family: 'Fraunces', Georgia, serif;
       font-weight: 500;
-      font-size: clamp(28px, 5vw, 40px);
+      font-size: clamp(26px, 4vw, 36px);
       color: #FAF7F2;
-      margin-bottom: 40px;
-      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.2;
     }
-
-    .faq-item {
-      border-bottom: 1px solid #2C1A0E;
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1px;
+      background: #3D2410;
+      border: 1px solid #3D2410;
+      border-radius: 12px;
+      overflow: hidden;
     }
-
-    .faq-item:first-of-type {
-      border-top: 1px solid #2C1A0E;
-    }
-
-    .faq-q {
-      width: 100%;
-      background: none;
-      border: none;
-      cursor: pointer;
+    .guide-card {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      padding: 20px 0;
-      text-align: left;
-      color: #FAF7F2;
-      font-family: "DM Sans", sans-serif;
-      font-size: 16px;
-      font-weight: 500;
-      line-height: 1.4;
+      gap: 12px;
+      padding: 18px 20px;
+      background: #2C1A0E;
+      text-decoration: none;
+      transition: background 0.15s;
     }
+    .guide-card:hover { background: #3A2214; }
+    .guide-card-label { font-size: 14px; color: #D4B99A; font-weight: 500; line-height: 1.4; }
+    .guide-card-arrow { color: #6B5040; flex-shrink: 0; }
 
-    .faq-q:hover { color: #D4B99A; }
-
-    .faq-chevron {
-      flex-shrink: 0;
-      color: #6B5040;
-      transition: transform 0.2s ease;
-    }
-
-    .faq-q[aria-expanded="true"] .faq-chevron {
-      transform: rotate(180deg);
-    }
-
-    .faq-a {
-      padding-bottom: 20px;
-    }
-
-    .faq-a p {
-      font-size: 15px;
-      line-height: 1.7;
-      color: #A89080;
-    }
-
-    /* ── CTA ──────────────────────────────────────────── */
-    .cta {
+    /* ── Bottom CTA ─── */
+    .bottom-cta {
       background: #FAF7F2;
       padding: 80px 24px;
       text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
     }
-
-    .cta h2 {
-      font-family: "Fraunces", Georgia, serif;
+    .bottom-cta h2 {
+      font-family: 'Fraunces', Georgia, serif;
       font-weight: 500;
       font-size: clamp(28px, 5vw, 44px);
-      line-height: 1.2;
       color: #2C1A0E;
-      max-width: 480px;
+      line-height: 1.15;
+      margin-bottom: 14px;
     }
-
-    .cta p {
-      font-size: 17px;
-      color: #8B6347;
-      max-width: 360px;
-      line-height: 1.6;
-    }
-
-    /* ── Footer ───────────────────────────────────────── */
-    footer {
-      background: #1A100A;
-      padding: 32px 24px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .footer-wordmark {
-      font-family: "Fraunces", Georgia, serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 13px;
-      color: #6B5040;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 24px;
-    }
-
-    .footer-links a {
-      font-size: 12px;
-      color: #6B5040;
-      text-decoration: none;
-      border-bottom: 1px solid #3D2410;
-      padding-bottom: 1px;
-    }
-
-    .footer-links a:hover { color: #A89080; }
-
-    .footer-copy {
-      font-size: 11px;
-      color: #3D2410;
-    }
+    .bottom-cta p { font-size: 17px; color: #6B4226; max-width: 380px; margin: 0 auto 32px; }
   </style>
 </head>
 <body>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="app-icon" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="52" height="52">
-        <path d="M10 11 C11 10 9 9 10 8 C11 7 9 6 10 5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
-        <path d="M16 11 C17 10 15 9 16 8 C17 7 15 6 16 5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
-        <rect x="5" y="12" width="16" height="2" rx="1" fill="white"/>
-        <path d="M5 14 H21 L19 25 H7 Z" fill="white"/>
-        <path d="M21 17 Q27 17 27 21 Q27 25 21 25" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
-        <rect x="4" y="26" width="21" height="1.5" rx="0.75" fill="white"/>
-      </svg>
+${renderNav()}
+
+<!-- Hero -->
+<section class="hero">
+  <p class="hero-eyebrow">Coffee Brew Coach</p>
+  <h1>AI coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
+  <p class="hero-sub">Describe your brew. Get one specific fix. Better coffee on the next cup.</p>
+  ${DOWNLOAD_BTNS}
+  <p class="hero-fine">Free · iOS &amp; Android · No credit card required</p>
+</section>
+
+<!-- How it works -->
+<section class="hiw" aria-labelledby="hiw-label">
+  <div class="hiw-inner">
+    <p class="section-label" id="hiw-label">How it works</p>
+    <div class="steps">
+      <div class="step">
+        <p class="step-num">1</p>
+        <h3>Describe your taste.</h3>
+        <p>Too bitter, sour, weak, or flat — just pick what you noticed. No technical knowledge required. Plain language only.</p>
+      </div>
+      <div class="step">
+        <p class="step-num">2</p>
+        <h3>AI diagnoses your brew.</h3>
+        <p>Coffee Brew Coach cross-references your tasting notes against your brew method, dose, grind, and extraction time to pinpoint the problem.</p>
+      </div>
+      <div class="step">
+        <p class="step-num">3</p>
+        <h3>Get one specific fix.</h3>
+        <p>Not a list of possibilities — one targeted change to make on your next brew. Grind finer. Drop the dose 0.5 g. Shorten your steep by 15 seconds.</p>
+      </div>
     </div>
+  </div>
+</section>
 
-    <p class="hero-wordmark">Coffee Brew Coach</p>
-
-    <h1>Dial In<br/>Your Coffee.</h1>
-
-    <p class="hero-tagline">
-      Describe how your espresso or pour over tasted.<br/>
-      Get one precise adjustment for your next brew.<br/>
-      Free. No barista knowledge required.
-    </p>
-
-    <a
-      class="badge-link"
-      href="https://apps.apple.com/app/id6777418888"
-      target="_blank"
-      rel="noopener"
-      aria-label="Download Dial In on the App Store"
-    >
-      <img
-        src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/white/en-us"
-        alt="Download on the App Store"
-      />
-    </a>
-
-    <p class="hero-sub">Free to download &nbsp;·&nbsp; iOS</p>
-  </section>
-
-  <!-- Brew methods strip -->
-  <div class="methods">
-    <p class="methods-label">Works with every brew method</p>
+<!-- Brew methods -->
+<section class="methods" aria-label="Supported brew methods">
+  <div>
+    <p class="section-label">Works with every brew method</p>
     <div class="methods-list" role="list">
       <span class="method-pill" role="listitem">Espresso</span>
       <span class="method-pill" role="listitem">V60</span>
       <span class="method-pill" role="listitem">AeroPress</span>
-      <span class="method-pill" role="listitem">Chemex</span>
       <span class="method-pill" role="listitem">French Press</span>
+      <span class="method-pill" role="listitem">Chemex</span>
       <span class="method-pill" role="listitem">Kalita Wave</span>
       <span class="method-pill" role="listitem">Moka Pot</span>
       <span class="method-pill" role="listitem">Cold Brew</span>
       <span class="method-pill" role="listitem">Drip Machine</span>
     </div>
   </div>
+</section>
 
-  <!-- Feature sections -->
-  ${featureSections}
-
-  <!-- FAQ -->
-  <section class="faq" aria-labelledby="faq-heading">
-    <div class="faq-inner">
-      <h2 class="faq-heading" id="faq-heading">Common questions</h2>
-      ${faqItems}
+<!-- Free tier -->
+<section class="free-tier" aria-labelledby="free-heading">
+  <div class="free-tier-inner">
+    <h2 id="free-heading">Start free.<br/>No credit card needed.</h2>
+    <p>Every account gets 10 free coached brews per month — enough to dial in a new coffee or fix a persistent problem. Upgrade to Pro for unlimited sessions.</p>
+    <div class="free-tier-perks">
+      <span class="perk-chip">10 free coaching sessions/month</span>
+      <span class="perk-chip">All brew methods included</span>
+      <span class="perk-chip">No credit card required</span>
+      <span class="perk-chip">iOS &amp; Android</span>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CTA -->
-  <section class="cta">
-    <h2>Start dialling in<br/>your coffee today.</h2>
-    <p>Free to download. Works with espresso, V60, AeroPress, and more.</p>
-    <a
-      class="badge-link"
-      href="https://apps.apple.com/app/id6777418888"
-      target="_blank"
-      rel="noopener"
-      aria-label="Download Dial In on the App Store"
-    >
-      <img
-        src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us"
-        alt="Download on the App Store"
-      />
-    </a>
-  </section>
-
-  <!-- Footer -->
-  <footer>
-    <p class="footer-wordmark">Dial In — Coffee Brew Coach</p>
-    <div class="footer-links">
-      <a href="/api/privacy">Privacy Policy</a>
-      <a href="/api/terms">Terms of Use</a>
+<!-- Brew guides -->
+<section class="guides" aria-labelledby="guides-heading">
+  <div class="guides-inner">
+    <p class="section-label">Brewing guides</p>
+    <h2 class="guides-heading" id="guides-heading">Learn the fundamentals.</h2>
+    <div class="guide-grid">
+      ${guideCards}
     </div>
-    <p class="footer-copy">© ${new Date().getFullYear()} Coffee Brew Coach</p>
-  </footer>
+  </div>
+</section>
 
-  <script>
-    document.querySelectorAll('.faq-q').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-        const answer = btn.nextElementSibling;
-        if (expanded) answer.hidden = true;
-        else answer.hidden = false;
-      });
-    });
-  </script>
+<!-- Bottom CTA -->
+<section class="bottom-cta">
+  <h2>Better coffee starts<br/>on the next cup.</h2>
+  <p>Free to download. Works with espresso, pour over, AeroPress, and more.</p>
+  ${DOWNLOAD_BTNS}
+</section>
+
+${renderFooter()}
 
 </body>
 </html>`;

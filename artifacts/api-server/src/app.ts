@@ -9,6 +9,7 @@ import termsRouter from "./routes/terms";
 import screenshotsRouter from "./routes/screenshots";
 import webhookRouter from "./routes/webhook";
 import sitemapRouter from "./routes/sitemap";
+import contentPagesRouter from "./routes/content-pages";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -43,6 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(landingRouter);
 app.use(sitemapRouter);
+app.use(contentPagesRouter);
 app.use(privacyRouter);
 app.use(supportRouter);
 app.use(termsRouter);
