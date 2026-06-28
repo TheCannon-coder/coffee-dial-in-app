@@ -69,9 +69,9 @@ function page(opts: {
 
 const chemexHtml = page({
   path: "/chemex",
-  title: "How to Brew Chemex Coffee",
+  title: "Chemex Brewing Guide | Coffee Brew Coach",
   description:
-    "Learn how to brew Chemex coffee with the right grind, ratio, and pour technique. Step-by-step guide for a clean, bright cup every time.",
+    "How to brew Chemex coffee and fix common problems — weak, bitter, or slow extraction. AI coaching from Coffee Brew Coach.",
   h1: "How to brew Chemex coffee",
   lead:
     "The Chemex produces one of the cleanest, brightest cups in coffee — but it's unforgiving. Get the grind or pour wrong and you'll end up with a bitter, muddy result. This guide covers everything you need to nail it.",
@@ -117,9 +117,9 @@ const chemexHtml = page({
 
 const kalitaHtml = page({
   path: "/kalita-wave",
-  title: "Kalita Wave Brewing Guide",
+  title: "Kalita Wave Brewing Guide | Coffee Brew Coach",
   description:
-    "A complete Kalita Wave brewing guide — grind size, ratio, pour technique, and how to fix common problems like sour or over-extracted coffee.",
+    "Master the Kalita Wave with the right grind, ratio, and pour technique. Get AI coaching from Coffee Brew Coach.",
   h1: "Kalita Wave brewing guide",
   lead:
     "The Kalita Wave's flat-bottom basket and three-hole drain are designed for consistent, forgiving extraction. Here's how to get the best out of it.",
@@ -163,9 +163,9 @@ const kalitaHtml = page({
 
 const mokaPotHtml = page({
   path: "/moka-pot",
-  title: "Moka Pot Coffee Too Bitter — How to Fix It",
+  title: "Moka Pot Coffee Too Bitter? Here's Why | Coffee Brew Coach",
   description:
-    "If your moka pot coffee tastes too bitter or burnt, here's exactly why it happens and how to fix it — grind size, heat, and dose all play a role.",
+    "Fix bitter, burnt, or weak Moka pot coffee with these simple adjustments. Free AI coaching from Coffee Brew Coach.",
   h1: "Moka pot coffee too bitter — how to fix it",
   lead:
     "Bitter moka pot coffee is almost always caused by too much heat, the wrong grind, or letting the coffee sit on the stove too long. All three are easy to fix once you know what to look for.",
@@ -204,9 +204,9 @@ const mokaPotHtml = page({
 
 const coldBrewHtml = page({
   path: "/cold-brew",
-  title: "Cold Brew Coffee Ratio — The Complete Guide",
+  title: "Cold Brew Coffee Ratio and Brew Time Guide | Coffee Brew Coach",
   description:
-    "The right cold brew coffee ratio depends on whether you want a concentrate or ready-to-drink brew. This guide covers ratios, steep times, and grind size for both.",
+    "Get the cold brew ratio, grind size, and steep time right every time. Free AI coaching from Coffee Brew Coach.",
   h1: "Cold brew coffee ratio — the complete guide",
   lead:
     "Cold brew ratio is the most important variable to get right. Too high a ratio and it's bitter and harsh; too low and it's watery and flat. Here's exactly what to use and why.",
@@ -248,9 +248,9 @@ const coldBrewHtml = page({
 
 const dripMachineHtml = page({
   path: "/drip-machine",
-  title: "Drip Coffee Maker Tips — Get the Best Cup from Your Machine",
+  title: "Drip Coffee Maker Tips | Coffee Brew Coach",
   description:
-    "Simple drip coffee maker tips that make a real difference: the right ratio, grind, water temperature, and maintenance habits for consistently better coffee.",
+    "Make better drip coffee with the right grind, ratio, and water temperature. AI coaching from Coffee Brew Coach.",
   h1: "Drip coffee maker tips for a better cup",
   lead:
     "Most drip coffee makers are set up to produce mediocre coffee by default. A few simple changes to your ratio, grind, and maintenance routine will dramatically improve what you're getting.",
@@ -286,9 +286,9 @@ const dripMachineHtml = page({
 
 const bitterHtml = page({
   path: "/why-does-my-coffee-taste-bitter",
-  title: "Why Does My Coffee Taste Bitter?",
+  title: "Why Does My Coffee Taste Bitter? | Coffee Brew Coach",
   description:
-    "Coffee tastes bitter because of over-extraction — water pulling out too many compounds. Here's what causes it and exactly how to fix it for every brew method.",
+    "Bitter coffee is almost always over-extraction. Here's how to fix it for espresso, pour over, French press, and more.",
   h1: "Why does my coffee taste bitter?",
   lead:
     "Bitter coffee is almost always over-extraction — water has pulled too many compounds out of the grounds. But the cause of that over-extraction varies by brew method, and the fix is specific to each situation.",
@@ -331,9 +331,9 @@ const bitterHtml = page({
 
 const espressoFastHtml = page({
   path: "/espresso-pulling-too-fast",
-  title: "Espresso Pulling Too Fast — How to Fix It",
+  title: "Espresso Pulling Too Fast? Here's the Fix | Coffee Brew Coach",
   description:
-    "If your espresso is pulling too fast — under 20 seconds — here's why it happens and exactly how to fix it: grind finer, adjust your dose, and check your tamp.",
+    "If your espresso pulls in under 20 seconds it's under-extracted. Here's exactly what to adjust to fix it.",
   h1: "Espresso pulling too fast — how to fix it",
   lead:
     "A fast espresso shot — one that finishes in under 20 seconds — is under-extracted. The coffee will taste sour, thin, and weak. Here's a systematic way to fix it.",
@@ -372,9 +372,9 @@ const espressoFastHtml = page({
 
 const grindSizeHtml = page({
   path: "/coffee-grind-size-guide",
-  title: "Coffee Grind Size Guide — Which Grind for Every Brew Method",
+  title: "Coffee Grind Size Guide | Coffee Brew Coach",
   description:
-    "A complete coffee grind size guide for every brew method — espresso, V60, AeroPress, French press, cold brew and more. Includes a grind size chart with visual references.",
+    "The complete grind size guide for every brew method — espresso, V60, AeroPress, French press, cold brew and more.",
   h1: "Coffee grind size guide",
   lead:
     "Grind size is the most powerful variable in coffee extraction. Use the wrong grind and no amount of ratio or temperature adjustment will fix the cup. Here's what grind to use for every method.",
@@ -431,9 +431,9 @@ const grindSizeHtml = page({
 
 const dialInEspressoHtml = page({
   path: "/how-to-dial-in-espresso",
-  title: "How to Dial In Espresso at Home",
+  title: "How to Dial In Espresso at Home | Coffee Brew Coach",
   description:
-    "Learn how to dial in espresso at home — the right starting recipe, which variable to change first, how to read the taste, and how to hit a consistently great shot.",
+    "Step-by-step guide to dialling in espresso — grind, dose, yield, and timing. Get instant AI coaching from Coffee Brew Coach.",
   h1: "How to dial in espresso at home",
   lead:
     "Dialling in espresso means systematically adjusting your variables until each shot tastes balanced and repeatable. It's not complicated — but you need to know which variable to change first.",
@@ -485,9 +485,9 @@ const dialInEspressoHtml = page({
 
 const aeropressWeakHtml = page({
   path: "/aeropress-too-weak",
-  title: "AeroPress Coffee Too Weak — How to Fix It",
+  title: "AeroPress Coffee Too Weak? Here's the Fix | Coffee Brew Coach",
   description:
-    "If your AeroPress coffee tastes weak, watery, or thin, here's exactly why it happens and how to fix it — grind size, dose, steep time, and water temperature all play a role.",
+    "Weak AeroPress coffee is usually grind size or steep time. Here's exactly how to fix it and brew stronger, better coffee.",
   h1: "AeroPress coffee too weak — how to fix it",
   lead:
     "Weak AeroPress coffee is a solvable problem. It comes down to one or more of four causes: too much water, not enough coffee, a grind that's too coarse, or a steep time that's too short.",
@@ -529,6 +529,64 @@ const aeropressWeakHtml = page({
   ctaHeading: "Fix your AeroPress coffee.",
 });
 
+/* ─── 11. French Press ───────────────────────────────────────────────────── */
+
+const frenchPressHtml = page({
+  path: "/french-press",
+  title: "French Press Coffee — Brew Guide and Fixes | Coffee Brew Coach",
+  description:
+    "Fix bitter, weak, or muddy French press coffee. The right grind, steep time, and ratio for a perfect cup every time.",
+  h1: "French Press Coffee — How to Brew and Troubleshoot",
+  lead:
+    "French press is one of the most forgiving brew methods — but it's easy to end up with bitter, muddy, or weak coffee if you get the grind, steep time, or ratio wrong. This guide covers exactly how to fix it.",
+  contentHtml: `
+<h2>Why French press is different</h2>
+<p>Unlike filtered methods (pour over, drip machine), French press keeps the coffee grounds in contact with water for the entire steep and uses a metal mesh filter rather than paper. This means the coffee oils and fine particles stay in the cup, giving French press its characteristic full body and rich texture.</p>
+<p>The metal filter doesn't trap fine particles the way paper does. If you grind too fine, you'll end up with a layer of sludge at the bottom and a cup that turns bitter as it sits. Coarse grind is not optional with French press — it's essential.</p>
+
+<h2>The recipe</h2>
+<ul>
+  <li><strong>Dose:</strong> 60–65 g coffee per litre of water (1:15 to 1:16 ratio)</li>
+  <li><strong>Grind:</strong> Coarse — like raw cane sugar or rough sea salt</li>
+  <li><strong>Water temperature:</strong> 93–96 °C (200–205 °F)</li>
+  <li><strong>Steep time:</strong> 4 minutes exactly</li>
+</ul>
+<p>The coarse grind is essential. French press steeps for 4 full minutes — if you grind to a medium or fine setting, that contact time will massively over-extract and produce harsh bitterness. When in doubt, grind coarser.</p>
+
+<h2>Step-by-step brew guide</h2>
+<p><strong>1. Preheat the press.</strong> Add a small amount of hot water, swirl it around, and discard. This prevents temperature drop when you add your brew water.</p>
+<p><strong>2. Add ground coffee.</strong> Use freshly ground coffee if possible. Add your dose and give the press a gentle shake to level the grounds.</p>
+<p><strong>3. Start your timer and pour.</strong> Pour all the water in one go, making sure all grounds are submerged. Give it one gentle stir to ensure even saturation. Place the lid on top with the plunger pulled all the way up — do not press yet.</p>
+<p><strong>4. Steep for exactly 4 minutes.</strong> This is the most important step. Set a timer. Steeping for too long is the single most common cause of bitter French press coffee.</p>
+<p><strong>5. Press slowly.</strong> At 4 minutes, press the plunger down using firm, steady pressure over about 20–30 seconds. Don't press too fast — aggressive plunging forces fine particles through the filter.</p>
+<p><strong>6. Pour immediately.</strong> Don't leave coffee sitting in the press after plunging. The grounds continue extracting even after the plunger is down. Pour into a cup or carafe right away.</p>
+
+<h2>French press coffee too bitter — how to fix it</h2>
+<h3>Grind coarser</h3>
+<p>This fixes the vast majority of bitter French press coffee. If your grind looks anything like table salt or beach sand, it's too fine. Move to a coarse setting where the particles look like raw cane sugar. This single change reduces bitterness more than any other adjustment.</p>
+<h3>Reduce steep time</h3>
+<p>If you're steeping longer than 4 minutes, the grounds continue extracting bitter compounds. Set a timer and plunge at exactly 4 minutes. If it's still bitter at 4 minutes with a coarse grind, try 3:30.</p>
+<h3>Lower your water temperature</h3>
+<p>Water above 97 °C accelerates extraction and can scorch the coffee. Let boiling water sit for 30–60 seconds before pouring, or target 93–95 °C with a temperature-controlled kettle.</p>
+
+<h2>French press coffee too weak — how to fix it</h2>
+<h3>Use more coffee</h3>
+<p>The most common cause of weak French press is not enough coffee. Many standard recipes under-dose to around 1:18 or 1:20 ratios. Move to 60–65 g per litre and the difference is immediate.</p>
+<h3>Grind slightly finer</h3>
+<p>If you're already using the right amount of coffee and it still tastes thin, try one step finer on your grinder. Aim for slightly coarse — not extremely coarse.</p>
+
+<h2>Why is my French press muddy?</h2>
+<p>A muddy cup — thick with sludge — usually means the grind is too fine and fine particles are passing through the metal filter. Grind coarser and press more slowly. Also check that your filter mesh isn't damaged or worn, which would allow more particles through than normal.</p>`,
+  cbcHtml: `<p>French press troubleshooting is exactly what Coffee Brew Coach is built for. You describe what went wrong — bitter, muddy, weak, flat — and the app identifies the specific cause based on your grind setting, steep time, and ratio. Instead of guessing whether to adjust grind, steep time, or dose, you get one targeted change to make on the next brew.</p>
+<p>Coffee Brew Coach also tracks your French press history brew by brew, so you can see exactly when a recipe clicked and replicate it with any new coffee you try.</p>`,
+  related: [
+    { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
+    { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
+    { href: "/cold-brew", label: "Cold brew coffee ratio guide" },
+  ],
+  ctaHeading: "Fix your French press coffee.",
+});
+
 /* ─── Register all routes ─────────────────────────────────────────────────── */
 
 const pages: Array<{ path: string; html: string }> = [
@@ -542,6 +600,7 @@ const pages: Array<{ path: string; html: string }> = [
   { path: "/coffee-grind-size-guide", html: grindSizeHtml },
   { path: "/how-to-dial-in-espresso", html: dialInEspressoHtml },
   { path: "/aeropress-too-weak", html: aeropressWeakHtml },
+  { path: "/french-press", html: frenchPressHtml },
 ];
 
 for (const { path, html } of pages) {

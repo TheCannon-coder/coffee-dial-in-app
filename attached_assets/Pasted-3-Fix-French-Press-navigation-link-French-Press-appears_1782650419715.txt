@@ -1,0 +1,24 @@
+3. Fix French Press navigation link
+French Press appears in the navigation menu but has no link. Link it to /french-press. If the /french-press page does not exist, create it with the same structure as the other brew method pages: one H1 ("French Press Coffee — How to Brew and Troubleshoot"), at least 300 words of helpful content about French press brewing, a section explaining how Coffee Brew Coach helps dial in French press, and an App Store download button at the bottom. Target keyword: "french press coffee too bitter."
+
+4. Add unique meta title and description tags to every page
+Every single page on the site must have its own unique <title> tag and <meta name="description"> tag in the <head>. Use these exactly:
+
+Homepage: <title>Coffee Brew Coach — AI Coaching for Home Brewers</title> / description: "Describe how your coffee tastes and get one specific fix per brew. Free AI coaching for espresso, V60, AeroPress, French press and more."
+/espresso or /how-to-dial-in-espresso: title: "How to Dial In Espresso at Home | Coffee Brew Coach" / description: "Learn how to dial in espresso step by step — grind size, dose, yield, and extraction. Free AI coaching from Coffee Brew Coach."
+/why-does-my-coffee-taste-bitter: title: "Why Does My Coffee Taste Bitter? | Coffee Brew Coach" / description: "Bitter coffee is almost always over-extraction. Here's how to fix it for espresso, pour over, French press, and more."
+/how-to-dial-in-espresso: title: "How to Dial In Espresso at Home | Coffee Brew Coach" / description: "Step-by-step guide to dialling in espresso — grind, dose, yield, and timing. Get instant AI coaching from Coffee Brew Coach."
+/coffee-grind-size-guide: title: "Coffee Grind Size Guide | Coffee Brew Coach" / description: "The complete grind size guide for every brew method — espresso, V60, AeroPress, French press, cold brew and more."
+/aeropress-too-weak: title: "AeroPress Coffee Too Weak? Here's the Fix | Coffee Brew Coach" / description: "Weak AeroPress coffee is usually grind size or steep time. Here's exactly how to fix it and brew stronger, better coffee."
+/chemex: title: "Chemex Brewing Guide | Coffee Brew Coach" / description: "How to brew Chemex coffee and fix common problems — weak, bitter, or slow extraction. AI coaching from Coffee Brew Coach."
+/kalita-wave: title: "Kalita Wave Brewing Guide | Coffee Brew Coach" / description: "Master the Kalita Wave with the right grind, ratio, and pour technique. Get AI coaching from Coffee Brew Coach."
+/moka-pot: title: "Moka Pot Coffee Too Bitter? Here's Why | Coffee Brew Coach" / description: "Fix bitter, burnt, or weak Moka pot coffee with these simple adjustments. Free AI coaching from Coffee Brew Coach."
+/cold-brew: title: "Cold Brew Coffee Ratio and Brew Time Guide | Coffee Brew Coach" / description: "Get the cold brew ratio, grind size, and steep time right every time. Free AI coaching from Coffee Brew Coach."
+/drip-machine: title: "Drip Coffee Maker Tips | Coffee Brew Coach" / description: "Make better drip coffee with the right grind, ratio, and water temperature. AI coaching from Coffee Brew Coach."
+/french-press: title: "French Press Coffee — Brew Guide and Fixes | Coffee Brew Coach" / description: "Fix bitter, weak, or muddy French press coffee. The right grind, steep time, and ratio for a perfect cup every time."
+/espresso-pulling-too-fast: title: "Espresso Pulling Too Fast? Here's the Fix | Coffee Brew Coach" / description: "If your espresso pulls in under 20 seconds it's under-extracted. Here's exactly what to adjust to fix it."
+5. Verify all pages return HTTP 200
+Check that every URL in the sitemap returns a 200 status code and not a 404 or redirect. Fix any that are broken.
+
+6. Update sitemap.xml with all pages and today's date
+The sitemap must include every page listed above. Set lastmod to today's date on all entries. Homepage priority 1.0, all other pages 0.8.

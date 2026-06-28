@@ -15,6 +15,7 @@ const CONTENT_PAGES = [
   "/coffee-grind-size-guide",
   "/how-to-dial-in-espresso",
   "/aeropress-too-weak",
+  "/french-press",
 ];
 
 router.get("/sitemap.xml", (_req, res) => {

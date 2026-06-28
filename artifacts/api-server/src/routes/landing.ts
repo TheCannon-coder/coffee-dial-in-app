@@ -30,8 +30,8 @@ const html = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Coffee Brew Coach — Coffee Coaching App for Espresso &amp; Pour Over</title>
-  <meta name="description" content="Coffee Brew Coach tells you exactly why your coffee tastes wrong and gives you one specific fix. Free app for espresso, V60, AeroPress, French press and more." />
+  <title>Coffee Brew Coach — AI Coaching for Home Brewers</title>
+  <meta name="description" content="Describe how your coffee tastes and get one specific fix per brew. Free AI coaching for espresso, V60, AeroPress, French press and more." />
   <meta name="keywords" content="coffee coaching app, coffee brew coach, espresso dialling in, pour over guide, coffee taste fix, coffee brewing app, espresso pull, V60 guide" />
   <link rel="canonical" href="https://www.coffeebrew.coach/" />
   <meta name="robots" content="index, follow" />
@@ -435,7 +435,7 @@ ${renderNav()}
       <a class="method-pill" href="/how-to-dial-in-espresso" role="listitem">Espresso</a>
       <a class="method-pill" href="/coffee-grind-size-guide" role="listitem">V60</a>
       <a class="method-pill" href="/aeropress-too-weak" role="listitem">AeroPress</a>
-      <span class="method-pill" role="listitem">French Press</span>
+      <a class="method-pill" href="/french-press" role="listitem">French Press</a>
       <a class="method-pill" href="/chemex" role="listitem">Chemex</a>
       <a class="method-pill" href="/kalita-wave" role="listitem">Kalita Wave</a>
       <a class="method-pill" href="/moka-pot" role="listitem">Moka Pot</a>
