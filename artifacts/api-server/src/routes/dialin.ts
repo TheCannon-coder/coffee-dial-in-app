@@ -20,6 +20,36 @@ function makeReferralCode(): string {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
+const METHOD_ALIASES: Record<string, string> = {
+  aeropress: "AeroPress",
+  "aero press": "AeroPress",
+  v60: "V60",
+  "pour over": "Pour Over",
+  "pour-over": "Pour Over",
+  pourover: "Pour Over",
+  chemex: "Chemex",
+  espresso: "Espresso",
+  "french press": "French Press",
+  "french-press": "French Press",
+  frenchpress: "French Press",
+  "drip machine": "Drip Machine",
+  dripmachine: "Drip Machine",
+  drip: "Drip Machine",
+  "moka pot": "Moka Pot",
+  mokapot: "Moka Pot",
+  moka: "Moka Pot",
+  "kalita wave": "Kalita Wave",
+  kalita: "Kalita Wave",
+  "cold brew": "Cold Brew",
+  coldbrew: "Cold Brew",
+};
+
+function normaliseMethod(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const key = raw.trim().toLowerCase();
+  return METHOD_ALIASES[key] ?? raw.trim();
+}
+
 const VALID_ADJUSTMENTS = [
   "grind_finer",
   "grind_coarser",
@@ -276,7 +306,7 @@ Respond ONLY with valid JSON, no markdown:
     await db.insert(brewsTable).values({
       userId: user.id,
       sessionId,
-      method: method ?? null,
+      method: normaliseMethod(method),
       coffeeName: coffeeName ?? null,
       dose: dose ?? null,
       water: water ?? null,
