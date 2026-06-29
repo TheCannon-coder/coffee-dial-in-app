@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -13,8 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
+import Purchases from 'react-native-purchases';
 import { useColors } from '@/hooks/useColors';
-import { createCheckout } from '@/lib/api';
+import { createCheckout, redeemPromoCode } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { useSubscription } from '@/lib/revenuecat';
 
@@ -29,6 +31,12 @@ export default function PaywallScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
 
   const resetsOn = params.resetsOn ?? '';
   const isAnon = params.isAnonymous === '1';
@@ -111,6 +119,45 @@ export default function PaywallScreen() {
       router.replace('/home');
     } catch {
       setErrorMsg('Could not restore purchases. Please try again.');
+    }
+  }
+
+  function openPromoModal() {
+    setPromoCode('');
+    setPromoError('');
+    setPromoSuccess('');
+    setShowPromoModal(true);
+  }
+
+  async function handleRedeemPromo() {
+    const trimmed = promoCode.trim();
+    if (!trimmed) {
+      setPromoError('Please enter a promo code.');
+      return;
+    }
+    setPromoLoading(true);
+    setPromoError('');
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      const revenuecatId = customerInfo.originalAppUserId;
+      const result = await redeemPromoCode(trimmed, revenuecatId);
+      if (result.error) {
+        setPromoError(result.error);
+      } else {
+        setPromoSuccess(result.message ?? 'Code applied! Your Pro access is now active.');
+        await Purchases.invalidateCustomerInfoCache();
+      }
+    } catch {
+      setPromoError('Something went wrong. Please try again.');
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  function handlePromoDone() {
+    setShowPromoModal(false);
+    if (promoSuccess) {
+      router.replace('/home');
     }
   }
 
@@ -233,6 +280,12 @@ export default function PaywallScreen() {
           <Text style={[styles.notNowText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Not now</Text>
         </Pressable>
 
+        <Pressable onPress={openPromoModal} style={styles.promoBtn} disabled={isLoadingAny}>
+          <Text style={[styles.promoBtnText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+            Have a promo code?
+          </Text>
+        </Pressable>
+
         <Pressable onPress={() => setShowRestoreConfirm(true)} style={styles.restoreBtn} disabled={isLoadingAny}>
           <Text style={[styles.restoreBtnText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
             {isRestoring ? 'Restoring…' : 'Restore purchases'}
@@ -254,6 +307,7 @@ export default function PaywallScreen() {
         </View>
       </ScrollView>
 
+      {/* Restore purchases confirmation modal */}
       <Modal
         visible={showRestoreConfirm}
         transparent
@@ -280,6 +334,104 @@ export default function PaywallScreen() {
                 <Text style={[styles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Cancel</Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Promo code modal */}
+      <Modal
+        visible={showPromoModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => !promoLoading && setShowPromoModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            {promoSuccess ? (
+              <>
+                <View style={[styles.promoSuccessIcon, { backgroundColor: colors.secondary }]}>
+                  <Feather name="check-circle" size={28} color={colors.accent} />
+                </View>
+                <Text style={[styles.modalTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                  Code applied!
+                </Text>
+                <Text style={[styles.modalBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  {promoSuccess}
+                </Text>
+                <View style={styles.modalActions}>
+                  <Pressable
+                    style={({ pressed }) => [styles.modalBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 }]}
+                    onPress={handlePromoDone}
+                  >
+                    <Text style={[styles.modalBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                      Start brewing
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.modalTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                  Promo code
+                </Text>
+                <Text style={[styles.modalBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  Enter your code below to unlock Pro access.
+                </Text>
+                <TextInput
+                  style={[
+                    styles.promoInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: promoError ? colors.destructive : colors.border,
+                      color: colors.espresso,
+                      fontFamily: 'DMSans_500Medium',
+                    },
+                  ]}
+                  value={promoCode}
+                  onChangeText={(t) => { setPromoCode(t); setPromoError(''); }}
+                  placeholder="e.g. PH1FREE"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleRedeemPromo}
+                  editable={!promoLoading}
+                />
+                {promoError ? (
+                  <Text style={[styles.promoErrorText, { color: colors.destructive, fontFamily: 'DMSans_400Regular' }]}>
+                    {promoError}
+                  </Text>
+                ) : null}
+                <View style={styles.modalActions}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.modalBtn,
+                      { backgroundColor: colors.espresso, opacity: pressed || promoLoading ? 0.8 : 1 },
+                    ]}
+                    onPress={handleRedeemPromo}
+                    disabled={promoLoading}
+                  >
+                    {promoLoading ? (
+                      <ActivityIndicator color={colors.cream} size="small" />
+                    ) : (
+                      <Text style={[styles.modalBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                        Redeem
+                      </Text>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setShowPromoModal(false)}
+                    style={styles.modalCancel}
+                    disabled={promoLoading}
+                  >
+                    <Text style={[styles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                      Cancel
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -386,6 +538,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textDecorationLine: 'underline',
   },
+  promoBtn: {
+    paddingVertical: 8,
+  },
+  promoBtnText: {
+    fontSize: 14,
+  },
   restoreBtn: {
     paddingVertical: 8,
   },
@@ -451,8 +609,32 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     paddingVertical: 14,
     alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
   },
   modalBtnText: { fontSize: 16 },
   modalCancel: { paddingVertical: 8 },
   modalCancelText: { fontSize: 14 },
+  promoInput: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 18,
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  promoErrorText: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  promoSuccessIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
 });

@@ -11,6 +11,7 @@ import webhookRouter from "./routes/webhook";
 import sitemapRouter from "./routes/sitemap";
 import contentPagesRouter from "./routes/content-pages";
 import waitlistRouter from "./routes/waitlist";
+import promoRouter from "./routes/promo";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -61,6 +62,7 @@ if (process.env.REFERRAL_PROGRAM === "true") {
   logger.info("Referral program routes enabled");
 }
 
+app.use("/api", promoRouter);
 app.use("/api", router);
 
 export default app;

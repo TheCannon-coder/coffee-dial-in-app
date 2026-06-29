@@ -154,3 +154,12 @@ export function submitFeedback(sessionId: string, wasHelpful: boolean): Promise<
   return post<{ ok: boolean }>('/feedback', { sessionId, wasHelpful });
 }
 
+export interface PromoRedeemResult {
+  message?: string;
+  error?: string;
+}
+
+export function redeemPromoCode(code: string, revenuecatId: string): Promise<PromoRedeemResult> {
+  return post<PromoRedeemResult>('/promo/redeem', { code, revenuecatId });
+}
+
