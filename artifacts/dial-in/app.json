@@ -8,7 +8,7 @@
         "projectId": "dc599702-2fe8-4dde-9bc2-1eb61c413e44"
       }
     },
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "dial-in",
@@ -23,7 +23,7 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.dialin.coffeecoach",
-      "buildNumber": "45",
+      "buildNumber": "46",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "Coffee Brew Coach can remind you to brew and notify you about referral rewards.",
