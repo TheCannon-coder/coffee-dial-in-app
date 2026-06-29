@@ -1,0 +1,20 @@
+Referral reward logic:
+* Every user gets a unique referral link and code at signup
+* When a new user signs up with a referral code, grant them 14 days of Pro access automatically — no credit card required
+* The referrer does NOT receive their reward immediately. The reward unlocks only after the referred user completes 3 brew sessions within their 14-day trial. This prevents fake account abuse.
+* When the reward unlocks: add 30 days of free Pro to the referrer's account
+* Track referral_reward_pending and referral_reward_unlocked on each conversion
+* If a user has referred 10 or more people who completed 3 brews each, set pro_permanent: true on their account — they never see a paywall again
+* Show referrers their progress in their profile: "You've referred X people — Y more until free Pro forever"
+* The share message should read: "I've been using Coffee Brew Coach to dial in my brews — here's 14 days free on me: [link]"
+
+Influencer affiliate payout logic — revenue share model, never flat upfront bounties:
+* When a referred user converts to a paid plan, start a 30-day hold. No payout is triggered during this window.
+    * After the 30-day hold, begin monthly payout instalments based on plan type:
+    * Monthly plan: pay the influencer their tier rate every month the subscription renews. If the subscription cancels, stop all future payments immediately. No clawback of already-paid months.
+    * Annual plan: divide the total commission into 12 equal monthly instalments. Pay one instalment per month for 12 months. If the subscriber receives a refund within the first 30 days, cancel all instalments. After 30 days, continue all 12 payments regardless.
+    * Lifetime plan: divide the total commission into 6 equal monthly instalments. Pay one instalment per month for 6 months. If the subscriber refunds within 30 days, cancel all instalments. After 30 days, continue all 6 payments regardless.
+* Track on each conversion record: commission_total, commission_paid_to_date, instalments_remaining, next_payout_date, payout_status (pending / active / complete / cancelled)
+* Run a monthly payout job on the 1st of each month: query all active conversions where next_payout_date is due, verify the subscription is still active (for monthly plans), calculate the instalment amount, add to the affiliate's pending payout balance, update next_payout_date to the following month.
+* For monthly plans only: before processing each monthly instalment, check that the App Store / Google Play subscription is still active. If it has lapsed, set payout_status: complete and stop future instalments.
+* Revenue Cat handles the actual bank transfer on the 1st of each month from the accumulated balance.
