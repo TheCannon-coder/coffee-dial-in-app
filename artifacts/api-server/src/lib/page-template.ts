@@ -400,6 +400,14 @@ export function buildPage({
 
   <script type="application/ld+json">${JSON.stringify(APP_SCHEMA)}</script>
 
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TJQQ53PBTE"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TJQQ53PBTE');
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300;1,9..144,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>${COMMON_CSS}</style>
