@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -21,15 +23,18 @@ import {
   getAffiliateMetrics,
   getConnectStatus,
   startConnectOnboarding,
+  getFriendReferralStats,
+  joinAffiliate,
   AffiliateStats,
   AffiliateMonth,
   ConnectStatusResult,
+  FriendReferralStats,
 } from '@/lib/api';
 
 // ── Calculator constants ─────────────────────────────────────────────────────
 const CONV_SIGNUP = 0.25;
 const CONV_PRO = 0.18;
-const DEFAULT_RATE_CENTS = 150; // Gold tier default for display
+const DEFAULT_RATE_CENTS = 150;
 
 const AUDIENCE_PRESETS = [
   { label: '1K', value: 1_000 },
@@ -75,8 +80,16 @@ export default function AffiliateScreen() {
   const [connectStatus, setConnectStatus] = useState<ConnectStatusResult | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
 
-  const [audienceIdx, setAudienceIdx] = useState(4); // default 50K
+  const [friendStats, setFriendStats] = useState<FriendReferralStats | null>(null);
+
+  const [audienceIdx, setAudienceIdx] = useState(4);
   const [copied, setCopied] = useState(false);
+
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinCountry, setJoinCountry] = useState('US');
+  const [joinPayoutEmail, setJoinPayoutEmail] = useState(email ?? '');
+  const [joinFtcAccepted, setJoinFtcAccepted] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
 
   const refreshConnectStatus = useCallback(async () => {
     if (!email) return;
@@ -88,18 +101,29 @@ export default function AffiliateScreen() {
     }
   }, [email]);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!email) return;
     setLoadingStats(true);
-    Promise.all([getAffiliateStats(email), getAffiliateMetrics(email)])
-      .then(([s, m]) => {
-        setStats(s);
-        setMonths(m.months);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingStats(false));
+    try {
+      const [s, m, fs] = await Promise.all([
+        getAffiliateStats(email),
+        getAffiliateMetrics(email),
+        getFriendReferralStats(email),
+      ]);
+      setStats(s);
+      setMonths(m.months);
+      setFriendStats(fs);
+    } catch {
+      // silently ignore
+    } finally {
+      setLoadingStats(false);
+    }
     refreshConnectStatus();
   }, [email, refreshConnectStatus]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleConnectOnboard = useCallback(async () => {
     if (!email) return;
@@ -112,7 +136,6 @@ export default function AffiliateScreen() {
       }
       if (result.url) {
         await WebBrowser.openBrowserAsync(result.url);
-        // Re-check status after browser closes
         await refreshConnectStatus();
       }
     } catch {
@@ -121,6 +144,42 @@ export default function AffiliateScreen() {
       setConnectLoading(false);
     }
   }, [email, refreshConnectStatus]);
+
+  const handleJoinAffiliate = useCallback(async () => {
+    if (!email) return;
+    if (!joinFtcAccepted) {
+      Alert.alert('FTC Disclosure Required', 'Please confirm you will disclose your affiliate relationship in all promotional content.');
+      return;
+    }
+    if (!joinPayoutEmail.trim()) {
+      Alert.alert('Payout Email Required', 'Enter the email address linked to your Stripe account.');
+      return;
+    }
+    setJoinLoading(true);
+    try {
+      const result = await joinAffiliate({
+        email,
+        country: joinCountry,
+        payoutEmail: joinPayoutEmail.trim(),
+        ftcDisclosureAccepted: true,
+      });
+      if (result.error) {
+        if (result.comingSoon) {
+          Alert.alert('Coming Soon', 'Affiliate payouts are currently available for US and Canada residents. We\'ll expand to more countries soon.');
+        } else {
+          Alert.alert('Error', result.error);
+        }
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowJoinForm(false);
+      await loadData();
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setJoinLoading(false);
+    }
+  }, [email, joinCountry, joinPayoutEmail, joinFtcAccepted, loadData]);
 
   const rateCents = stats?.isAffiliate && stats.monthlyRateCents
     ? stats.monthlyRateCents
@@ -147,12 +206,16 @@ export default function AffiliateScreen() {
     if (!referralLink) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Share.share({
-      message: `I've been using Coffee Brew Coach to perfect my espresso — give it a try: ${referralLink}`,
+      message: `I've been using Coffee Brew Coach to perfect my espresso — try it free for a month with my link: ${referralLink}`,
       url: referralLink,
     });
   }, [referralLink]);
 
   const hasActivity = months.some(m => m.newConversions > 0 || m.earningsCents > 0);
+
+  const qualifyingCount = friendStats?.qualifyingCount ?? 0;
+  const proPermanent = friendStats?.proPermanent ?? false;
+  const friendProgress = Math.min(qualifyingCount, 10);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -178,7 +241,7 @@ export default function AffiliateScreen() {
           Refer {'&'} Earn
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Share Coffee Brew Coach and earn a monthly commission for every Pro subscriber you bring in.
+          Share Coffee Brew Coach. Friends get 1 month free — you earn rewards.
         </Text>
 
         {/* Referral link row */}
@@ -210,96 +273,269 @@ export default function AffiliateScreen() {
           </View>
         )}
 
-        {/* Affiliate stats */}
+        {/* ── Friend referral progress ── */}
         {loadingStats ? (
           <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />
-        ) : stats?.isAffiliate ? (
+        ) : (
           <>
-            <Text style={[styles.sectionLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-              Your stats
-            </Text>
-            <View style={styles.statsGrid}>
-              <StatCard
-                label="Active subs"
-                value={String(stats.activeConversions ?? 0)}
-                colors={colors}
-              />
-              <StatCard
-                label="Est. monthly"
-                value={fmtMoney(stats.estimatedMonthlyEarningsCents ?? 0)}
-                colors={colors}
-                highlight
-              />
-              <StatCard
-                label="Total referrals"
-                value={String(stats.totalConversions ?? 0)}
-                colors={colors}
-              />
-              <StatCard
-                label="Total earned"
-                value={fmtMoney(stats.totalPaidCents ?? 0)}
-                colors={colors}
-              />
-            </View>
-
-            {(stats.pendingCents ?? 0) > 0 && (
-              <Text style={[styles.pendingNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                {fmtMoney(stats.pendingCents!)} pending in next payout
-              </Text>
+            {proPermanent ? (
+              <View style={[styles.permanentProCard, { backgroundColor: colors.espresso }]}>
+                <Feather name="star" size={20} color={colors.accent} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.permanentProTitle, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
+                    Free Pro forever
+                  </Text>
+                  <Text style={[styles.permanentProBody, { color: 'rgba(250,247,242,0.6)', fontFamily: 'DMSans_400Regular' }]}>
+                    You've earned permanent Pro access through referrals. The paywall will never show again.
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.progressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.progressHeader}>
+                  <Feather name="gift" size={16} color={colors.accent} />
+                  <Text style={[styles.progressTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                    Free Pro forever at 10 referrals
+                  </Text>
+                </View>
+                <View style={[styles.progressBar, { backgroundColor: colors.secondary }]}>
+                  <View style={[
+                    styles.progressFill,
+                    {
+                      backgroundColor: colors.accent,
+                      width: `${(friendProgress / 10) * 100}%` as any,
+                    },
+                  ]} />
+                </View>
+                <Text style={[styles.progressLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  {qualifyingCount} of 10 qualifying referrals
+                  {qualifyingCount === 0
+                    ? ' — share your link to get started'
+                    : qualifyingCount < 10
+                    ? ` — ${10 - qualifyingCount} more to go`
+                    : ''}
+                </Text>
+                <Text style={[styles.progressNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  A referral qualifies once your friend completes 3 brews. Each qualifying referral also earns you 30 days of Pro.
+                </Text>
+              </View>
             )}
 
-            {/* Monthly breakdown */}
-            <Text style={[styles.sectionLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-              Month by month
-            </Text>
-            <View style={[styles.monthTable, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {months.map((m, i) => (
-                <View
-                  key={m.month}
-                  style={[
-                    styles.monthRow,
-                    { borderTopColor: colors.border },
-                    i === 0 && { borderTopWidth: 0 },
-                  ]}
+            {/* ── Affiliate stats (if enrolled) ── */}
+            {stats?.isAffiliate ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                  Your affiliate stats
+                </Text>
+                <View style={styles.statsGrid}>
+                  <StatCard label="Active subs" value={String(stats.activeConversions ?? 0)} colors={colors} />
+                  <StatCard label="Est. monthly" value={fmtMoney(stats.estimatedMonthlyEarningsCents ?? 0)} colors={colors} highlight />
+                  <StatCard label="Total referrals" value={String(stats.totalConversions ?? 0)} colors={colors} />
+                  <StatCard label="Total earned" value={fmtMoney(stats.totalPaidCents ?? 0)} colors={colors} />
+                </View>
+
+                {(stats.pendingCents ?? 0) > 0 && (
+                  <Text style={[styles.pendingNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                    {fmtMoney(stats.pendingCents!)} pending in next payout
+                  </Text>
+                )}
+
+                {/* Monthly breakdown */}
+                <Text style={[styles.sectionLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                  Month by month
+                </Text>
+                <View style={[styles.monthTable, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  {months.map((m, i) => (
+                    <View
+                      key={m.month}
+                      style={[
+                        styles.monthRow,
+                        { borderTopColor: colors.border },
+                        i === 0 && { borderTopWidth: 0 },
+                      ]}
+                    >
+                      <Text style={[styles.monthName, { color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}>
+                        {formatMonth(m.month)}
+                      </Text>
+                      <View style={styles.monthRight}>
+                        <Text style={[styles.monthConv, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                          {m.newConversions > 0 ? `+${m.newConversions} referral${m.newConversions !== 1 ? 's' : ''}` : '—'}
+                        </Text>
+                        <Text style={[
+                          styles.monthEarnings,
+                          { fontFamily: 'DMSans_500Medium', color: m.earningsCents > 0 ? colors.espresso : colors.mutedForeground }
+                        ]}>
+                          {m.earningsCents > 0 ? fmtMoney(m.earningsCents) : '—'}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  {!hasActivity && (
+                    <View style={[styles.monthRow, { borderTopWidth: 0 }]}>
+                      <Text style={[styles.emptyNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                        No activity yet — share your link to get started.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={[styles.rateNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  Your rate: {fmtMoney(rateCents)}/active subscriber/month
+                </Text>
+
+                {/* Payout setup */}
+                <PayoutSetupCard
+                  connectStatus={connectStatus}
+                  loading={connectLoading}
+                  onPress={handleConnectOnboard}
+                  colors={colors}
+                />
+
+                {/* How payouts work link */}
+                <Pressable
+                  style={({ pressed }) => [styles.payoutsLink, { opacity: pressed ? 0.6 : 1 }]}
+                  onPress={() => router.push('/affiliate-payouts')}
                 >
-                  <Text style={[styles.monthName, { color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}>
-                    {formatMonth(m.month)}
+                  <Feather name="info" size={14} color={colors.accent} />
+                  <Text style={[styles.payoutsLinkText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+                    How payouts work
                   </Text>
-                  <View style={styles.monthRight}>
-                    <Text style={[styles.monthConv, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                      {m.newConversions > 0 ? `+${m.newConversions} referral${m.newConversions !== 1 ? 's' : ''}` : '—'}
+                  <Feather name="chevron-right" size={14} color={colors.accent} />
+                </Pressable>
+              </>
+            ) : (
+              /* ── Affiliate join section (not yet enrolled) ── */
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                  Earn cash commissions
+                </Text>
+
+                {!showJoinForm ? (
+                  <View style={[styles.joinCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={[styles.joinBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                      Join the affiliate program to earn a monthly cash commission for every Pro subscriber you bring in — instead of (or in addition to) Pro access credits.
                     </Text>
-                    <Text style={[
-                      styles.monthEarnings,
-                      { fontFamily: 'DMSans_500Medium', color: m.earningsCents > 0 ? colors.espresso : colors.mutedForeground }
-                    ]}>
-                      {m.earningsCents > 0 ? fmtMoney(m.earningsCents) : '—'}
-                    </Text>
+
+                    <View style={styles.joinFeatures}>
+                      <JoinFeature icon="dollar-sign" text="Monthly cash payouts via Stripe" colors={colors} />
+                      <JoinFeature icon="lock" text="Your rate locks in at signup — never retroactively reduced" colors={colors} />
+                      <JoinFeature icon="trending-up" text="Silver, Gold, and Platinum tiers with higher rates" colors={colors} />
+                      <JoinFeature icon="globe" text="US and Canada only (more countries coming)" colors={colors} />
+                    </View>
+
+                    <Pressable
+                      style={({ pressed }) => [styles.joinBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 }]}
+                      onPress={() => setShowJoinForm(true)}
+                    >
+                      <Text style={[styles.joinBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                        Join the affiliate program
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={({ pressed }) => [styles.payoutsLinkInCard, { opacity: pressed ? 0.6 : 1 }]}
+                      onPress={() => router.push('/affiliate-payouts')}
+                    >
+                      <Feather name="info" size={13} color={colors.accent} />
+                      <Text style={[styles.payoutsLinkText, { color: colors.accent, fontFamily: 'DMSans_400Regular' }]}>
+                        How payouts work
+                      </Text>
+                    </Pressable>
                   </View>
-                </View>
-              ))}
-              {!hasActivity && (
-                <View style={[styles.monthRow, { borderTopWidth: 0 }]}>
-                  <Text style={[styles.emptyNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                    No activity yet — share your link to get started.
-                  </Text>
-                </View>
-              )}
-            </View>
+                ) : (
+                  <View style={[styles.joinForm, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={[styles.joinFormTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                      Join affiliate program
+                    </Text>
 
-            <Text style={[styles.rateNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Your rate: {fmtMoney(rateCents)}/active subscriber/month
-            </Text>
+                    <Text style={[styles.fieldLabel, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                      Country
+                    </Text>
+                    <View style={styles.countryRow}>
+                      {['US', 'CA'].map((c) => (
+                        <Pressable
+                          key={c}
+                          onPress={() => setJoinCountry(c)}
+                          style={[
+                            styles.countryPill,
+                            joinCountry === c
+                              ? { backgroundColor: colors.espresso }
+                              : { backgroundColor: colors.secondary, borderColor: colors.border, borderWidth: 1 },
+                          ]}
+                        >
+                          <Text style={[
+                            styles.countryPillText,
+                            { fontFamily: 'DMSans_500Medium', color: joinCountry === c ? colors.cream : colors.espresso },
+                          ]}>
+                            {c === 'US' ? '🇺🇸 United States' : '🇨🇦 Canada'}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
 
-            {/* Payout setup */}
-            <PayoutSetupCard
-              connectStatus={connectStatus}
-              loading={connectLoading}
-              onPress={handleConnectOnboard}
-              colors={colors}
-            />
+                    <Text style={[styles.fieldLabel, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                      Payout email (Stripe account)
+                    </Text>
+                    <TextInput
+                      style={[styles.input, { color: colors.espresso, borderColor: colors.border, fontFamily: 'DMSans_400Regular' }]}
+                      value={joinPayoutEmail}
+                      onChangeText={setJoinPayoutEmail}
+                      placeholder="you@example.com"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+
+                    <Pressable
+                      style={styles.ftcRow}
+                      onPress={() => setJoinFtcAccepted((v) => !v)}
+                    >
+                      <View style={[
+                        styles.checkbox,
+                        {
+                          backgroundColor: joinFtcAccepted ? colors.espresso : 'transparent',
+                          borderColor: joinFtcAccepted ? colors.espresso : colors.border,
+                        },
+                      ]}>
+                        {joinFtcAccepted && <Feather name="check" size={11} color={colors.cream} />}
+                      </View>
+                      <Text style={[styles.ftcText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                        I agree to clearly disclose my affiliate relationship whenever I promote Coffee Brew Coach (FTC requirement).
+                      </Text>
+                    </Pressable>
+
+                    <View style={styles.joinFormActions}>
+                      <Pressable
+                        style={({ pressed }) => [styles.cancelBtn, { borderColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
+                        onPress={() => setShowJoinForm(false)}
+                      >
+                        <Text style={[styles.cancelBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                          Cancel
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.submitBtn,
+                          { backgroundColor: colors.espresso, opacity: pressed || joinLoading ? 0.7 : 1 },
+                        ]}
+                        onPress={handleJoinAffiliate}
+                        disabled={joinLoading}
+                      >
+                        {joinLoading ? (
+                          <ActivityIndicator color={colors.cream} size="small" />
+                        ) : (
+                          <Text style={[styles.submitBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                            Enroll
+                          </Text>
+                        )}
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
           </>
-        ) : null}
+        )}
 
         {/* ── Earnings calculator ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
@@ -309,7 +545,6 @@ export default function AffiliateScreen() {
           Estimate what you'd earn based on your audience size.
         </Text>
 
-        {/* Audience pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -342,14 +577,12 @@ export default function AffiliateScreen() {
           })}
         </ScrollView>
 
-        {/* Funnel */}
         <View style={[styles.funnelCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FunnelRow icon="radio" label="Audience reached" value={fmtNum(audience)} colors={colors} />
           <FunnelRow icon="user-plus" label={`Sign up (~${Math.round(CONV_SIGNUP * 100)}%)`} value={fmtNum(signups)} colors={colors} />
           <FunnelRow icon="star" label={`Go Pro (~${Math.round(CONV_PRO * 100)}% of signups)`} value={fmtNum(pro)} colors={colors} />
         </View>
 
-        {/* Earnings estimate */}
         <View style={[styles.earningsCard, { backgroundColor: colors.espresso }]}>
           <Text style={[styles.earningsLabel, { color: 'rgba(250,247,242,0.5)', fontFamily: 'DMSans_400Regular' }]}>
             Estimated monthly earnings
@@ -475,6 +708,17 @@ function FunnelRow({ icon, label, value, colors }: {
   );
 }
 
+function JoinFeature({ icon, text, colors }: { icon: string; text: string; colors: Colors }) {
+  return (
+    <View style={styles.joinFeatureRow}>
+      <Feather name={icon as any} size={13} color={colors.accent} />
+      <Text style={[styles.joinFeatureText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -500,7 +744,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     gap: 10,
-    marginBottom: 28,
+    marginBottom: 20,
   },
   linkUrl: {
     fontSize: 13,
@@ -523,7 +767,55 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 18,
     marginBottom: 12,
-    marginTop: 4,
+    marginTop: 20,
+  },
+  permanentProCard: {
+    flexDirection: 'row',
+    gap: 14,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 20,
+    alignItems: 'flex-start',
+  },
+  permanentProTitle: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  permanentProBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  progressCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 20,
+    gap: 10,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressTitle: {
+    fontSize: 15,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+    minWidth: 6,
+  },
+  progressLabel: {
+    fontSize: 13,
+  },
+  progressNote: {
+    fontSize: 12,
+    lineHeight: 18,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -584,7 +876,167 @@ const styles = StyleSheet.create({
   },
   rateNote: {
     fontSize: 12,
-    marginBottom: 28,
+    marginBottom: 16,
+  },
+  payoutCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+    marginBottom: 12,
+  },
+  payoutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  payoutTitle: {
+    fontSize: 15,
+  },
+  payoutBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  payoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 100,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    alignSelf: 'flex-start',
+  },
+  payoutBtnText: {
+    fontSize: 14,
+  },
+  payoutsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 24,
+    alignSelf: 'flex-start',
+  },
+  payoutsLinkInCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  payoutsLinkText: {
+    fontSize: 13,
+  },
+  joinCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+  },
+  joinBody: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  joinFeatures: {
+    gap: 8,
+  },
+  joinFeatureRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+  },
+  joinFeatureText: {
+    fontSize: 13,
+    lineHeight: 20,
+    flex: 1,
+  },
+  joinBtn: {
+    borderRadius: 100,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  joinBtnText: {
+    fontSize: 15,
+  },
+  joinForm: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+    marginBottom: 8,
+  },
+  joinFormTitle: {
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  countryRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  countryPill: {
+    borderRadius: 100,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  countryPillText: {
+    fontSize: 14,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+  },
+  ftcRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  ftcText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  joinFormActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  cancelBtn: {
+    flex: 1,
+    borderRadius: 100,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 14,
+  },
+  submitBtn: {
+    flex: 2,
+    borderRadius: 100,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  submitBtnText: {
+    fontSize: 14,
   },
   calcSubtitle: {
     fontSize: 13,
@@ -651,37 +1103,5 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     textAlign: 'center',
     marginTop: 4,
-  },
-  payoutCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    gap: 10,
-    marginBottom: 28,
-  },
-  payoutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  payoutTitle: {
-    fontSize: 15,
-  },
-  payoutBody: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  payoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderRadius: 100,
-    paddingVertical: 11,
-    paddingHorizontal: 18,
-    alignSelf: 'flex-start',
-  },
-  payoutBtnText: {
-    fontSize: 14,
   },
 });

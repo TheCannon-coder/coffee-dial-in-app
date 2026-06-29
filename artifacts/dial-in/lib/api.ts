@@ -163,3 +163,48 @@ export function redeemPromoCode(code: string, revenuecatId: string): Promise<Pro
   return post<PromoRedeemResult>('/promo/redeem', { code, revenuecatId });
 }
 
+export interface ReferralClaimResult {
+  success: boolean;
+  rcGranted?: boolean;
+  message?: string;
+  error?: string;
+}
+
+export function claimReferralCode(
+  referralCode: string,
+  userId: number,
+  revenuecatId: string,
+): Promise<ReferralClaimResult> {
+  return post<ReferralClaimResult>('/referral/claim', { referralCode, userId, revenuecatId });
+}
+
+export interface AffiliateJoinResult {
+  success?: boolean;
+  affiliate?: { id: number; tier: string; country: string };
+  error?: string;
+  comingSoon?: boolean;
+}
+
+export function joinAffiliate(params: {
+  email: string;
+  country: string;
+  payoutEmail: string;
+  audienceSize?: number;
+  name?: string;
+  ftcDisclosureAccepted: boolean;
+}): Promise<AffiliateJoinResult> {
+  return post<AffiliateJoinResult>('/affiliate/join', params);
+}
+
+export interface FriendReferralStats {
+  qualifyingCount: number;
+  pendingCount: number;
+  proPermanent: boolean;
+  totalReferrals: number;
+}
+
+export function getFriendReferralStats(email: string): Promise<FriendReferralStats> {
+  const url = `${API_BASE}/referral/friend-stats?email=${encodeURIComponent(email)}`;
+  return fetch(url).then((r) => r.json()) as Promise<FriendReferralStats>;
+}
+

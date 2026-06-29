@@ -54,11 +54,12 @@ app.use(termsRouter);
 app.use(screenshotsRouter);
 app.use("/api", screenshotsRouter);
 
-// Feature flag — set REFERRAL_PROGRAM=true to enable the earnings calculator
-// and affiliate commission routes. Not live until referral backend is built.
+// Feature flag — set REFERRAL_PROGRAM=true to enable the referral + affiliate routes.
 if (process.env.REFERRAL_PROGRAM === "true") {
   const { default: earnRouter } = await import("./routes/earn.js");
+  const { default: referralRouter } = await import("./routes/referral.js");
   app.use("/api", earnRouter);
+  app.use("/api", referralRouter);
   logger.info("Referral program routes enabled");
 }
 

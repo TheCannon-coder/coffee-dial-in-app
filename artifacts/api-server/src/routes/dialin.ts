@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db, usersTable, brewsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
+import { recordBrewForReferral } from "../lib/affiliate-helpers";
 
 const router = Router();
 
@@ -326,6 +327,10 @@ Respond ONLY with valid JSON, no markdown:
     const usesRemaining = user.isPro ? FREE_BREW_LIMIT : Math.max(0, limit - newCount);
 
     res.json({ advice, adjustment, usesRemaining, isPro: user.isPro, sessionId });
+
+    recordBrewForReferral(user.id).catch((err) => {
+      logger.warn({ err, userId: user.id }, "recordBrewForReferral failed (non-fatal)");
+    });
   } catch (err) {
     logger.error({ err }, "dialin error");
     res.status(500).json({ error: "internal_error" });

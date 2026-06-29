@@ -1,3 +1,5 @@
 - [EAS babel-preset-expo fix](eas-babel-preset-expo-fix.md) — pnpm doesn't hoist transitive deps; babel-preset-expo MUST be direct devDep in dial-in/package.json or EAS builds fail with obscure metro crash
 - [IAP Paid Apps Agreement](iap-paid-apps-agreement.md) — RevenueCat offerings fail to load in Apple sandbox if the Paid Apps Agreement isn't accepted in App Store Connect.
 - [EAS build number burn](eas-build-number-burn.md) — EAS Submit timeouts still register the build number with Apple; use Transporter + autoIncrement:true to avoid conflicts.
+- [Drizzle push in non-TTY](drizzle-non-tty.md) — drizzle-kit push hangs/errors in non-interactive shells when existing data triggers confirmation prompts; use direct SQL ALTER TABLE instead.
+- [Referral system design](referral-system-design.md) — same code, two tracks: affiliate (cash via Stripe Connect) vs friend (Pro credits); track determined at subscription time by affiliates table lookup; proPermanent flag must be immune to subscription.deleted webhook.

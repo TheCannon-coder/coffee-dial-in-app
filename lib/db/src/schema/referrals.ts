@@ -84,6 +84,17 @@ export type Affiliate = typeof affiliatesTable.$inferSelect;
  * Referral conversions — created when someone signs up via a referral code.
  * planType is null until they actually subscribe.
  * is_subscription_active flips to false on cancellation.
+ *
+ * Reward track (set at subscription time based on whether referrer is an affiliate):
+ *   isAffiliateConversion=false → friend track: brew_count gates a 30-day Pro reward
+ *   isAffiliateConversion=true  → affiliate track: cash commissions via ledger
+ *
+ * Instalment tracking (annual/lifetime affiliate conversions only):
+ *   instalmentTotal            = 12 (annual) or 6 (lifetime)
+ *   instalmentsPaid            = how many monthly instalments have been released
+ *   instalmentMonthlyAmountCents = per-instalment amount
+ *   nextPayoutDate             = date the next instalment becomes eligible
+ *   instalmentStatus           = na | active | complete | cancelled
  */
 export const referralConversionsTable = pgTable("referral_conversions", {
   id: serial("id").primaryKey(),
@@ -107,6 +118,36 @@ export const referralConversionsTable = pgTable("referral_conversions", {
   signedUpAt: timestamp("signed_up_at").defaultNow().notNull(),
   subscribedAt: timestamp("subscribed_at"),
   cancelledAt: timestamp("cancelled_at"),
+
+  // ── Friend referral track ────────────────────────────────────────────────
+  /** Number of brew sessions completed by the referred user (friend track gate) */
+  brewCount: integer("brew_count").notNull().default(0),
+  /** Timestamp when the referrer received their 30-day Pro reward (friend track) */
+  referrerRewardedAt: timestamp("referrer_rewarded_at"),
+
+  // ── Affiliate vs friend track ────────────────────────────────────────────
+  /**
+   * Set at subscription time. true = referrer is an affiliate → cash commission track.
+   * false = friend track: 30-day Pro reward after 3 brews, permanent Pro at 10.
+   */
+  isAffiliateConversion: boolean("is_affiliate_conversion").notNull().default(false),
+
+  // ── Instalment tracking (affiliate track, annual/lifetime plans only) ────
+  /** Total number of monthly instalments. 12 for annual, 6 for lifetime, null for monthly plans. */
+  instalmentTotal: integer("instalment_total"),
+  /** How many monthly instalments have been released to the ledger so far */
+  instalmentsPaid: integer("instalments_paid").notNull().default(0),
+  /** Amount per instalment in cents (total commission ÷ instalmentTotal) */
+  instalmentMonthlyAmountCents: integer("instalment_monthly_amount_cents"),
+  /** Date on which the next instalment becomes eligible for the payout job */
+  nextPayoutDate: date("next_payout_date"),
+  /**
+   * na        — not an instalment-based conversion (monthly plan or friend track)
+   * active    — instalments are being paid out month by month
+   * complete  — all instalments paid
+   * cancelled — subscription cancelled before all instalments paid (no further payments)
+   */
+  instalmentStatus: text("instalment_status").notNull().default("na"),
 });
 
 export type ReferralConversion = typeof referralConversionsTable.$inferSelect;
@@ -139,7 +180,8 @@ export type PayoutBatch = typeof payoutBatchesTable.$inferSelect;
 /**
  * Commission ledger — individual earned commissions.
  * commissionType: recurring (monthly plans, generated each month)
- *                 one_time (annual/lifetime, generated at subscription)
+ *                 instalment (annual/lifetime, one entry per month until instalmentTotal)
+ *                 one_time   (legacy — no longer generated, kept for historical rows)
  * status: pending → approved → paid | voided
  */
 export const commissionLedgerTable = pgTable("commission_ledger", {
@@ -155,7 +197,7 @@ export const commissionLedgerTable = pgTable("commission_ledger", {
   ),
   periodMonth: text("period_month").notNull(), // "2026-06"
   planType: text("plan_type").notNull(),
-  commissionType: text("commission_type").notNull(), // recurring | one_time
+  commissionType: text("commission_type").notNull(), // recurring | instalment | one_time
   amountCents: integer("amount_cents").notNull(),
   tier: text("tier").notNull(),
   status: text("status").notNull().default("pending"),

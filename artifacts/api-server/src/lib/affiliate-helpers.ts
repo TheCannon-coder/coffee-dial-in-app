@@ -3,8 +3,17 @@
  * Stripe webhook handler. Extracted here to avoid duplicating logic.
  */
 
-import { eq, desc } from "drizzle-orm";
-import { db, affiliatesTable, commissionLedgerTable, commissionPhasesTable, referralConversionsTable } from "@workspace/db";
+import { eq, desc, and, gte, isNull, count, sql } from "drizzle-orm";
+import {
+  db,
+  affiliatesTable,
+  commissionLedgerTable,
+  commissionPhasesTable,
+  referralConversionsTable,
+  usersTable,
+} from "@workspace/db";
+import { ReplitConnectors } from "@replit/connectors-sdk";
+import { logger } from "./logger";
 
 export function currentMonth(): string {
   const d = new Date();
@@ -76,11 +85,144 @@ export async function ensureRatesLocked(
   return updated!;
 }
 
+// ── RevenueCat entitlement grant ─────────────────────────────────────────────
+
+const RC_DURATION: Record<number, string> = {
+  1: "monthly",
+  2: "two_month",
+  3: "three_month",
+  6: "six_month",
+  12: "yearly",
+};
+
 /**
- * Called when a referred user subscribes. Marks the conversion active,
- * locks the affiliate's rate, and generates a one-time commission for
- * annual/lifetime plans. Safe to call multiple times (idempotent on
- * already-subscribed conversions).
+ * Grant a promotional Pro entitlement via RevenueCat.
+ * months: number of calendar months to grant (1, 2, 3, 6, or 12).
+ * Returns true on success.
+ */
+export async function grantRcProEntitlement(rcId: string, months: number): Promise<boolean> {
+  const duration = RC_DURATION[months] ?? "monthly";
+  try {
+    const connectors = new ReplitConnectors();
+    const response = await connectors.proxy(
+      "revenuecat",
+      `/v1/subscribers/${encodeURIComponent(rcId)}/entitlements/pro/promotional`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duration }),
+      },
+    ) as { status: number };
+    return response.status >= 200 && response.status < 300;
+  } catch (err) {
+    logger.error({ err, rcId, months }, "grantRcProEntitlement: RC call failed");
+    return false;
+  }
+}
+
+// ── Friend referral brew tracking ────────────────────────────────────────────
+
+/**
+ * Called after every brew session (non-blocking, fire-and-forget).
+ * Increments brew_count on the referred user's conversion record.
+ * When brew_count reaches 3 and the referrer hasn't been rewarded yet:
+ *   - Grants the referrer 1 month of Pro via RevenueCat
+ *   - Checks if the referrer now has 10+ qualifying referrals → pro_permanent
+ */
+export async function recordBrewForReferral(referredUserId: number): Promise<void> {
+  const conversion = await db.query.referralConversionsTable.findFirst({
+    where: and(
+      eq(referralConversionsTable.referredUserId, referredUserId),
+      eq(referralConversionsTable.isAffiliateConversion, false),
+      isNull(referralConversionsTable.referrerRewardedAt),
+    ),
+  });
+
+  if (!conversion) return;
+
+  const newCount = (conversion.brewCount ?? 0) + 1;
+
+  await db
+    .update(referralConversionsTable)
+    .set({ brewCount: newCount })
+    .where(eq(referralConversionsTable.id, conversion.id));
+
+  if (newCount < 3) return;
+
+  const referrer = await db.query.usersTable.findFirst({
+    where: eq(usersTable.id, conversion.referrerUserId),
+  });
+  if (!referrer) return;
+
+  const rcId = referrer.email ?? referrer.anonId;
+  if (!rcId) return;
+
+  const granted = await grantRcProEntitlement(rcId, 1);
+  if (!granted) {
+    logger.warn({ referrerId: referrer.id }, "recordBrewForReferral: RC grant failed, will retry next brew");
+    return;
+  }
+
+  await db
+    .update(referralConversionsTable)
+    .set({ referrerRewardedAt: new Date() })
+    .where(eq(referralConversionsTable.id, conversion.id));
+
+  logger.info({ referrerId: referrer.id, conversionId: conversion.id }, "Friend referral: 30-day Pro granted to referrer");
+
+  await checkAndGrantPermanentPro(referrer.id);
+}
+
+/**
+ * Counts how many of the referrer's friend-track conversions have hit 3+ brews
+ * (i.e. "qualifying referrals"). If >= 10, sets pro_permanent on the user.
+ */
+export async function checkAndGrantPermanentPro(referrerUserId: number): Promise<boolean> {
+  const user = await db.query.usersTable.findFirst({
+    where: eq(usersTable.id, referrerUserId),
+  });
+  if (!user || user.proPermanent) return false;
+
+  const [row] = await db
+    .select({ cnt: count() })
+    .from(referralConversionsTable)
+    .where(
+      and(
+        eq(referralConversionsTable.referrerUserId, referrerUserId),
+        eq(referralConversionsTable.isAffiliateConversion, false),
+        gte(referralConversionsTable.brewCount, 3),
+      ),
+    );
+
+  const qualifyingCount = Number(row?.cnt ?? 0);
+  if (qualifyingCount < 10) return false;
+
+  await db
+    .update(usersTable)
+    .set({ proPermanent: true, isPro: true })
+    .where(eq(usersTable.id, referrerUserId));
+
+  logger.info({ referrerUserId, qualifyingCount }, "Friend referral: permanent Pro granted");
+  return true;
+}
+
+// ── Conversion subscription recording ───────────────────────────────────────
+
+/**
+ * Called when a referred user subscribes (Stripe webhook checkout.session.completed).
+ * Determines the reward track (affiliate vs friend) and sets up commission or brew tracking.
+ *
+ * Affiliate track (referrer is in affiliates table):
+ *   - Locks the affiliate's commission rate
+ *   - For monthly plans: marks as active; monthly payout job handles recurring commissions
+ *   - For annual plans: sets up 12 monthly instalments
+ *   - For lifetime plans: sets up 6 monthly instalments
+ *
+ * Friend track (referrer is not an affiliate):
+ *   - Sets isAffiliateConversion=false
+ *   - brew_count tracking (via recordBrewForReferral) will trigger the 30-day Pro reward
+ *
+ * Safe to call multiple times (idempotent on already-subscribed conversions).
  */
 export async function recordConversionSubscribed(
   conversionId: number,
@@ -92,42 +234,155 @@ export async function recordConversionSubscribed(
   });
   if (!conversion || conversion.isSubscriptionActive) return;
 
-  const affiliate = await db.query.affiliatesTable.findFirst({
-    where: eq(affiliatesTable.userId, conversion.referrerUserId),
-  });
-  if (!affiliate) return;
-
   const now = new Date();
   const payableAfter = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const periodMonth = currentMonth();
 
-  await db
-    .update(referralConversionsTable)
-    .set({
-      planType,
-      stripeSubscriptionId: stripeSubscriptionId ?? null,
-      isSubscriptionActive: true,
-      subscribedAt: now,
-      payableAfter,
-    })
-    .where(eq(referralConversionsTable.id, conversion.id));
+  const affiliate = await db.query.affiliatesTable.findFirst({
+    where: and(
+      eq(affiliatesTable.userId, conversion.referrerUserId),
+      eq(affiliatesTable.isActive, true),
+    ),
+  });
 
-  const rates = await getCurrentRates();
-  const lockedAffiliate = await ensureRatesLocked(affiliate, rates);
+  const isAffiliateConversion = !!affiliate;
 
-  if (planType === "annual" || planType === "lifetime") {
-    const amountCents = resolveRateCents(lockedAffiliate, planType, rates);
-    if (amountCents > 0) {
+  if (isAffiliateConversion && affiliate) {
+    // ── Affiliate track ──────────────────────────────────────────────────────
+    const rates = await getCurrentRates();
+    const lockedAffiliate = await ensureRatesLocked(affiliate, rates);
+    const rateCents = resolveRateCents(lockedAffiliate, planType, rates);
+
+    let instalmentTotal: number | null = null;
+    let instalmentMonthlyAmountCents: number | null = null;
+    let instalmentStatus = "na";
+    let nextPayoutDateStr: string | null = null;
+
+    if (planType === "annual") {
+      instalmentTotal = 12;
+      instalmentMonthlyAmountCents = rateCents > 0 ? Math.round(rateCents / 12) : 0;
+      instalmentStatus = "active";
+      const d = new Date(payableAfter);
+      nextPayoutDateStr = d.toISOString().slice(0, 10);
+    } else if (planType === "lifetime") {
+      instalmentTotal = 6;
+      instalmentMonthlyAmountCents = rateCents > 0 ? Math.round(rateCents / 6) : 0;
+      instalmentStatus = "active";
+      const d = new Date(payableAfter);
+      nextPayoutDateStr = d.toISOString().slice(0, 10);
+    }
+
+    await db
+      .update(referralConversionsTable)
+      .set({
+        planType,
+        stripeSubscriptionId: stripeSubscriptionId ?? null,
+        isSubscriptionActive: true,
+        subscribedAt: now,
+        payableAfter,
+        isAffiliateConversion: true,
+        instalmentTotal,
+        instalmentMonthlyAmountCents,
+        instalmentStatus,
+        nextPayoutDate: nextPayoutDateStr,
+      })
+      .where(eq(referralConversionsTable.id, conversion.id));
+
+    if (planType === "monthly" && rateCents > 0) {
       await db.insert(commissionLedgerTable).values({
         affiliateUserId: affiliate.userId,
         conversionId: conversion.id,
         periodMonth,
         planType,
-        commissionType: "one_time",
-        amountCents,
+        commissionType: "recurring",
+        amountCents: rateCents,
         tier: affiliate.tier,
         status: "pending",
       });
     }
+
+    logger.info({ conversionId, planType, isAffiliateConversion, instalmentTotal }, "Conversion recorded — affiliate track");
+  } else {
+    // ── Friend track ─────────────────────────────────────────────────────────
+    await db
+      .update(referralConversionsTable)
+      .set({
+        planType,
+        stripeSubscriptionId: stripeSubscriptionId ?? null,
+        isSubscriptionActive: true,
+        subscribedAt: now,
+        payableAfter,
+        isAffiliateConversion: false,
+      })
+      .where(eq(referralConversionsTable.id, conversion.id));
+
+    logger.info({ conversionId, planType }, "Conversion recorded — friend track (brew counting active)");
   }
+}
+
+/**
+ * Monthly payout job helper — process one instalment for an active annual/lifetime conversion.
+ * Call this for each conversion where instalmentStatus='active' and nextPayoutDate <= today.
+ * Returns true if an instalment was released, false if nothing to do.
+ */
+export async function processNextInstalment(conversionId: number): Promise<boolean> {
+  const conversion = await db.query.referralConversionsTable.findFirst({
+    where: eq(referralConversionsTable.id, conversionId),
+  });
+
+  if (
+    !conversion ||
+    conversion.instalmentStatus !== "active" ||
+    !conversion.instalmentTotal ||
+    !conversion.instalmentMonthlyAmountCents
+  ) return false;
+
+  if (conversion.instalmentsPaid >= conversion.instalmentTotal) {
+    await db
+      .update(referralConversionsTable)
+      .set({ instalmentStatus: "complete" })
+      .where(eq(referralConversionsTable.id, conversionId));
+    return false;
+  }
+
+  const affiliate = await db.query.affiliatesTable.findFirst({
+    where: eq(affiliatesTable.userId, conversion.referrerUserId),
+  });
+  if (!affiliate) return false;
+
+  const periodMonth = currentMonth();
+  const newPaid = conversion.instalmentsPaid + 1;
+  const isLast = newPaid >= (conversion.instalmentTotal ?? 0);
+
+  const nextDate = new Date();
+  nextDate.setMonth(nextDate.getMonth() + 1);
+  const nextPayoutDateStr = nextDate.toISOString().slice(0, 10);
+
+  await db.transaction(async (tx) => {
+    await tx.insert(commissionLedgerTable).values({
+      affiliateUserId: affiliate.userId,
+      conversionId: conversion.id,
+      periodMonth,
+      planType: conversion.planType ?? "annual",
+      commissionType: "instalment",
+      amountCents: conversion.instalmentMonthlyAmountCents!,
+      tier: affiliate.tier,
+      status: "pending",
+    });
+
+    await tx
+      .update(referralConversionsTable)
+      .set({
+        instalmentsPaid: newPaid,
+        instalmentStatus: isLast ? "complete" : "active",
+        nextPayoutDate: isLast ? null : nextPayoutDateStr,
+      })
+      .where(eq(referralConversionsTable.id, conversionId));
+  });
+
+  logger.info(
+    { conversionId, instalmentsPaid: newPaid, total: conversion.instalmentTotal, isLast },
+    "Instalment released",
+  );
+  return true;
 }

@@ -13,6 +13,8 @@ export const usersTable = pgTable("users", {
   stripeCustomerId: text("stripe_customer_id"),
   appleUserId: text("apple_user_id").unique(),
   referredByCode: text("referred_by_code"),
+  /** True once a user has earned 10 qualifying referrals — paywall never shows again */
+  proPermanent: boolean("pro_permanent").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

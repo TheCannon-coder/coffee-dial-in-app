@@ -144,7 +144,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
-  await db.update(usersTable).set({ isPro: false }).where(eq(usersTable.id, user.id));
+  if (!user.proPermanent) {
+    await db.update(usersTable).set({ isPro: false }).where(eq(usersTable.id, user.id));
+  }
 
   const conversion = await db.query.referralConversionsTable.findFirst({
     where: eq(referralConversionsTable.referredUserId, user.id),
