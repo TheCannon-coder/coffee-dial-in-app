@@ -163,8 +163,8 @@ const html = `<!DOCTYPE html>
     </div>
 
     <div class="faq-item">
-      <div class="faq-q">How does the AI coaching work?</div>
-      <div class="faq-a">After you log how your cup tasted, the AI analyzes your tasting notes alongside your brew parameters (dose, grind, water temp, brew time) and gives you one clear adjustment to try next. It's designed to change one variable at a time so you can track what actually made a difference.</div>
+      <div class="faq-q">How does the coaching work?</div>
+      <div class="faq-a">After you log how your cup tasted, the app analyzes your tasting notes alongside your brew parameters (dose, grind, water temp, brew time) and gives you one clear adjustment to try next. It's designed to change one variable at a time so you can track what actually made a difference.</div>
     </div>
 
     <div class="contact-card">

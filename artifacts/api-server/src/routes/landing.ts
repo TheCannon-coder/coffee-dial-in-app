@@ -30,8 +30,8 @@ const html = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Coffee Brew Coach — AI Coaching for Home Brewers</title>
-  <meta name="description" content="Describe how your coffee tastes and get one specific fix per brew. Free AI coaching for espresso, V60, AeroPress, French press and more." />
+  <title>Coffee Brew Coach — Coaching for Home Brewers</title>
+  <meta name="description" content="Describe how your coffee tastes and get one specific fix per brew. Free coaching for espresso, V60, AeroPress, French press and more." />
   <meta name="keywords" content="coffee coaching app, coffee brew coach, espresso dialling in, pour over guide, coffee taste fix, coffee brewing app, espresso pull, V60 guide" />
   <link rel="canonical" href="https://www.coffeebrew.coach/" />
   <meta name="robots" content="index, follow" />

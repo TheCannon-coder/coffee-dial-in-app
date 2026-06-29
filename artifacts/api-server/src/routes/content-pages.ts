@@ -71,7 +71,7 @@ const chemexHtml = page({
   path: "/chemex",
   title: "Chemex Brewing Guide | Coffee Brew Coach",
   description:
-    "How to brew Chemex coffee and fix common problems — weak, bitter, or slow extraction. AI coaching from Coffee Brew Coach.",
+    "How to brew Chemex coffee and fix common problems — weak, bitter, or slow extraction. Coaching from Coffee Brew Coach.",
   h1: "How to brew Chemex coffee",
   lead:
     "The Chemex produces one of the cleanest, brightest cups in coffee — but it's unforgiving. Get the grind or pour wrong and you'll end up with a bitter, muddy result. This guide covers everything you need to nail it.",
@@ -119,7 +119,7 @@ const kalitaHtml = page({
   path: "/kalita-wave",
   title: "Kalita Wave Brewing Guide | Coffee Brew Coach",
   description:
-    "Master the Kalita Wave with the right grind, ratio, and pour technique. Get AI coaching from Coffee Brew Coach.",
+    "Master the Kalita Wave with the right grind, ratio, and pour technique. Get coaching from Coffee Brew Coach.",
   h1: "Kalita Wave brewing guide",
   lead:
     "The Kalita Wave's flat-bottom basket and three-hole drain are designed for consistent, forgiving extraction. Here's how to get the best out of it.",
@@ -165,7 +165,7 @@ const mokaPotHtml = page({
   path: "/moka-pot",
   title: "Moka Pot Coffee Too Bitter? Here's Why | Coffee Brew Coach",
   description:
-    "Fix bitter, burnt, or weak Moka pot coffee with these simple adjustments. Free AI coaching from Coffee Brew Coach.",
+    "Fix bitter, burnt, or weak Moka pot coffee with these simple adjustments. Free coaching from Coffee Brew Coach.",
   h1: "Moka pot coffee too bitter — how to fix it",
   lead:
     "Bitter moka pot coffee is almost always caused by too much heat, the wrong grind, or letting the coffee sit on the stove too long. All three are easy to fix once you know what to look for.",
@@ -206,7 +206,7 @@ const coldBrewHtml = page({
   path: "/cold-brew",
   title: "Cold Brew Coffee Ratio and Brew Time Guide | Coffee Brew Coach",
   description:
-    "Get the cold brew ratio, grind size, and steep time right every time. Free AI coaching from Coffee Brew Coach.",
+    "Get the cold brew ratio, grind size, and steep time right every time. Free coaching from Coffee Brew Coach.",
   h1: "Cold brew coffee ratio — the complete guide",
   lead:
     "Cold brew ratio is the most important variable to get right. Too high a ratio and it's bitter and harsh; too low and it's watery and flat. Here's exactly what to use and why.",
@@ -250,7 +250,7 @@ const dripMachineHtml = page({
   path: "/drip-machine",
   title: "Drip Coffee Maker Tips | Coffee Brew Coach",
   description:
-    "Make better drip coffee with the right grind, ratio, and water temperature. AI coaching from Coffee Brew Coach.",
+    "Make better drip coffee with the right grind, ratio, and water temperature. Coaching from Coffee Brew Coach.",
   h1: "Drip coffee maker tips for a better cup",
   lead:
     "Most drip coffee makers are set up to produce mediocre coffee by default. A few simple changes to your ratio, grind, and maintenance routine will dramatically improve what you're getting.",
@@ -433,7 +433,7 @@ const dialInEspressoHtml = page({
   path: "/how-to-dial-in-espresso",
   title: "How to Dial In Espresso at Home | Coffee Brew Coach",
   description:
-    "Step-by-step guide to dialling in espresso — grind, dose, yield, and timing. Get instant AI coaching from Coffee Brew Coach.",
+    "Step-by-step guide to dialling in espresso — grind, dose, yield, and timing. Get instant coaching from Coffee Brew Coach.",
   h1: "How to dial in espresso at home",
   lead:
     "Dialling in espresso means systematically adjusting your variables until each shot tastes balanced and repeatable. It's not complicated — but you need to know which variable to change first.",

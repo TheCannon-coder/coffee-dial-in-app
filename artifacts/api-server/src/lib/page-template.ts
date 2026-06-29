@@ -10,7 +10,7 @@ export const APP_SCHEMA = {
     "priceCurrency": "USD",
   },
   "description":
-    "AI coffee coaching that diagnoses why your coffee tastes wrong and gives you one specific fix per brew.",
+    "Coffee coaching that diagnoses why your coffee tastes wrong and gives you one specific fix per brew.",
   "url": "https://www.coffeebrew.coach",
   "downloadUrl": "https://apps.apple.com/app/id6777418888",
 };
