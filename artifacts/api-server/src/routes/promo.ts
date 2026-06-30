@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq, and, sql } from "drizzle-orm";
-import { db, promoCodesTable, promoCodeRedemptionsTable } from "@workspace/db";
+import { db, promoCodesTable, promoCodeRedemptionsTable, usersTable } from "@workspace/db";
 import { grantProEntitlement } from "../lib/revenuecat";
 
 const router = Router();
@@ -63,6 +63,10 @@ router.post("/promo/redeem", async (req, res) => {
         .update(promoCodesTable)
         .set({ useCount: sql`${promoCodesTable.useCount} + 1` })
         .where(eq(promoCodesTable.id, promo.id));
+      await tx
+        .update(usersTable)
+        .set({ isPro: true })
+        .where(eq(usersTable.anonId, revenuecatId));
     });
 
     req.log.info({ code: normalizedCode, revenuecatId }, "promo/redeem: redeemed");
