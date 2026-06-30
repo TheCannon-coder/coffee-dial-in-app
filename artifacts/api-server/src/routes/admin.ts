@@ -42,6 +42,8 @@ import {
   payoutBatchesTable,
   commissionPhasesTable,
   taxRecordsTable,
+  promoCodesTable,
+  promoCodeRedemptionsTable,
 } from "@workspace/db";
 import { getStripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
@@ -2276,6 +2278,103 @@ router.post("/admin/gear/import", async (req, res) => {
     res.json({ upserted: results.length, slugs: results });
   } catch (err) {
     logger.error({ err }, "admin/gear/import error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// ── Promo codes ────────────────────────────────────────────────────────────────
+
+router.get("/admin/promo-codes", async (_req, res) => {
+  try {
+    const codes = await db
+      .select({
+        id: promoCodesTable.id,
+        code: promoCodesTable.code,
+        rewardMonths: promoCodesTable.rewardMonths,
+        maxUses: promoCodesTable.maxUses,
+        useCount: promoCodesTable.useCount,
+        active: promoCodesTable.active,
+        expiresAt: promoCodesTable.expiresAt,
+        createdAt: promoCodesTable.createdAt,
+      })
+      .from(promoCodesTable)
+      .orderBy(desc(promoCodesTable.createdAt));
+    res.json(codes);
+  } catch (err) {
+    logger.error({ err }, "admin/promo-codes list error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.post("/admin/promo-codes", async (req, res) => {
+  const { code, rewardMonths = 1, maxUses, expiresAt, active = true } = req.body as {
+    code?: string;
+    rewardMonths?: number;
+    maxUses?: number | null;
+    expiresAt?: string | null;
+    active?: boolean;
+  };
+
+  if (!code) {
+    res.status(400).json({ error: "code is required" });
+    return;
+  }
+
+  const normalized = code.trim().toUpperCase();
+
+  try {
+    const [created] = await db
+      .insert(promoCodesTable)
+      .values({
+        code: normalized,
+        rewardMonths,
+        maxUses: maxUses ?? null,
+        active,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!created) {
+      res.status(409).json({ error: "code already exists" });
+      return;
+    }
+
+    res.status(201).json(created);
+  } catch (err) {
+    logger.error({ err }, "admin/promo-codes create error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.patch("/admin/promo-codes/:id", async (req, res) => {
+  const id = Number(req.params["id"]);
+  const { active, maxUses, expiresAt } = req.body as {
+    active?: boolean;
+    maxUses?: number | null;
+    expiresAt?: string | null;
+  };
+
+  try {
+    const updates: Partial<typeof promoCodesTable.$inferInsert> = {};
+    if (active !== undefined) updates.active = active;
+    if (maxUses !== undefined) updates.maxUses = maxUses;
+    if (expiresAt !== undefined) updates.expiresAt = expiresAt ? new Date(expiresAt) : null;
+
+    const [updated] = await db
+      .update(promoCodesTable)
+      .set(updates)
+      .where(eq(promoCodesTable.id, id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+
+    res.json(updated);
+  } catch (err) {
+    logger.error({ err }, "admin/promo-codes update error");
     res.status(500).json({ error: "internal_error" });
   }
 });
