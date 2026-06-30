@@ -1,29 +1,14 @@
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import { createClient, createConfig } from "@replit/revenuecat-sdk/client";
 import { grantCustomerEntitlement } from "@replit/revenuecat-sdk";
 import { logger } from "./logger";
 
 function getRcClient() {
-  const connectors = new ReplitConnectors();
+  const secretKey = process.env["REVENUECAT_SECRET_KEY"];
+  if (!secretKey) throw new Error("REVENUECAT_SECRET_KEY not set");
   return createClient(
     createConfig({
       baseUrl: "https://api.revenuecat.com/v2",
-      fetch: async (request: Request) => {
-        const url = new URL(request.url);
-        const path = url.pathname + url.search;
-        const body =
-          request.method !== "GET" && request.method !== "HEAD"
-            ? await request.text()
-            : undefined;
-        const headers: Record<string, string> = {};
-        request.headers.forEach((v, k) => { headers[k] = v; });
-        const response = await connectors.proxy("revenuecat", path, {
-          method: request.method,
-          headers,
-          body,
-        });
-        return response as unknown as Response;
-      },
+      headers: { Authorization: `Bearer ${secretKey}` },
     }),
   );
 }
