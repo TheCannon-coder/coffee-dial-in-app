@@ -102,6 +102,13 @@ router.post("/referral/claim", async (req, res) => {
 
   const granted = await grantRcProEntitlement(revenuecatId, 1);
 
+  if (granted) {
+    await db
+      .update(usersTable)
+      .set({ isPro: true })
+      .where(eq(usersTable.id, userId));
+  }
+
   req.log.info(
     { referrerId: referrer.id, referredUserId: userId, rcGranted: granted },
     "referral/claim: code claimed",

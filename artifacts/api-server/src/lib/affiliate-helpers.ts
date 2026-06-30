@@ -130,7 +130,7 @@ export async function recordBrewForReferral(referredUserId: number): Promise<voi
   });
   if (!referrer) return;
 
-  const rcId = referrer.email ?? referrer.anonId;
+  const rcId = referrer.anonId;
   if (!rcId) return;
 
   const granted = await grantRcProEntitlement(rcId, 1);
@@ -139,10 +139,16 @@ export async function recordBrewForReferral(referredUserId: number): Promise<voi
     return;
   }
 
-  await db
-    .update(referralConversionsTable)
-    .set({ referrerRewardedAt: new Date() })
-    .where(eq(referralConversionsTable.id, conversion.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(referralConversionsTable)
+      .set({ referrerRewardedAt: new Date() })
+      .where(eq(referralConversionsTable.id, conversion.id));
+    await tx
+      .update(usersTable)
+      .set({ isPro: true })
+      .where(eq(usersTable.id, referrer.id));
+  });
 
   logger.info({ referrerId: referrer.id, conversionId: conversion.id }, "Friend referral: 30-day Pro granted to referrer");
 

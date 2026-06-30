@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -73,11 +75,28 @@ export default function HomeScreen() {
   async function handleManageSubscription() {
     if (!email) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (isSubscribed) {
+      Alert.alert(
+        'Manage Subscription',
+        'Your subscription is managed through Apple. Go to Settings → Apple ID → Subscriptions to make changes.',
+        [
+          { text: 'Open Settings', onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions') },
+          { text: 'Cancel', style: 'cancel' },
+        ],
+      );
+      return;
+    }
+
     try {
-      const { url } = await getCustomerPortal(email);
-      if (url) WebBrowser.openBrowserAsync(url);
+      const result = await getCustomerPortal(email);
+      if ('url' in result && result.url) {
+        WebBrowser.openBrowserAsync(result.url);
+      } else {
+        Alert.alert('No Subscription Found', 'We couldn\'t find an active subscription linked to this account.');
+      }
     } catch {
-      // silent
+      Alert.alert('Something Went Wrong', 'Unable to open the subscription portal. Please try again.');
     }
   }
 
