@@ -21,6 +21,7 @@ import { BadgeDetailModal } from '@/components/BadgeDetailModal';
 import { ReferralCard } from '@/components/ReferralCard';
 import { getUser, getCustomerPortal } from '@/lib/api';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
+import { useSubscription } from '@/lib/revenuecat';
 
 function greeting() {
   const h = new Date().getHours();
@@ -47,7 +48,9 @@ function groupCoffees(coffees: SavedCoffee[]): { name: string; sessions: SavedCo
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { email, isPro, usesRemaining, savedCoffees, updateUserStats, setReferralCode } = useUser();
+  const { email, isPro: isProFromDB, usesRemaining, savedCoffees, updateUserStats, setReferralCode } = useUser();
+  const { isSubscribed } = useSubscription();
+  const isPro = isProFromDB || isSubscribed;
   const { enabled: notificationsEnabled, toggle: toggleNotifications, permission, reminderHour, reminderMinute, setReminderTime } = useNotifications();
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<BadgeId[]>([]);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
