@@ -159,8 +159,12 @@ export interface PromoRedeemResult {
   error?: string;
 }
 
-export function redeemPromoCode(code: string, revenuecatId: string): Promise<PromoRedeemResult> {
-  return post<PromoRedeemResult>('/promo/redeem', { code, revenuecatId });
+export function redeemPromoCode(
+  code: string,
+  revenuecatId: string,
+  opts?: { email?: string; anonId?: string },
+): Promise<PromoRedeemResult> {
+  return post<PromoRedeemResult>('/promo/redeem', { code, revenuecatId, ...opts });
 }
 
 export interface ReferralClaimResult {

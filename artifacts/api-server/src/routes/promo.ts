@@ -6,7 +6,12 @@ import { grantProEntitlement } from "../lib/revenuecat";
 const router = Router();
 
 router.post("/promo/redeem", async (req, res) => {
-  const { code, revenuecatId } = req.body as { code?: string; revenuecatId?: string };
+  const { code, revenuecatId, email, anonId } = req.body as {
+    code?: string;
+    revenuecatId?: string;
+    email?: string;
+    anonId?: string;
+  };
 
   if (!code || !revenuecatId) {
     res.status(400).json({ error: "code and revenuecatId are required" });
@@ -63,10 +68,14 @@ router.post("/promo/redeem", async (req, res) => {
         .update(promoCodesTable)
         .set({ useCount: sql`${promoCodesTable.useCount} + 1` })
         .where(eq(promoCodesTable.id, promo.id));
-      await tx
-        .update(usersTable)
-        .set({ isPro: true })
-        .where(eq(usersTable.anonId, revenuecatId));
+      const userClause = email
+        ? eq(usersTable.email, email)
+        : anonId
+        ? eq(usersTable.anonId, anonId)
+        : null;
+      if (userClause) {
+        await tx.update(usersTable).set({ isPro: true }).where(userClause);
+      }
     });
 
     req.log.info({ code: normalizedCode, revenuecatId }, "promo/redeem: redeemed");

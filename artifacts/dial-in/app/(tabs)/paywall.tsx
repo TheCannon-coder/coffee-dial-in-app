@@ -24,7 +24,7 @@ export default function PaywallScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ resetsOn?: string; isAnonymous?: string }>();
-  const { email } = useUser();
+  const { email, ensureAnonId } = useUser();
   const { offerings, purchase, restore, isPurchasing, isRestoring, isLoading, offeringsError, refetchOfferings } = useSubscription();
 
   const [loading, setLoading] = useState<'yearly' | 'monthly' | null>(null);
@@ -140,7 +140,8 @@ export default function PaywallScreen() {
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       const revenuecatId = customerInfo.originalAppUserId;
-      const result = await redeemPromoCode(trimmed, revenuecatId);
+      const localAnonId = email ? undefined : await ensureAnonId();
+      const result = await redeemPromoCode(trimmed, revenuecatId, { email: email ?? undefined, anonId: localAnonId });
       if (result.error) {
         setPromoError(result.error);
       } else {
