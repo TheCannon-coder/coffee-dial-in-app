@@ -9,6 +9,7 @@
     "capture-screenshots": "tsx ./src/capture-screenshots.ts",
     "upscale-screenshots": "tsx ./src/upscale-screenshots.ts",
     "seed-revenuecat": "tsx ./src/seedRevenueCat.ts",
+    "get-entitlement-id": "tsx ./src/getEntitlementId.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

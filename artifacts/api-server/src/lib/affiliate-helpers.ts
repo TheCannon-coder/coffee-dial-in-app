@@ -12,7 +12,6 @@ import {
   referralConversionsTable,
   usersTable,
 } from "@workspace/db";
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import { logger } from "./logger";
 
 export function currentMonth(): string {
@@ -87,37 +86,14 @@ export async function ensureRatesLocked(
 
 // ── RevenueCat entitlement grant ─────────────────────────────────────────────
 
-const RC_DURATION: Record<number, string> = {
-  1: "monthly",
-  2: "two_month",
-  3: "three_month",
-  6: "six_month",
-  12: "yearly",
-};
-
 /**
- * Grant a promotional Pro entitlement via RevenueCat.
+ * Grant a promotional Pro entitlement via RevenueCat v2 SDK.
  * months: number of calendar months to grant (1, 2, 3, 6, or 12).
  * Returns true on success.
  */
 export async function grantRcProEntitlement(rcId: string, months: number): Promise<boolean> {
-  const duration = RC_DURATION[months] ?? "monthly";
-  try {
-    const connectors = new ReplitConnectors();
-    const response = await connectors.proxy(
-      "revenuecat",
-      `/v1/subscribers/${encodeURIComponent(rcId)}/entitlements/pro/promotional`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ duration }),
-      },
-    ) as { status: number };
-    return response.status >= 200 && response.status < 300;
-  } catch (err) {
-    logger.error({ err, rcId, months }, "grantRcProEntitlement: RC call failed");
-    return false;
-  }
+  const { grantProEntitlement } = await import("./revenuecat.js");
+  return grantProEntitlement(rcId, months);
 }
 
 // ── Friend referral brew tracking ────────────────────────────────────────────

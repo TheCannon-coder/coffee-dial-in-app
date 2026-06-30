@@ -1,32 +1,9 @@
 import { Router } from "express";
 import { eq, and, sql } from "drizzle-orm";
 import { db, promoCodesTable, promoCodeRedemptionsTable } from "@workspace/db";
-import { ReplitConnectors } from "@replit/connectors-sdk";
+import { grantProEntitlement } from "../lib/revenuecat";
 
 const router = Router();
-
-const RC_DURATION: Record<number, string> = {
-  1: "monthly",
-  2: "two_month",
-  3: "three_month",
-  6: "six_month",
-  12: "yearly",
-};
-
-async function grantProEntitlement(revenuecatId: string, months: number): Promise<boolean> {
-  const duration = RC_DURATION[months] ?? "monthly";
-  const connectors = new ReplitConnectors();
-  const response = await connectors.proxy(
-    "revenuecat",
-    `/v1/subscribers/${encodeURIComponent(revenuecatId)}/entitlements/pro/promotional`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ duration }),
-    },
-  ) as { status: number; ok?: boolean };
-  return response.status >= 200 && response.status < 300;
-}
 
 router.post("/promo/redeem", async (req, res) => {
   const { code, revenuecatId } = req.body as { code?: string; revenuecatId?: string };
