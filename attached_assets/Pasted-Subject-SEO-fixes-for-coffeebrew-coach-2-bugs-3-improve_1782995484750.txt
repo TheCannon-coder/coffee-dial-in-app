@@ -1,0 +1,30 @@
+Subject: SEO fixes for coffeebrew.coach — 2 bugs + 3 improvements
+
+Please fix the following issues on www.coffeebrew.coach:
+
+1. Bug: Every page title has the brand name duplicated
+
+All 11 guide pages currently render titles like:
+Chemex Brewing Guide | Coffee Brew Coach | Coffee Brew Coach
+
+This is happening on: /chemex, /kalita-wave, /moka-pot, /cold-brew, /drip-machine, /why-does-my-coffee-taste-bitter, /espresso-pulling-too-fast, /coffee-grind-size-guide, /how-to-dial-in-espresso, /aeropress-too-weak, /french-press.
+
+Looks like each page's title already includes | Coffee Brew Coach, and then a shared layout/template is appending | Coffee Brew Coach again on top. Find wherever the site sets the global <title> template (likely a layout file or metadata helper) and remove the duplicate suffix — each page should end with the brand name exactly once, e.g. Chemex Brewing Guide | Coffee Brew Coach.
+
+2. Bug: Social share image (og:image) is broken — returns 404
+
+The og:image meta tag points to https://www.coffeebrew.coach/screenshots/og, but that URL currently 404s. This means every share of the site on Facebook, X, LinkedIn, Slack, or iMessage shows a broken/missing preview image. Please regenerate or fix the deployment of that OG image route so it returns a valid image again.
+
+3. Improvement: Add structured data to guide pages
+
+The homepage has MobileApplication JSON-LD schema, but the individual guide pages don't have any structured data. Add HowTo schema to step-by-step pages (e.g. /how-to-dial-in-espresso, /chemex) and FAQPage schema to troubleshooting pages (e.g. /why-does-my-coffee-taste-bitter, /aeropress-too-weak, /espresso-pulling-too-fast). This enables rich snippets in Google search results (step lists / expandable FAQs), which should improve click-through rate.
+
+4. Improvement: Sitemap includes /api/ legal pages that shouldn't be indexed
+
+/api/privacy and /api/terms are listed in sitemap.xml. These are legal boilerplate with no ranking value sitting at an odd /api/ path. Either add noindex to those two pages and remove them from the sitemap, or move them to cleaner URLs like /privacy and /terms.
+
+5. Improvement: Homepage sends Cache-Control: private
+
+The homepage currently returns Cache-Control: private, which prevents CDN/browser caching of a fully public marketing page. Please set a public, max-age=... caching policy for static marketing pages (homepage + guide pages) to improve repeat-visit load times, which factors into Core Web Vitals.
+
+Priority: fix #1 and #2 first since they're live bugs affecting every page right now, then #3, then #4/#5 as cleanup.

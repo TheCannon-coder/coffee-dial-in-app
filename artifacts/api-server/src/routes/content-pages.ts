@@ -587,6 +587,96 @@ const frenchPressHtml = page({
   ctaHeading: "Fix your French press coffee.",
 });
 
+/* ─── Structured data ────────────────────────────────────────────────────── */
+
+const STRUCTURED_DATA: Record<string, object> = {
+  "/chemex": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to brew Chemex coffee",
+    "description": "How to brew Chemex coffee and fix common problems — weak, bitter, or slow extraction.",
+    "totalTime": "PT5M",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Rinse the filter", "text": "Place the three-layered side of the folded filter toward the spout. Pour hot water through to rinse out the papery taste and preheat the brewer. Discard the rinse water." },
+      { "@type": "HowToStep", "position": 2, "name": "Add your coffee and bloom", "text": "Pour 60 g of water (twice your coffee dose) over the grounds, saturating them evenly. Wait 45 seconds to let CO₂ escape from freshly roasted beans." },
+      { "@type": "HowToStep", "position": 3, "name": "Pour in stages", "text": "Pour in slow circles from the centre outward, keeping the water level between 2 and 4 cm below the rim. Add water every 45–60 seconds as the bed drains. Aim for 3–4 total pours." },
+      { "@type": "HowToStep", "position": 4, "name": "Finish at 4–5 minutes", "text": "Allow the brew to complete. Target total brew time is 4–5 minutes. If it finishes under 4 minutes, grind coarser next time. Over 5 minutes, grind finer." },
+    ],
+  },
+  "/kalita-wave": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "Kalita Wave brewing guide",
+    "description": "Master the Kalita Wave with the right grind, ratio, and pour technique.",
+    "totalTime": "PT3M30S",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Rinse the filter", "text": "Place a Kalita Wave filter in the dripper and pour hot water through it to remove papery flavour and preheat the brewer. Discard the rinse water." },
+      { "@type": "HowToStep", "position": 2, "name": "Bloom", "text": "Add your ground coffee and pour 40 g of water, making sure all the grounds are saturated. Wait 30–45 seconds." },
+      { "@type": "HowToStep", "position": 3, "name": "Pour in slow circles", "text": "From the centre outward, pour steadily, keeping the water level roughly 50 mm deep in the dripper. Maintain a relatively constant water level throughout." },
+      { "@type": "HowToStep", "position": 4, "name": "Final pour", "text": "Complete your pours by 2:30, then allow the water to drain fully. Total time should be 3:00–3:30. Grind finer if it drains faster than 3 minutes, coarser if slower than 4 minutes." },
+    ],
+  },
+  "/french-press": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to brew French press coffee",
+    "description": "Fix bitter, weak, or muddy French press coffee with the right grind, steep time, and ratio.",
+    "totalTime": "PT4M",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Preheat the press", "text": "Add a small amount of hot water, swirl it around, and discard to prevent temperature drop when you add your brew water." },
+      { "@type": "HowToStep", "position": 2, "name": "Add ground coffee", "text": "Add your dose of freshly ground coarse coffee and give the press a gentle shake to level the grounds." },
+      { "@type": "HowToStep", "position": 3, "name": "Pour and start timer", "text": "Pour all the water in one go, making sure all grounds are submerged. Give it one gentle stir. Place the lid on with the plunger pulled all the way up — do not press yet." },
+      { "@type": "HowToStep", "position": 4, "name": "Steep for exactly 4 minutes", "text": "Set a timer and wait exactly 4 minutes. Steeping longer is the single most common cause of bitter French press coffee." },
+      { "@type": "HowToStep", "position": 5, "name": "Press slowly", "text": "At 4 minutes, press the plunger down using firm, steady pressure over about 20–30 seconds. Don't press too fast." },
+      { "@type": "HowToStep", "position": 6, "name": "Pour immediately", "text": "Don't leave coffee sitting in the press after plunging — grounds continue extracting. Pour into a cup or carafe right away." },
+    ],
+  },
+  "/how-to-dial-in-espresso": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to dial in espresso at home",
+    "description": "Step-by-step guide to dialling in espresso — grind, dose, yield, and timing.",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Start with the baseline recipe", "text": "Use 18 g dose, 36 g yield (2× dose weight), 25–30 seconds from pump start, water at 93 °C. This 1:2 ratio is a solid starting point for most medium-roast coffees." },
+      { "@type": "HowToStep", "position": 2, "name": "Adjust grind first", "text": "Keep dose and yield constant. Adjust grind until the shot takes 25–30 seconds. Grind finer if shot pulls under 20 seconds; coarser if over 35 seconds." },
+      { "@type": "HowToStep", "position": 3, "name": "Use taste to guide adjustments", "text": "Sour or sharp means under-extracted — grind finer. Bitter or harsh means over-extracted — grind coarser. Weak means under-extracted and under-dosed." },
+      { "@type": "HowToStep", "position": 4, "name": "Adjust dose after grind is dialled in", "text": "Once grind is correct, fine-tune dose in 0.5 g increments to adjust body and strength. Changes above 1 g significantly alter the shot." },
+      { "@type": "HowToStep", "position": 5, "name": "Keep notes on every shot", "text": "Record grind setting, dose, yield, time, and a taste note. You only need 2–3 shots to dial in most coffees with notes. Without notes you'll repeat the same mistakes." },
+    ],
+  },
+  "/why-does-my-coffee-taste-bitter": {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Why does my espresso taste bitter?", "acceptedAnswer": { "@type": "Answer", "text": "The most common cause is a grind that's too fine, extending extraction time. Grind coarser first. If the shot is still bitter and pulling in 25–30 seconds, lower your water temperature by 1–2 degrees." } },
+      { "@type": "Question", "name": "Why does my pour over coffee taste bitter?", "acceptedAnswer": { "@type": "Answer", "text": "Usually grind too fine, water too hot, or total brew time too long. Target 3–4 minutes total and grind coarser if the cup is harsh. Also avoid fast, aggressive pours that agitate the grounds." } },
+      { "@type": "Question", "name": "Why does my French press taste bitter?", "acceptedAnswer": { "@type": "Answer", "text": "Steeping too long is the primary cause. Steep for exactly 4 minutes, plunge, and pour immediately. Grind coarser if it's still bitter at 4 minutes." } },
+      { "@type": "Question", "name": "Why does my moka pot coffee taste bitter?", "acceptedAnswer": { "@type": "Answer", "text": "Too much heat or too fine a grind. Use medium-low heat, start with pre-heated water, and grind medium-fine. Remove from heat as soon as the flow slows to a sputter." } },
+      { "@type": "Question", "name": "What is the quickest fix for bitter coffee?", "acceptedAnswer": { "@type": "Answer", "text": "Grind coarser — this is the most likely fix for almost every method. Then try reducing water temperature by 2–3 °C and shortening extraction time." } },
+    ],
+  },
+  "/espresso-pulling-too-fast": {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Why is my espresso pulling too fast?", "acceptedAnswer": { "@type": "Answer", "text": "The most common cause is a grind that's too coarse. Other causes include: dose too low, tamp too light, channelling in the puck, or uneven coffee distribution before tamping." } },
+      { "@type": "Question", "name": "How long should an espresso shot take?", "acceptedAnswer": { "@type": "Answer", "text": "A properly extracted espresso should take 25–35 seconds from when the pump starts. If your shot finishes before 20 seconds, it's under-extracted and will taste sour and thin." } },
+      { "@type": "Question", "name": "How do I fix a fast espresso shot?", "acceptedAnswer": { "@type": "Answer", "text": "Step 1: grind finer. Step 2: if still too fast, increase dose by 0.5 g. Step 3: ensure your tamp is firm and level (about 15 kg pressure). Step 4: distribute grounds evenly before tamping using a WDT tool or by tapping the portafilter." } },
+      { "@type": "Question", "name": "What does under-extracted espresso taste like?", "acceptedAnswer": { "@type": "Answer", "text": "Under-extracted espresso tastes sour, thin, and weak. The colour will be pale yellow rather than warm amber-brown. Shots that pull in under 20 seconds are almost always under-extracted." } },
+    ],
+  },
+  "/aeropress-too-weak": {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Why is my AeroPress coffee weak?", "acceptedAnswer": { "@type": "Answer", "text": "Weak AeroPress coffee is almost always under-extraction caused by one of four things: too much water (wrong ratio), grind too coarse, steep time too short, or water not hot enough." } },
+      { "@type": "Question", "name": "What is the best AeroPress ratio?", "acceptedAnswer": { "@type": "Answer", "text": "A good AeroPress ratio is 1:12 to 1:15 — 15–17 g of coffee to 200 ml of water. Many weak cups use a diluted 1:18 ratio. Try 16 g coffee to 220 g water as a starting point." } },
+      { "@type": "Question", "name": "How long should I steep AeroPress?", "acceptedAnswer": { "@type": "Answer", "text": "With a medium grind, steep for 1–2 minutes before plunging slowly over 30 seconds. Steeping for only 30–60 seconds with a medium grind produces weak coffee." } },
+      { "@type": "Question", "name": "What grind size should I use for AeroPress?", "acceptedAnswer": { "@type": "Answer", "text": "For a standard AeroPress brew, use a medium grind — like beach sand or sea salt. If you have been using a French press-coarse grind, go two or three notches finer on your grinder." } },
+    ],
+  },
+};
+
 /* ─── Register all routes ─────────────────────────────────────────────────── */
 
 const pages: Array<{ path: string; html: string }> = [
@@ -606,7 +696,12 @@ const pages: Array<{ path: string; html: string }> = [
 for (const { path, html } of pages) {
   router.get(path, (_req, res) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(html);
+    res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+    const sd = STRUCTURED_DATA[path];
+    const finalHtml = sd
+      ? html.replace("</head>", `  <script type="application/ld+json">${JSON.stringify(sd)}</script>\n</head>`)
+      : html;
+    res.send(finalHtml);
   });
 }
 

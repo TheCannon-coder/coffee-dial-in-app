@@ -37,18 +37,6 @@ router.get("/sitemap.xml", (_req, res) => {
     <priority>1.0</priority>
   </url>
 ${contentEntries}
-  <url>
-    <loc>https://www.coffeebrew.coach/api/privacy</loc>
-    <lastmod>${TODAY}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.coffeebrew.coach/api/terms</loc>
-    <lastmod>${TODAY}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
