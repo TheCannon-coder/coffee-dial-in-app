@@ -341,6 +341,7 @@ export function renderNav(): string {
   <a class="nav-logo" href="/">Coffee Brew Coach</a>
   <div class="nav-links">
     <a href="/">Home</a>
+    <a href="/affiliate/become">Affiliates</a>
     <a href="https://apps.apple.com/app/id6777418888" target="_blank" rel="noopener">Download</a>
   </div>
 </nav>`;
@@ -353,6 +354,7 @@ export function renderFooter(): string {
     <p class="footer-wordmark">Coffee Brew Coach</p>
     <div class="footer-links">
       <a href="/">Home</a>
+      <a href="/affiliate/become">Become an Affiliate</a>
       <a href="/api/privacy">Privacy</a>
       <a href="/api/terms">Terms</a>
     </div>
