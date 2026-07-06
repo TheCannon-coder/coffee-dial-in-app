@@ -71,27 +71,18 @@ An AI-powered coffee coaching iOS app that guides users to dial in their espress
 
 **Status:** Code complete, gated behind `REFERRAL_PROGRAM=true` env var. Enable to launch.
 
-**Commission phase-down schedule** (controlled by `REFERRAL_COMMISSION` env var — no deploy needed to step down):
-| Phase | Rate | Trigger |
-|---|---|---|
-| 1 — Launch | **$2.00/month** | Day 1 |
-| 2 | $1.75/month | TBD |
-| 3 | $1.50/month | TBD |
-| 4 | $1.25/month | TBD |
-| 5 — Mature | $1.00/month | TBD |
-
-Higher launch rate attracts early advocates; steps down as the program becomes self-sustaining.
-
 **Commission tiers auto-promote on active referred paying subscribers (sticky, never demote):**
-| Tier | Active referred subscribers |
-|---|---|
-| Standard | 0–9 |
-| Silver | 10–99 |
-| Gold | 100–999 |
-| Platinum | 1,000+ |
+| Tier | Active referred subscribers | Launch monthly rate |
+|---|---|---|
+| Standard | 0–9 | $0.75 |
+| Silver | 10–99 | $1.00 |
+| Gold | 100–999 | $1.50 |
+| Platinum | 1,000+ | $2.00 |
+
+Rates for all four tiers (monthly/annual/lifetime) live in the `commission_phases` DB table, seeded at the "Launch" phase above. **Note:** the earnings-calculator widget (`/api/earn`, `REFERRAL_COMMISSION` env var, default `$2.00`) advertises the top-tier (Platinum) headline rate for marketing purposes — it is not the rate a new Standard-tier affiliate actually earns. Confirmed with the user (2026-07-06): the tiered ramp is intentional, not a bug — keep Standard at $0.75 rather than flattening everyone to $2.00.
 
 - Recomputed automatically whenever a referral converts to paying (Stripe webhook + `/admin/conversions/:id/subscribe`), and self-heals during the monthly payout batch job before rates are locked.
-- Promotion re-locks the affiliate's custom rate to the new tier's *current* global rate — reuses the existing "lock rate at first conversion" mechanism so future phase step-downs don't retroactively lower an already-promoted affiliate.
+- Promotion re-locks the affiliate's custom rate to the new tier's *current* rate in `commission_phases` — reuses the existing "lock rate at first conversion" mechanism so future rate changes don't retroactively lower an already-promoted affiliate.
 - Crossing into Platinum stamps `platinum_achieved_at` (permanent, never cleared), sets `founder_outreach_pending = true`, and sends a best-effort congratulations email (gated behind `RESEND_API_KEY`, same feature-flag convention as everything else — logs and no-ops if unset).
 - Admin tools: `POST /admin/affiliates/:id/recompute-tier` (manual backfill/debug, never demotes) and `POST /admin/affiliates/:id/clear-outreach-flag` (clear after founder personally reaches out).
 
