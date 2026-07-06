@@ -4,3 +4,4 @@
 - [Drizzle push in non-TTY](drizzle-non-tty.md) — drizzle-kit push hangs/errors in non-interactive shells when existing data triggers confirmation prompts; use direct SQL ALTER TABLE instead.
 - [Referral system design](referral-system-design.md) — same code, two tracks: affiliate (cash via Stripe Connect) vs friend (Pro credits); track determined at subscription time by affiliates table lookup; proPermanent flag must be immune to subscription.deleted webhook.
 - [RC entitlement grant](rc-entitlement-grant.md) — use REVENUECAT_SECRET_KEY + v2 SDK grantCustomerEntitlement; connectors.proxy lacks write scope and v1 API rejects the connector's auth format.
+- [Klaviyo API key scopes](klaviyo-api-key-scopes.md) — private key needs Profiles+Lists+Subscriptions all Write; also Replit Secrets UI can silently re-link to a stale Account Vault value on "paste new secret".
