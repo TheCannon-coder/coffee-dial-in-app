@@ -355,6 +355,8 @@ export function renderFooter(): string {
     <div class="footer-links">
       <a href="/">Home</a>
       <a href="/affiliate/become">Become an Affiliate</a>
+      <a href="/how-coffee-youtubers-make-money">How Coffee YouTubers Make Money</a>
+      <a href="/best-affiliate-programs-for-coffee-creators">Best Affiliate Programs for Creators</a>
       <a href="/api/privacy">Privacy</a>
       <a href="/api/terms">Terms</a>
     </div>

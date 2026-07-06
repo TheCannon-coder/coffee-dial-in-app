@@ -15,6 +15,8 @@ function page(opts: {
   cbcHtml: string;
   related: Array<{ href: string; label: string }>;
   ctaHeading: string;
+  skipAffiliateCallout?: boolean;
+  affiliateCalloutHref?: string;
 }): string {
   const relatedItems = [
     ...opts.related,
@@ -22,6 +24,15 @@ function page(opts: {
   ]
     .map(r => `<li><a href="${r.href}">${r.label}</a></li>`)
     .join("\n");
+
+  const affiliateCallout = opts.skipAffiliateCallout
+    ? ""
+    : `
+<section class="cbc-section" style="border-top: 1px solid #E0D5C8;">
+  <div class="cbc-inner" style="text-align:center;">
+    <p style="font-size:15px; color:#6B4226;">Make coffee content? <a href="${opts.affiliateCalloutHref ?? "/affiliate/become"}">Learn how creators earn recurring commissions with our affiliate program →</a></p>
+  </div>
+</section>`;
 
   const body = `
 <header class="content-hero">
@@ -41,6 +52,7 @@ function page(opts: {
     ${opts.cbcHtml}
   </div>
 </section>
+${affiliateCallout}
 
 <section class="related-section">
   <div class="related-inner">
@@ -675,6 +687,36 @@ const STRUCTURED_DATA: Record<string, object> = {
       { "@type": "Question", "name": "What grind size should I use for AeroPress?", "acceptedAnswer": { "@type": "Answer", "text": "For a standard AeroPress brew, use a medium grind — like beach sand or sea salt. If you have been using a French press-coarse grind, go two or three notches finer on your grinder." } },
     ],
   },
+  "/how-coffee-youtubers-make-money": {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How Coffee YouTubers Make Money",
+    "description":
+      "How coffee YouTubers and content creators actually earn income — sponsorships, gear affiliate links, and recurring commission affiliate programs like Coffee Brew Coach's.",
+    "datePublished": "2026-07-06",
+    "dateModified": "2026-07-06",
+    "author": { "@type": "Organization", "name": "Coffee Brew Coach" },
+    "publisher": { "@type": "Organization", "name": "Coffee Brew Coach" },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.coffeebrew.coach/how-coffee-youtubers-make-money",
+    },
+  },
+  "/best-affiliate-programs-for-coffee-creators": {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Best Affiliate Programs for Coffee Content Creators",
+    "description":
+      "A comparison of affiliate programs for coffee content creators — one-time gear commissions vs. recurring commission programs like Coffee Brew Coach's affiliate program.",
+    "datePublished": "2026-07-06",
+    "dateModified": "2026-07-06",
+    "author": { "@type": "Organization", "name": "Coffee Brew Coach" },
+    "publisher": { "@type": "Organization", "name": "Coffee Brew Coach" },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.coffeebrew.coach/best-affiliate-programs-for-coffee-creators",
+    },
+  },
 };
 
 /* ─── 12. How coffee YouTubers make money ───────────────────────────────── */
@@ -702,14 +744,16 @@ const youtuberMoneyHtml = page({
 <p><a href="/affiliate/become">Coffee Brew Coach's affiliate program</a> works this way: you get paid monthly for every Pro subscriber you refer, for as long as they stay subscribed, with your rate automatically increasing as more of your referrals convert. A single well-placed mention in a video description can keep paying out for years, instead of a single click-through commission that pays once.</p>
 
 <h2>Which model actually compounds</h2>
-<p>One-time affiliate links and ad revenue both reset to zero every month — you have to keep producing new content just to maintain the same income. Recurring commission programs are the only model in this list where income from old content keeps compounding as your back catalog keeps referring new subscribers.</p>`,
+<p>One-time affiliate links and ad revenue both reset to zero every month — you have to keep producing new content just to maintain the same income. Recurring commission programs are the only model in this list where income from old content keeps compounding as your back catalog keeps referring new subscribers. For a closer look at how the main options stack up side by side, see our <a href="/best-affiliate-programs-for-coffee-creators">comparison of affiliate programs for coffee content creators</a>.</p>`,
   cbcHtml: `<p>If you create coffee content and want a monetization option that doesn't require constant new sponsorship deals, Coffee Brew Coach's <a href="/affiliate/become">recurring commission affiliate program</a> pays you monthly for every Pro subscriber you refer — not just once. It's built specifically for creators whose audience already asks coffee troubleshooting questions.</p>`,
   related: [
     { href: "/affiliate/become", label: "Become a Coffee Brew Coach affiliate" },
+    { href: "/best-affiliate-programs-for-coffee-creators", label: "Best affiliate programs for coffee content creators" },
     { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
   ctaHeading: "Turn your coffee content into recurring income.",
+  skipAffiliateCallout: true,
 });
 
 /* ─── 13. Best affiliate programs for coffee content creators ────────────── */
@@ -742,6 +786,7 @@ const bestAffiliateProgramsHtml = page({
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
   ctaHeading: "Join a recurring commission affiliate program built for coffee creators.",
+  skipAffiliateCallout: true,
 });
 
 /* ─── Register all routes ─────────────────────────────────────────────────── */
