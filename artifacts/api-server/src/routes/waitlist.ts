@@ -9,6 +9,7 @@ const router = Router();
 // Only platforms with a configured list get pushed to Klaviyo.
 const KLAVIYO_LIST_BY_PLATFORM: Record<string, string | undefined> = {
   affiliate: process.env["KLAVIYO_LIST_ID"],
+  android: process.env["KLAVIYO_ANDROID_LIST_ID"],
 };
 
 router.post("/waitlist", async (req, res) => {

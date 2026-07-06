@@ -135,12 +135,15 @@ Deployed to production. Unlike the sections above, this ships regardless of the 
 
 ## Waitlist → Klaviyo sync
 
-Affiliate waitlist signups (`POST /api/waitlist` with `platform: "affiliate"`) are also pushed to the Klaviyo list "BC Affiliate Waitlist" via `artifacts/api-server/src/lib/klaviyo.ts`, using the profile-subscription-bulk-create-jobs endpoint (creates/updates the profile and subscribes with explicit marketing consent in one call).
+Waitlist signups (`POST /api/waitlist`) are also pushed to a matching Klaviyo list via `artifacts/api-server/src/lib/klaviyo.ts`, using the profile-subscription-bulk-create-jobs endpoint (creates/updates the profile and subscribes with explicit marketing consent in one call).
 
-- Requires `KLAVIYO_API_KEY` (private API key with **Profiles, Lists, and Subscriptions** all set to Full Access/Write — `subscriptions:write` specifically is required, easy to miss when creating a custom-access key) and `KLAVIYO_LIST_ID` (the target list's ID, not its name).
-- Best-effort/non-blocking, same feature-flag convention as `RESEND_API_KEY`: logs and no-ops if `KLAVIYO_API_KEY` is unset, and never fails the waitlist signup itself if the Klaviyo call errors.
+- `KLAVIYO_LIST_BY_PLATFORM` in `waitlist.ts` maps a waitlist `platform` value to its Klaviyo list ID env var:
+  - `affiliate` → `KLAVIYO_LIST_ID` (Klaviyo list "BC Affiliate Waitlist")
+  - `android` → `KLAVIYO_ANDROID_LIST_ID` (Klaviyo list "Android Waitlist")
+- Requires `KLAVIYO_API_KEY` (private API key with **Profiles, Lists, and Subscriptions** all set to Full Access/Write — `subscriptions:write` specifically is required, easy to miss when creating a custom-access key).
+- Best-effort/non-blocking, same feature-flag convention as `RESEND_API_KEY`: logs and no-ops if `KLAVIYO_API_KEY` or the platform's list ID is unset, and never fails the waitlist signup itself if the Klaviyo call errors.
 - The `android_waitlist` DB table remains the source of truth; Klaviyo is a downstream sync, not the record of truth.
-- Only the `affiliate` platform is wired to a Klaviyo list today (via `KLAVIYO_LIST_BY_PLATFORM` in `waitlist.ts`); other platforms (e.g. `android`) are not synced unless a list ID is added for them.
+- To wire up a new platform, add its list ID env var to `KLAVIYO_LIST_BY_PLATFORM`.
 
 ## User preferences
 
