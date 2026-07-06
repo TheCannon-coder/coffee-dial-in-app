@@ -122,6 +122,17 @@ Rates for all four tiers (monthly/annual/lifetime) live in the `commission_phase
 - `artifacts/mockup-sandbox/src/components/mockups/referral/EarningsWidget.tsx` — React version for canvas/email embeds
 - `artifacts/mockup-sandbox/src/components/mockups/referral/ReferralFinancialModel.tsx` — interactive financial model on canvas
 
+### Affiliate web portal (live, independent of `REFERRAL_PROGRAM`)
+
+Deployed to production. Unlike the sections above, this ships regardless of the `REFERRAL_PROGRAM` flag — it only serves *existing, confirmed* affiliates (rows in `affiliates` with `isActive = true`, created via `POST /api/admin/affiliates`) and does not expose self-serve join or the live earnings calculator.
+
+- `GET /affiliate/become` — public, SEO-indexed explainer page ("passive income" positioning, tier ladder, Stripe Connect/tax framing). Captures interest via `POST /api/waitlist` with `platform: "affiliate"` (reuses the existing `android_waitlist` table/route) instead of a live signup form. Listed in `sitemap.ts`.
+- `GET /affiliate/login` + `POST /api/affiliate/login-request` — passwordless magic-link login by `payoutEmail`. Always returns a generic response (no email enumeration); sends via Resend (`RESEND_API_KEY`, no-ops with a warning log if unset, per the standard feature-flag convention).
+- `GET /affiliate/verify` — redeems the single-use, 15-minute magic-link token (`affiliate_login_tokens` table, SHA-256 hashed) and sets an httpOnly, HMAC-signed session cookie (`SESSION_SECRET`, 30-day TTL).
+- `GET /affiliate/dashboard` — gated by `requireAffiliateAuth` middleware (`artifacts/api-server/src/lib/affiliate-session.ts`); redirects HTML requests to `/affiliate/login`, 401s API requests. Shows only real data: current tier + ladder progress, active referred subscriber count, commission ledger (paid vs. pending), Stripe Connect/tax status. No fake stats (e.g. no click tracking — that isn't tracked anywhere).
+- `POST /api/affiliate/logout` — clears the session cookie.
+- Router (`artifacts/api-server/src/routes/affiliate-portal.ts`) is mounted unconditionally in `app.ts`, not behind any feature flag.
+
 ## User preferences
 
 - Feature-flag anything not ready for production — use env vars, never conditional compilation.

@@ -276,3 +276,22 @@ export const taxRecordsTable = pgTable(
 );
 
 export type TaxRecord = typeof taxRecordsTable.$inferSelect;
+
+/**
+ * Single-use magic-link login tokens for the affiliate web dashboard.
+ * Raw token is emailed to the affiliate's payoutEmail; only its SHA-256 hash
+ * is stored here. Expires after a short window (15 min) and is marked used
+ * on redemption so it can't be replayed.
+ */
+export const affiliateLoginTokensTable = pgTable("affiliate_login_tokens", {
+  id: serial("id").primaryKey(),
+  affiliateId: integer("affiliate_id")
+    .notNull()
+    .references(() => affiliatesTable.id),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: tsz("expires_at").notNull(),
+  usedAt: tsz("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AffiliateLoginToken = typeof affiliateLoginTokensTable.$inferSelect;

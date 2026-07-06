@@ -36,6 +36,12 @@ router.get("/sitemap.xml", (_req, res) => {
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://www.coffeebrew.coach/affiliate/become</loc>
+    <lastmod>${TODAY}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 ${contentEntries}
 </urlset>`;
 

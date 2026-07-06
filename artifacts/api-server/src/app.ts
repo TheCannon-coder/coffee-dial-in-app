@@ -12,6 +12,7 @@ import sitemapRouter from "./routes/sitemap";
 import contentPagesRouter from "./routes/content-pages";
 import waitlistRouter from "./routes/waitlist";
 import promoRouter from "./routes/promo";
+import affiliatePortalRouter from "./routes/affiliate-portal";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -62,6 +63,8 @@ if (process.env.REFERRAL_PROGRAM === "true") {
   app.use("/api", referralRouter);
   logger.info("Referral program routes enabled");
 }
+
+app.use(affiliatePortalRouter);
 
 app.use("/api", promoRouter);
 app.use("/api", router);
