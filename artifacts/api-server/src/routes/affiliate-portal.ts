@@ -67,13 +67,13 @@ router.get("/affiliate/become", (_req, res) => {
 <header class="content-hero">
   <div class="content-hero-inner">
     <h1>Turn your coffee content into passive income</h1>
-    <p class="lead">Join the Dial In affiliate program and earn recurring commissions every month a subscriber you referred stays on Pro — no shipping, no inventory, no extra work after the share.</p>
+    <p class="lead">Join the Coffee Brew Coach affiliate program and earn recurring commissions every month a subscriber you referred stays on Pro — no shipping, no inventory, no extra work after the share.</p>
   </div>
 </header>
 
 <div class="content-body">
-  <h2>Passive income, one referral link at a time</h2>
-  <p>Most affiliate programs pay you once. Ours doesn't. Every Pro subscriber you refer to Dial In generates a recurring monthly commission for as long as they stay subscribed — so the referral links you share today keep paying out long after you've posted them. That's the definition of passive income: you do the work once, and it keeps earning.</p>
+  <h2>A recurring commission affiliate program for coffee creators</h2>
+  <p>Most affiliate programs pay you once. Ours doesn't. Every Pro subscriber you refer to Coffee Brew Coach generates a recurring monthly commission for as long as they stay subscribed — so the referral links you share today keep paying out long after you've posted them. That's the definition of passive income: you do the work once, and it keeps earning.</p>
 
   <h2>How commissions grow with you</h2>
   <p>Your rate isn't fixed. As more of the people you refer become active, paying subscribers, you're automatically promoted to a higher commission tier — and once you're promoted, you never get moved back down.</p>
@@ -88,7 +88,7 @@ router.get("/affiliate/become", (_req, res) => {
   <p>Reach Platinum and our founders personally reach out — you're driving a meaningful share of our growth at that point, and we treat that relationship accordingly.</p>
 
   <h2>Built for creators who talk about coffee</h2>
-  <p>If you already make espresso content — YouTube, TikTok, a newsletter, a coffee shop's social presence — your audience is already primed to want a coaching tool that fixes their shots. You're not selling anything; you're recommending something you'd recommend anyway, and getting paid every month for it.</p>
+  <p>If you already make espresso content — YouTube, TikTok, a newsletter, a coffee shop's social presence — your audience is already primed to want a coaching tool that fixes their shots. You're not selling anything; you're recommending something you'd recommend anyway, and getting paid every month for it. See <a href="/how-coffee-youtubers-make-money">how coffee YouTubers make money</a> for a full breakdown of how this compares to sponsorships and one-time gear links.</p>
 
   <h2>Payouts, made simple</h2>
   <p>Payouts run automatically through Stripe Connect once you're onboarded — no manual invoicing, no chasing payments. Stripe handles your tax forms (W-9 or W-8BEN) and identity verification directly; we handle the commission math, tier promotions, and your dashboard.</p>
@@ -159,16 +159,92 @@ router.get("/affiliate/become", (_req, res) => {
 })();
 </script>`;
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "How do commissions work in the Coffee Brew Coach affiliate program?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "You earn a recurring monthly commission for every Pro subscriber you refer, for as long as they stay subscribed. Your rate starts at $0.75/mo (Standard) and automatically increases as your active referred subscribers grow — Silver at 10+, Gold at 100+, and Platinum at 1,000+ — and it never moves back down once you're promoted.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Who can join the coffee affiliate program?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "It's built for creators who talk about coffee — YouTube, TikTok, newsletters, or a coffee shop's social presence. Affiliate payouts are currently open to affiliates based in the United States and Canada, though referred users can join from anywhere in the world.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How do affiliate payouts work?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Payouts run automatically through Stripe Connect once you're onboarded — no manual invoicing. Stripe collects your tax forms (W-9 or W-8BEN) and verifies your identity directly; Coffee Brew Coach handles the commission math, tier promotions, and your live dashboard.",
+        },
+      },
+    ],
+  };
+
   const html = buildPage({
-    title: "Become a Dial In Affiliate — Earn Passive Income Recommending Coffee Coaching",
+    title: "Coffee Affiliate Program — Recurring Commissions for Coffee Creators",
     description:
-      "Earn recurring passive income as a Dial In affiliate. Get paid monthly for every Pro subscriber you refer, with commissions that grow as your audience does.",
+      "Join the Coffee Brew Coach affiliate program: a recurring commission affiliate program for coffee YouTubers, TikTokers, and newsletter writers. Earn monthly for every Pro subscriber you refer.",
     canonical: `${BASE}/affiliate/become`,
     bodyHtml: body,
-  });
+    ogImage: `${BASE}/affiliate/og`,
+  }).replace(
+    "</head>",
+    `  <script type="application/ld+json">${JSON.stringify(faqSchema)}</script>\n</head>`,
+  );
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
+});
+
+// ── GET /affiliate/og — dedicated share image (1200×630 SVG) with tier table ──
+
+router.get("/affiliate/og", (_req, res) => {
+  const rows = TIER_LADDER.map((t, i) => {
+    const y = 300 + i * 62;
+    const range = t.min === 0 ? "0–9" : t.min === 10 ? "10–99" : t.min === 100 ? "100–999" : "1,000+";
+    return `
+  <text x="80" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#FAF7F2">${t.label}</text>
+  <text x="420" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#A89080">${range} referred subs</text>
+  <text x="760" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="#FAF7F2">${t.rate}</text>`;
+  }).join("\n");
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#2C1A0E"/>
+  <rect x="0" y="0" width="1200" height="630" fill="url(#grain)" opacity="0.04"/>
+  <defs>
+    <pattern id="grain" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="1" height="1" fill="#FAF7F2"/>
+    </pattern>
+  </defs>
+
+  <circle cx="1100" cy="-80" r="380" fill="none" stroke="#3D2410" stroke-width="80"/>
+  <circle cx="1100" cy="-80" r="280" fill="none" stroke="#3D2410" stroke-width="40"/>
+
+  <text x="80" y="90" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-style="italic" fill="#A89080" letter-spacing="1">Coffee Brew Coach — Affiliate Program</text>
+
+  <text x="80" y="170" font-family="Georgia, 'Times New Roman', serif" font-size="56" font-weight="bold" fill="#FAF7F2" letter-spacing="-1">Recurring commissions,</text>
+  <text x="80" y="230" font-family="Georgia, 'Times New Roman', serif" font-size="56" font-weight="bold" fill="#FAF7F2" letter-spacing="-1">every month.</text>
+
+  <line x1="80" y1="262" x2="1120" y2="262" stroke="#3D2410" stroke-width="2"/>
+${rows}
+
+  <rect x="80" y="540" width="300" height="62" rx="31" fill="#FAF7F2"/>
+  <text x="230" y="579" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="bold" fill="#2C1A0E" text-anchor="middle">Become an affiliate</text>
+</svg>`;
+
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(svg);
 });
 
 // ── GET /affiliate/login — magic-link login page ─────────────────────────────

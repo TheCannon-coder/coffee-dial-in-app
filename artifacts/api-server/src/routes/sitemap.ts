@@ -16,6 +16,8 @@ const CONTENT_PAGES = [
   "/how-to-dial-in-espresso",
   "/aeropress-too-weak",
   "/french-press",
+  "/how-coffee-youtubers-make-money",
+  "/best-affiliate-programs-for-coffee-creators",
 ];
 
 router.get("/sitemap.xml", (_req, res) => {

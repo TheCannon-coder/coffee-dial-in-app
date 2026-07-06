@@ -368,13 +368,15 @@ export function buildPage({
   description,
   canonical,
   bodyHtml,
+  ogImage: ogImageOverride,
 }: {
   title: string;
   description: string;
   canonical: string;
   bodyHtml: string;
+  ogImage?: string;
 }): string {
-  const ogImage = "https://www.coffeebrew.coach/screenshots/og";
+  const ogImage = ogImageOverride ?? "https://www.coffeebrew.coach/screenshots/og";
   const cleanTitle = title.replace(/\s*\|\s*Coffee Brew Coach\s*$/i, "").trim();
   const fullTitle = `${cleanTitle} | Coffee Brew Coach`;
 

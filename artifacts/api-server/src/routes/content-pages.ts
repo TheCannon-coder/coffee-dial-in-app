@@ -677,6 +677,73 @@ const STRUCTURED_DATA: Record<string, object> = {
   },
 };
 
+/* ─── 12. How coffee YouTubers make money ───────────────────────────────── */
+
+const youtuberMoneyHtml = page({
+  path: "/how-coffee-youtubers-make-money",
+  title: "How Coffee YouTubers Make Money | Coffee Brew Coach",
+  description:
+    "How coffee YouTubers and content creators actually earn income — sponsorships, gear affiliate links, and recurring commission affiliate programs like Coffee Brew Coach's.",
+  h1: "How coffee YouTubers make money",
+  lead:
+    "Coffee content creators rarely rely on a single income stream. Here's a breakdown of how working coffee YouTubers, TikTokers, and newsletter writers actually monetize their audience — and where recurring commissions fit in.",
+  contentHtml: `
+<h2>Brand sponsorships</h2>
+<p>Direct sponsorships from roasters, grinder makers, and espresso machine brands are the most visible income source for larger channels. They pay well per video but are inconsistent — you're re-negotiating every deal, and income disappears the moment you stop posting sponsored content.</p>
+
+<h2>Gear affiliate links (one-time commission)</h2>
+<p>Amazon Associates and similar programs are the most common starting point: you link to a grinder or scale, and earn a small percentage on that single purchase. It's easy to set up but the commission is a one-time payout — refer the same viewer twice and you only get paid once, and rates are typically 1–4%.</p>
+
+<h2>Ad revenue</h2>
+<p>Platform ad revenue (YouTube, TikTok Creator Fund) scales with views, not with how useful your content actually is to the viewer. It also requires meaningful watch time thresholds most niche coffee channels never reach.</p>
+
+<h2>Recurring commission affiliate programs</h2>
+<p>A newer model — and the one that best matches how coffee content actually works — is a <strong>recurring commission affiliate program</strong>. Instead of a one-time cut of a single gear purchase, you earn a commission every month a subscriber you referred stays active. If your audience is already asking "why does my espresso taste bitter" or "how do I dial in my grinder," recommending a coaching app is a natural fit, not a hard sell.</p>
+<p><a href="/affiliate/become">Coffee Brew Coach's affiliate program</a> works this way: you get paid monthly for every Pro subscriber you refer, for as long as they stay subscribed, with your rate automatically increasing as more of your referrals convert. A single well-placed mention in a video description can keep paying out for years, instead of a single click-through commission that pays once.</p>
+
+<h2>Which model actually compounds</h2>
+<p>One-time affiliate links and ad revenue both reset to zero every month — you have to keep producing new content just to maintain the same income. Recurring commission programs are the only model in this list where income from old content keeps compounding as your back catalog keeps referring new subscribers.</p>`,
+  cbcHtml: `<p>If you create coffee content and want a monetization option that doesn't require constant new sponsorship deals, Coffee Brew Coach's <a href="/affiliate/become">recurring commission affiliate program</a> pays you monthly for every Pro subscriber you refer — not just once. It's built specifically for creators whose audience already asks coffee troubleshooting questions.</p>`,
+  related: [
+    { href: "/affiliate/become", label: "Become a Coffee Brew Coach affiliate" },
+    { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
+    { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
+  ],
+  ctaHeading: "Turn your coffee content into recurring income.",
+});
+
+/* ─── 13. Best affiliate programs for coffee content creators ────────────── */
+
+const bestAffiliateProgramsHtml = page({
+  path: "/best-affiliate-programs-for-coffee-creators",
+  title: "Best Affiliate Programs for Coffee Content Creators | Coffee Brew Coach",
+  description:
+    "A comparison of affiliate programs for coffee content creators — one-time gear commissions vs. recurring commission programs like Coffee Brew Coach's affiliate program.",
+  h1: "Best affiliate programs for coffee content creators",
+  lead:
+    "Not all coffee affiliate programs pay the same way. Here's how the main options compare if you make coffee content and want to monetize your audience without selling anything you don't already recommend.",
+  contentHtml: `
+<h2>Gear affiliate programs (Amazon Associates and similar)</h2>
+<p>The most common entry point for coffee creators. You link to a grinder, scale, or brewer, and earn a small one-time percentage — typically 1–4% — when someone buys through your link within a short cookie window (often just 24 hours). Good for driving some income from gear reviews, but it doesn't reward you for building a loyal, returning audience.</p>
+
+<h2>Roaster and subscription-box affiliate programs</h2>
+<p>Coffee bean subscription services sometimes offer a flat bounty (e.g. $10–20) for the first order a referred customer places. Some pay a small recurring cut for the customer's first few months, but almost none pay indefinitely for the life of the subscription.</p>
+
+<h2>Recurring commission affiliate programs for coffee creators</h2>
+<p>A smaller category, but the best fit if your content is about improving how people brew rather than what gear they buy. These programs pay a commission every month a referred subscriber remains active — meaning your existing content keeps earning long after you've published it.</p>
+<p><a href="/affiliate/become">Coffee Brew Coach's affiliate program</a> is built this way: a recurring commission affiliate program specifically for coffee creators, with tiered rates that increase automatically as more of your referrals convert to paying subscribers (from $0.75/mo at the entry tier up to $2.00/mo once you've referred 1,000+ active subscribers). Affiliate payouts are currently open to creators based in the US and Canada.</p>
+
+<h2>How to choose</h2>
+<p>If your content already diagnoses brewing problems — "why is my espresso sour," "how to fix a bitter pour over" — a recurring commission affiliate program for coffee creators will out-earn a one-time gear link over any reasonable time horizon, because you're being paid for retention, not just a single click. Gear links still make sense as a complement for equipment-focused reviews, but shouldn't be your only affiliate income source.</p>`,
+  cbcHtml: `<p>Coffee Brew Coach's <a href="/affiliate/become">become a coffee affiliate</a> page has the full tier breakdown, payout details, and a waitlist to join the program if you create coffee content and want recurring income instead of one-time gear commissions.</p>`,
+  related: [
+    { href: "/affiliate/become", label: "Coffee Brew Coach affiliate program details" },
+    { href: "/how-coffee-youtubers-make-money", label: "How coffee YouTubers make money" },
+    { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
+  ],
+  ctaHeading: "Join a recurring commission affiliate program built for coffee creators.",
+});
+
 /* ─── Register all routes ─────────────────────────────────────────────────── */
 
 const pages: Array<{ path: string; html: string }> = [
@@ -691,6 +758,8 @@ const pages: Array<{ path: string; html: string }> = [
   { path: "/how-to-dial-in-espresso", html: dialInEspressoHtml },
   { path: "/aeropress-too-weak", html: aeropressWeakHtml },
   { path: "/french-press", html: frenchPressHtml },
+  { path: "/how-coffee-youtubers-make-money", html: youtuberMoneyHtml },
+  { path: "/best-affiliate-programs-for-coffee-creators", html: bestAffiliateProgramsHtml },
 ];
 
 for (const { path, html } of pages) {
