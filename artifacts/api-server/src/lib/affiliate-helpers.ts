@@ -19,6 +19,163 @@ export function currentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// ── Volume-based tier automation ─────────────────────────────────────────────
+
+/**
+ * Tier ladder based on how many of an affiliate's referred conversions are
+ * currently active, paying subscribers. Ordered highest-first so
+ * resolveTierForCount can return on the first match.
+ *
+ *   Standard: 0-9 active referred subscribers
+ *   Silver:   10-99
+ *   Gold:     100-999
+ *   Platinum: 1,000+
+ */
+const TIER_THRESHOLDS: { tier: string; min: number }[] = [
+  { tier: "platinum", min: 1000 },
+  { tier: "gold", min: 100 },
+  { tier: "silver", min: 10 },
+  { tier: "standard", min: 0 },
+];
+
+/** Rank used to enforce "tiers only ever move up" — never demote an affiliate. */
+export const TIER_RANK: Record<string, number> = {
+  standard: 0,
+  silver: 1,
+  gold: 2,
+  platinum: 3,
+};
+
+export function resolveTierForCount(activeReferredSubscriberCount: number): string {
+  const match = TIER_THRESHOLDS.find((t) => activeReferredSubscriberCount >= t.min);
+  return match?.tier ?? "standard";
+}
+
+/** Counts this affiliate's referred conversions that are currently active, paying subscriptions. */
+export async function countActiveReferredSubscribers(affiliateUserId: number): Promise<number> {
+  const [row] = await db
+    .select({ cnt: count() })
+    .from(referralConversionsTable)
+    .where(
+      and(
+        eq(referralConversionsTable.referrerUserId, affiliateUserId),
+        eq(referralConversionsTable.isAffiliateConversion, true),
+        eq(referralConversionsTable.isSubscriptionActive, true),
+      ),
+    );
+  return Number(row?.cnt ?? 0);
+}
+
+/**
+ * Best-effort congratulations email for affiliates who just crossed into
+ * Platinum. Gated behind RESEND_API_KEY like every other not-yet-configured
+ * integration in this app — logs and no-ops if the key isn't set, rather
+ * than failing the promotion.
+ */
+async function sendPlatinumCongratulationsEmail(affiliate: {
+  id: number;
+  userId: number;
+  payoutEmail: string;
+  name: string | null;
+}): Promise<void> {
+  const apiKey = process.env["RESEND_API_KEY"];
+  if (!apiKey) {
+    logger.warn(
+      { affiliateId: affiliate.id },
+      "Platinum reached but RESEND_API_KEY not set — congratulations email not sent",
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Dial In <hello@coffeebrew.coach>",
+        to: affiliate.payoutEmail,
+        subject: "You've reached Platinum status 🎉",
+        html: `<p>Hi ${affiliate.name ?? "there"},</p><p>You've just crossed 1,000 active referred subscribers and unlocked our Platinum tier — our highest commission rate. Thank you for driving so much growth for Dial In.</p><p>Someone from our founding team will be reaching out personally soon.</p>`,
+      }),
+    });
+    if (!response.ok) {
+      logger.error(
+        { affiliateId: affiliate.id, status: response.status },
+        "Platinum congratulations email failed to send",
+      );
+    }
+  } catch (err) {
+    logger.error({ err, affiliateId: affiliate.id }, "Platinum congratulations email threw");
+  }
+}
+
+/**
+ * Recomputes an affiliate's tier from their active referred subscriber count
+ * and promotes them if they've crossed into a higher tier. Tiers are sticky —
+ * this never demotes, even if active count later drops (e.g. cancellations).
+ *
+ * On promotion, the affiliate's locked commission rate is refreshed to the
+ * new tier's current rate, so the step-up takes effect immediately and going
+ * forward (consistent with the existing "lock rate at first conversion"
+ * protection against future phase step-downs — a promotion just re-locks at
+ * the new, higher tier).
+ *
+ * On first crossing into Platinum: stamps platinum_achieved_at, flags
+ * founder_outreach_pending, and fires a best-effort congratulations email.
+ *
+ * @param extraActiveCount - active subscribers not yet committed to the DB
+ *   (e.g. the conversion currently being marked subscribed), so the count
+ *   used for promotion reflects the event that triggered this check.
+ */
+export async function promoteAffiliateTierIfEligible(
+  affiliateUserId: number,
+  extraActiveCount = 0,
+): Promise<{ promoted: boolean; newTier?: string; reachedPlatinum?: boolean }> {
+  const affiliate = await db.query.affiliatesTable.findFirst({
+    where: eq(affiliatesTable.userId, affiliateUserId),
+  });
+  if (!affiliate) return { promoted: false };
+
+  const activeCount = (await countActiveReferredSubscribers(affiliateUserId)) + extraActiveCount;
+  const targetTier = resolveTierForCount(activeCount);
+
+  if (TIER_RANK[targetTier]! <= TIER_RANK[affiliate.tier]!) {
+    return { promoted: false };
+  }
+
+  const rates = await getCurrentRates();
+  const tierRates = rates[targetTier] ?? {};
+  const reachedPlatinum = targetTier === "platinum";
+  const now = new Date();
+
+  await db
+    .update(affiliatesTable)
+    .set({
+      tier: targetTier,
+      customMonthlyRateCents: tierRates["monthly"] ?? 0,
+      customAnnualRateCents: tierRates["annual"] ?? 0,
+      customLifetimeRateCents: tierRates["lifetime"] ?? 0,
+      ...(reachedPlatinum
+        ? { platinumAchievedAt: now, founderOutreachPending: true }
+        : {}),
+    })
+    .where(eq(affiliatesTable.id, affiliate.id));
+
+  logger.info(
+    { affiliateUserId, fromTier: affiliate.tier, toTier: targetTier, activeCount },
+    "Affiliate tier auto-promoted",
+  );
+
+  if (reachedPlatinum) {
+    await sendPlatinumCongratulationsEmail(affiliate);
+  }
+
+  return { promoted: true, newTier: targetTier, reachedPlatinum };
+}
+
 export async function getCurrentRates(): Promise<Record<string, Record<string, number>>> {
   const phases = await db
     .select()
@@ -231,9 +388,14 @@ export async function recordConversionSubscribed(
 
   if (isAffiliateConversion && affiliate) {
     // ── Affiliate track ──────────────────────────────────────────────────────
+    // Recompute tier first — this conversion isn't marked active in the DB yet,
+    // so pass extraActiveCount=1 to count it toward the promotion check.
+    const promotion = await promoteAffiliateTierIfEligible(affiliate.userId, 1);
     const rates = await getCurrentRates();
-    const lockedAffiliate = await ensureRatesLocked(affiliate, rates);
-    const rateCents = resolveRateCents(lockedAffiliate, planType, rates);
+    const affiliateForRate = promotion.promoted
+      ? (await db.query.affiliatesTable.findFirst({ where: eq(affiliatesTable.id, affiliate.id) }))!
+      : await ensureRatesLocked(affiliate, rates);
+    const rateCents = resolveRateCents(affiliateForRate, planType, rates);
 
     let instalmentTotal: number | null = null;
     let instalmentMonthlyAmountCents: number | null = null;

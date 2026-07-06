@@ -75,6 +75,20 @@ export const affiliatesTable = pgTable("affiliates", {
   /** Cumulative earnings in EUR-equivalent cents for DAC7 threshold monitoring */
   totalEarnedEurEquivCents: integer("total_earned_eur_equiv_cents").notNull().default(0),
 
+  // ── Volume-based tier automation ─────────────────────────────────────────
+  /**
+   * Set the first time this affiliate's active referred subscriber count
+   * crosses the Platinum threshold (1,000+). Never cleared, even if their
+   * active count later drops — tier promotions are sticky/one-way.
+   */
+  platinumAchievedAt: tsz("platinum_achieved_at"),
+  /**
+   * True once the affiliate crosses into Platinum — signals that a founder
+   * should personally reach out. Cleared manually by an admin once the
+   * outreach has happened (POST /admin/affiliates/:id/clear-outreach-flag).
+   */
+  founderOutreachPending: boolean("founder_outreach_pending").notNull().default(false),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -21,6 +21,15 @@ Both friend referrals and influencer affiliate commissions use the same `referra
 - Lifetime plans: 6 monthly `instalment` entries, `instalment_status=active`
 - Rate locked at first subscription — `customMonthlyRateCents` etc. written to `affiliates` row
 
+## Tier auto-promotion (sticky, count-based)
+Tiers (standard/silver/gold/platinum) auto-promote off count of active referred paying subscribers (`is_affiliate_conversion=true AND is_subscription_active=true`), recomputed on every conversion-to-paying event and self-healed in the monthly payout job. Never demotes — promotion only fires if the new tier outranks the current one.
+
+Promotion **re-locks** the affiliate's custom rate to the new tier's current rate in `commission_phases`, reusing the existing "lock rate at first conversion" mechanism rather than adding a second rate concept — this is why a promoted affiliate's rate can jump immediately without waiting for a new conversion event.
+
+**Why re-lock instead of a separate "tier rate" field:** keeps one source of truth (`customMonthlyRateCents` et al.) for "what does this affiliate actually get paid," so payout code doesn't need to reconcile two rate concepts.
+
+Platinum crossing is a one-way permanent event: stamps `platinumAchievedAt` (never cleared) and sets `founderOutreachPending=true` for manual founder follow-up (cleared via admin endpoint, separately from the timestamp).
+
 ## Key invariants
 
 **proPermanent must never be reverted:**

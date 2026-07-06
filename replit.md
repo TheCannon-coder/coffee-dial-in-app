@@ -82,6 +82,19 @@ An AI-powered coffee coaching iOS app that guides users to dial in their espress
 
 Higher launch rate attracts early advocates; steps down as the program becomes self-sustaining.
 
+**Commission tiers auto-promote on active referred paying subscribers (sticky, never demote):**
+| Tier | Active referred subscribers |
+|---|---|
+| Standard | 0–9 |
+| Silver | 10–99 |
+| Gold | 100–999 |
+| Platinum | 1,000+ |
+
+- Recomputed automatically whenever a referral converts to paying (Stripe webhook + `/admin/conversions/:id/subscribe`), and self-heals during the monthly payout batch job before rates are locked.
+- Promotion re-locks the affiliate's custom rate to the new tier's *current* global rate — reuses the existing "lock rate at first conversion" mechanism so future phase step-downs don't retroactively lower an already-promoted affiliate.
+- Crossing into Platinum stamps `platinum_achieved_at` (permanent, never cleared), sets `founder_outreach_pending = true`, and sends a best-effort congratulations email (gated behind `RESEND_API_KEY`, same feature-flag convention as everything else — logs and no-ops if unset).
+- Admin tools: `POST /admin/affiliates/:id/recompute-tier` (manual backfill/debug, never demotes) and `POST /admin/affiliates/:id/clear-outreach-flag` (clear after founder personally reaches out).
+
 **Conversion funnel:**
 - 25% of referred audience signs up, 18% of signups go Pro
 - Pro subscription price: $4.99/month

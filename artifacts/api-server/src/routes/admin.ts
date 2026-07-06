@@ -3,11 +3,18 @@
  * Set ADMIN_KEY env var to a strong secret before exposing to the internet.
  *
  * Affiliates:
- *   GET    /api/admin/affiliates              list with earnings summary
- *   POST   /api/admin/affiliates              create affiliate
- *   GET    /api/admin/affiliates/:id          detail with conversions
- *   PATCH  /api/admin/affiliates/:id          update tier / payout info
- *   POST   /api/admin/affiliates/:id/set-code assign custom referral code
+ *   GET    /api/admin/affiliates                      list with earnings summary
+ *   POST   /api/admin/affiliates                      create affiliate
+ *   GET    /api/admin/affiliates/:id                  detail with conversions
+ *   PATCH  /api/admin/affiliates/:id                  update tier / payout info
+ *   POST   /api/admin/affiliates/:id/set-code         assign custom referral code
+ *   POST   /api/admin/affiliates/:id/recompute-tier   recompute tier from active referred subscriber count
+ *   POST   /api/admin/affiliates/:id/clear-outreach-flag  clear founder_outreach_pending after Platinum outreach
+ *
+ * Tiers auto-promote based on active referred subscribers (never demote):
+ *   standard: 0-9, silver: 10-99, gold: 100-999, platinum: 1,000+
+ *   Crossing into Platinum stamps platinum_achieved_at, sets
+ *   founder_outreach_pending=true, and sends a congratulations email.
  *
  * Conversions:
  *   GET    /api/admin/conversions             list all referral conversions
@@ -47,6 +54,12 @@ import {
 } from "@workspace/db";
 import { getStripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
+import {
+  getCurrentRates,
+  resolveRateCents,
+  ensureRatesLocked,
+  promoteAffiliateTierIfEligible,
+} from "../lib/affiliate-helpers";
 
 const router = Router();
 
@@ -160,96 +173,6 @@ function calcProcessableAfter(periodMonth: string): string {
   // and day 0 of that = last day of month+1).
   const d = new Date(year, month + 1, 0);
   return d.toISOString().split("T")[0]!;
-}
-
-async function getCurrentRates(): Promise<
-  Record<string, Record<string, number>>
-> {
-  const phases = await db
-    .select()
-    .from(commissionPhasesTable)
-    .where(eq(commissionPhasesTable.isActive, true))
-    .orderBy(desc(commissionPhasesTable.phaseNumber));
-
-  const rates: Record<string, Record<string, number>> = {};
-  for (const p of phases) {
-    if (!rates[p.tier]) rates[p.tier] = {};
-    if (!rates[p.tier][p.planType]) {
-      rates[p.tier][p.planType] = p.amountCents;
-    }
-  }
-  return rates;
-}
-
-/**
- * Resolve the commission rate for one affiliate + plan type.
- * Custom rate on the affiliate wins over the global phase rate.
- * Returns rate in cents.
- */
-function resolveRateCents(
-  affiliate: {
-    tier: string;
-    customMonthlyRateCents: number | null;
-    customAnnualRateCents: number | null;
-    customLifetimeRateCents: number | null;
-  },
-  planType: string,
-  globalRates: Record<string, Record<string, number>>,
-): number {
-  const customMap: Record<string, number | null> = {
-    monthly: affiliate.customMonthlyRateCents,
-    annual: affiliate.customAnnualRateCents,
-    lifetime: affiliate.customLifetimeRateCents,
-  };
-  const custom = customMap[planType];
-  if (custom !== null && custom !== undefined) return custom;
-  return globalRates[affiliate.tier]?.[planType] ?? 75;
-}
-
-type AffiliateWithRates = {
-  id: number;
-  tier: string;
-  customMonthlyRateCents: number | null;
-  customAnnualRateCents: number | null;
-  customLifetimeRateCents: number | null;
-};
-
-/**
- * On an affiliate's first subscription event, permanently lock their commission
- * rates to the phase that was active at that moment.  Subsequent phase changes
- * won't affect them — they keep earning the rate they were promised when they
- * first drove a subscriber.  Returns the affiliate record (possibly updated).
- *
- * If the affiliate already has rates locked (any non-null custom column) this
- * is a no-op, so it's safe to call on every subscribe event.
- */
-async function ensureRatesLocked(
-  affiliate: AffiliateWithRates,
-  globalRates: Record<string, Record<string, number>>,
-): Promise<AffiliateWithRates> {
-  const alreadyLocked =
-    affiliate.customMonthlyRateCents !== null ||
-    affiliate.customAnnualRateCents !== null ||
-    affiliate.customLifetimeRateCents !== null;
-
-  if (alreadyLocked) return affiliate;
-
-  const tierRates = globalRates[affiliate.tier] ?? {};
-  const monthly = tierRates["monthly"] ?? 75;
-  const annual = tierRates["annual"] ?? 0;
-  const lifetime = tierRates["lifetime"] ?? 0;
-
-  const [updated] = await db
-    .update(affiliatesTable)
-    .set({
-      customMonthlyRateCents: monthly,
-      customAnnualRateCents: annual,
-      customLifetimeRateCents: lifetime,
-    })
-    .where(eq(affiliatesTable.id, affiliate.id))
-    .returning();
-
-  return updated;
 }
 
 // ── Dashboard HTML ─────────────────────────────────────────────────────────────
@@ -407,6 +330,8 @@ router.get("/admin/affiliates", async (req, res) => {
         payoutMethod: affiliatesTable.payoutMethod,
         isActive: affiliatesTable.isActive,
         notes: affiliatesTable.notes,
+        platinumAchievedAt: affiliatesTable.platinumAchievedAt,
+        founderOutreachPending: affiliatesTable.founderOutreachPending,
         createdAt: affiliatesTable.createdAt,
       })
       .from(affiliatesTable)
@@ -512,6 +437,8 @@ router.get("/admin/affiliates/:id", async (req, res) => {
         payoutMethod: affiliatesTable.payoutMethod,
         isActive: affiliatesTable.isActive,
         notes: affiliatesTable.notes,
+        platinumAchievedAt: affiliatesTable.platinumAchievedAt,
+        founderOutreachPending: affiliatesTable.founderOutreachPending,
         createdAt: affiliatesTable.createdAt,
       })
       .from(affiliatesTable)
@@ -684,6 +611,62 @@ router.post("/admin/affiliates/:id/set-code", async (req, res) => {
   }
 });
 
+/**
+ * Manually recompute an affiliate's tier from their current active referred
+ * subscriber count. Tiers are auto-promoted whenever a referral converts, so
+ * this is mainly a backfill/debug tool — safe to call any time, it never
+ * demotes and no-ops if the affiliate is already at or above the tier their
+ * current count would earn them.
+ */
+router.post("/admin/affiliates/:id/recompute-tier", async (req, res) => {
+  const id = Number(req.params["id"]);
+  try {
+    const affiliate = await db.query.affiliatesTable.findFirst({
+      where: eq(affiliatesTable.id, id),
+    });
+    if (!affiliate) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+
+    const result = await promoteAffiliateTierIfEligible(affiliate.userId);
+    const updated = await db.query.affiliatesTable.findFirst({
+      where: eq(affiliatesTable.id, id),
+    });
+
+    res.json({ ...result, affiliate: updated });
+  } catch (err) {
+    logger.error({ err }, "admin/affiliates recompute-tier error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+/**
+ * Clear the founder_outreach_pending flag once someone has personally
+ * reached out to a newly-Platinum affiliate. platinum_achieved_at is never
+ * cleared — it's a permanent record of when they first crossed the threshold.
+ */
+router.post("/admin/affiliates/:id/clear-outreach-flag", async (req, res) => {
+  const id = Number(req.params["id"]);
+  try {
+    const [updated] = await db
+      .update(affiliatesTable)
+      .set({ founderOutreachPending: false })
+      .where(eq(affiliatesTable.id, id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+
+    res.json(updated);
+  } catch (err) {
+    logger.error({ err }, "admin/affiliates clear-outreach-flag error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
 // ── Conversions ────────────────────────────────────────────────────────────────
 
 router.get("/admin/conversions", async (req, res) => {
@@ -749,11 +732,17 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
       })
       .where(eq(referralConversionsTable.id, id));
 
-    // Lock this affiliate's rates to the current phase if this is their first
-    // ever subscription — guarantees they always earn at the rate they were
-    // promised when they first drove a paying user, regardless of future phases.
+    // Recompute tier first — this conversion isn't marked active in the DB yet,
+    // so pass extraActiveCount=1 to count it toward the promotion check.
+    // On promotion, the affiliate's locked rate is refreshed to the new tier's
+    // current rate; otherwise lock at the current tier rate on first-ever
+    // subscription — guarantees they always earn at the rate they were
+    // promised, regardless of future phase step-downs.
+    const promotion = await promoteAffiliateTierIfEligible(affiliate.userId, 1);
     const rates = await getCurrentRates();
-    const lockedAffiliate = await ensureRatesLocked(affiliate, rates);
+    const lockedAffiliate = promotion.promoted
+      ? (await db.query.affiliatesTable.findFirst({ where: eq(affiliatesTable.id, affiliate.id) }))!
+      : await ensureRatesLocked(affiliate, rates);
 
     // For annual and lifetime: generate a one-time commission immediately
     let ledgerEntry = null;
@@ -904,33 +893,40 @@ router.post("/admin/payouts/generate", async (req, res) => {
     );
 
     if (newEntries.length > 0) {
+      // Self-healing tier check: recompute each affiliate's tier from their
+      // current active referred subscriber count before locking rates for
+      // this batch, in case anything changed outside the normal
+      // webhook/admin-subscribe flow.
+      const uniqueAffiliateUserIds = [...new Set(newEntries.map((c) => c.referrerUserId))];
+      await Promise.all(uniqueAffiliateUserIds.map((uid) => promoteAffiliateTierIfEligible(uid)));
+
       // Lock rates for any affiliate who hasn't had a subscription event yet
       // (edge case: monthly subscriber added without going through /subscribe).
       const lockedEntries = await Promise.all(
-        newEntries.map(async (c) => ({
-          ...c,
-          locked: await ensureRatesLocked(
-            {
-              id: c.affiliateId,
-              tier: c.tier,
-              customMonthlyRateCents: c.customMonthlyRateCents,
-              customAnnualRateCents: c.customAnnualRateCents,
-              customLifetimeRateCents: c.customLifetimeRateCents,
-            },
-            rates,
-          ),
-        })),
+        newEntries.map(async (c) => {
+          const fresh = await db.query.affiliatesTable.findFirst({
+            where: eq(affiliatesTable.id, c.affiliateId),
+          });
+          const affiliateForLock = fresh ?? {
+            id: c.affiliateId,
+            tier: c.tier,
+            customMonthlyRateCents: c.customMonthlyRateCents,
+            customAnnualRateCents: c.customAnnualRateCents,
+            customLifetimeRateCents: c.customLifetimeRateCents,
+          };
+          return { ...c, locked: await ensureRatesLocked(affiliateForLock, rates) };
+        }),
       );
 
       await db.insert(commissionLedgerTable).values(
-        lockedEntries.map(({ locked, conversionId, referrerUserId, tier }) => ({
+        lockedEntries.map(({ locked, conversionId, referrerUserId }) => ({
           affiliateUserId: referrerUserId,
           conversionId,
           periodMonth,
           planType: "monthly",
           commissionType: "recurring",
           amountCents: resolveRateCents(locked, "monthly", rates),
-          tier,
+          tier: locked.tier,
           status: "pending",
         })),
       );
