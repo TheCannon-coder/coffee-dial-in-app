@@ -176,6 +176,13 @@ export const payoutBatchesTable = pgTable("payout_batches", {
   status: text("status").notNull().default("draft"),
   totalAmountCents: integer("total_amount_cents").notNull().default(0),
   affiliateCount: integer("affiliate_count").notNull().default(0),
+  /**
+   * Number of affiliates skipped during generation because a required
+   * commission_phases rate row was missing for their (tier, planType).
+   * Non-zero means the batch is incomplete: fix rates and regenerate.
+   * The approval endpoint requires an explicit force acknowledgment when > 0.
+   */
+  skippedCount: integer("skipped_count").notNull().default(0),
   notes: text("notes"),
   /**
    * Earliest date this batch may be processed (transferred to affiliates).

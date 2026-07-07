@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterEach, beforeEach } from "vitest";
 import request from "supertest";
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -206,8 +206,15 @@ beforeAll(() => {
   process.env["ADMIN_KEY"] = ADMIN_KEY;
 });
 
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+});
+
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
+  delete process.env["RESEND_API_KEY"];
+  delete process.env["ADMIN_EMAIL"];
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -349,5 +356,168 @@ describe("POST /api/admin/payouts/generate — missing rate guard", () => {
     expect(res.body.newEntriesCreated).toBe(1);
     expect(res.body.lineItems).toHaveLength(1);
     expect(res.body.lineItems[0].amountCents).toBe(75);
+  });
+});
+
+describe("POST /api/admin/payouts/generate — skip alert email", () => {
+  it("fires a Resend alert when RESEND_API_KEY + ADMIN_EMAIL are set and entries are skipped", async () => {
+    process.env["RESEND_API_KEY"] = "re_test_key";
+    process.env["ADMIN_EMAIL"] = "admin@example.com";
+
+    setupDbForSkippedEntry();
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+    vi.mocked(ensureRatesLocked).mockRejectedValue(
+      new MissingCommissionRateError("standard", "monthly"),
+    );
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(res.status).toBe(200);
+    expect(res.body.skippedEntries).toHaveLength(1);
+
+    // Allow the fire-and-forget promise to settle
+    await new Promise((r) => setTimeout(r, 10));
+
+    const fetchMock = vi.mocked(fetch);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, options] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://api.resend.com/emails");
+    const body = JSON.parse((options as RequestInit).body as string);
+    expect(body.to).toBe("admin@example.com");
+    expect(body.subject).toMatch(/skipped/i);
+  });
+
+  it("does not call fetch when RESEND_API_KEY is missing", async () => {
+    process.env["ADMIN_EMAIL"] = "admin@example.com";
+    // RESEND_API_KEY intentionally absent
+
+    setupDbForSkippedEntry();
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+    vi.mocked(ensureRatesLocked).mockRejectedValue(
+      new MissingCommissionRateError("standard", "monthly"),
+    );
+
+    await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+  });
+
+  it("does not call fetch when there are no skipped entries", async () => {
+    process.env["RESEND_API_KEY"] = "re_test_key";
+    process.env["ADMIN_EMAIL"] = "admin@example.com";
+
+    const rates = { standard: { monthly: 75 } };
+    vi.mocked(getCurrentRates).mockResolvedValue(rates);
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+    const lockedAffiliate = { ...affiliateRow, customMonthlyRateCents: 75 };
+    vi.mocked(ensureRatesLocked).mockResolvedValue(lockedAffiliate);
+    vi.mocked(resolveRateCents).mockReturnValue(75);
+
+    const mdb = getDb();
+    mdb.query.payoutBatchesTable.findFirst.mockResolvedValue(null);
+    mdb.query.affiliatesTable.findFirst.mockResolvedValue(affiliateRow);
+    mdb.select
+      .mockReturnValueOnce(buildSelectChain([activeMonthlyConversion]))
+      .mockReturnValueOnce(buildSelectChain([]))
+      .mockReturnValue(buildSelectChain([]));
+    mdb.insert
+      .mockReturnValueOnce(buildInsertChain([]))
+      .mockReturnValue(buildInsertChain([batchRow]));
+    mdb.update.mockReturnValue(buildUpdateChain());
+
+    await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/admin/payouts/:id/approve — skipped-entry guard", () => {
+  function setupApprovalDb(skippedCount: number, status = "draft") {
+    const mdb = getDb();
+    mdb.query.payoutBatchesTable.findFirst.mockResolvedValue({
+      ...batchRow,
+      skippedCount,
+      status,
+    });
+    mdb.update.mockReturnValue(buildUpdateChain());
+  }
+
+  it("returns 409 batch_has_skipped_entries when skippedCount > 0 and force is not set", async () => {
+    setupApprovalDb(2);
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/1/approve")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({});
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("batch_has_skipped_entries");
+    expect(res.body.skippedCount).toBe(2);
+  });
+
+  it("allows approval when skippedCount > 0 and force: true is passed", async () => {
+    setupApprovalDb(2);
+    // returning() needs to resolve with an updated row
+    const mdb = getDb();
+    const approvedBatch = { ...batchRow, skippedCount: 2, status: "approved" };
+    mdb.update.mockReturnValue({
+      set: () => ({
+        where: () => ({
+          returning: () => Promise.resolve([approvedBatch]),
+        }),
+      }),
+    });
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/1/approve")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ force: true });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("allows approval without force when skippedCount is 0", async () => {
+    setupApprovalDb(0);
+    const mdb = getDb();
+    const approvedBatch = { ...batchRow, skippedCount: 0, status: "approved" };
+    mdb.update.mockReturnValue({
+      set: () => ({
+        where: () => ({
+          returning: () => Promise.resolve([approvedBatch]),
+        }),
+      }),
+    });
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/1/approve")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({});
+
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 409 batch_not_in_draft when batch is already approved", async () => {
+    setupApprovalDb(0, "approved");
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/1/approve")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({});
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("batch_not_in_draft");
   });
 });

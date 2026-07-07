@@ -65,6 +65,76 @@ import {
 
 const router = Router();
 
+// ── Payout skip alert ─────────────────────────────────────────────────────────
+
+/**
+ * Best-effort admin alert email (via Resend) when a payout batch is generated
+ * with skipped entries due to missing commission_phases rates.
+ *
+ * Requires RESEND_API_KEY and ADMIN_EMAIL env vars. If either is absent the
+ * function logs a warning and no-ops — same feature-flag convention used
+ * throughout the codebase (never fails the calling request).
+ */
+async function sendPayoutSkipAlert({
+  periodMonth,
+  batchId,
+  skippedEntries,
+}: {
+  periodMonth: string;
+  batchId: number;
+  skippedEntries: { conversionId: number; affiliateUserId: number; tier: string; reason: string }[];
+}): Promise<void> {
+  const apiKey = process.env["RESEND_API_KEY"];
+  const adminEmail = process.env["ADMIN_EMAIL"];
+
+  if (!apiKey || !adminEmail) {
+    logger.warn(
+      { hasResendKey: Boolean(apiKey), hasAdminEmail: Boolean(adminEmail) },
+      "payout skip alert suppressed — RESEND_API_KEY and/or ADMIN_EMAIL not set",
+    );
+    return;
+  }
+
+  const rows = skippedEntries
+    .map(
+      (e) =>
+        `<tr><td>${e.conversionId}</td><td>${e.affiliateUserId}</td><td>${e.tier}</td><td>${e.reason}</td></tr>`,
+    )
+    .join("");
+
+  const html = `
+<p><strong>⚠️ Payout batch for ${periodMonth} (batch #${batchId}) was generated with ${skippedEntries.length} skipped affiliate(s).</strong></p>
+<p>These affiliates will <em>not</em> be paid until the missing commission_phases rates are configured and the batch is regenerated.</p>
+<p>To fix: add the missing rate rows via <code>POST /api/admin/rates/phase</code>, then regenerate the batch via <code>POST /api/admin/payouts/generate</code> with <code>periodMonth: "${periodMonth}"</code>.</p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <thead><tr><th>Conversion ID</th><th>Affiliate User ID</th><th>Tier</th><th>Reason</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>`;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Dial In <hello@coffeebrew.coach>",
+      to: adminEmail,
+      subject: `⚠️ Payout batch ${periodMonth} skipped ${skippedEntries.length} affiliate(s) — action required`,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    logger.error(
+      { status: response.status, periodMonth, batchId },
+      "payout skip alert email failed to send",
+    );
+  } else {
+    logger.info({ periodMonth, batchId, skippedCount: skippedEntries.length }, "payout skip alert email sent");
+  }
+}
+
 // ── Auth middleware ────────────────────────────────────────────────────────────
 
 /**
@@ -1036,6 +1106,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
         .set({
           totalAmountCents,
           affiliateCount: uniqueAffiliates.size,
+          skippedCount: skippedEntries.length,
           notes: notes ?? existing.notes,
           processableAfter,
         })
@@ -1049,6 +1120,7 @@ router.post("/admin/payouts/generate", async (req, res) => {
           periodMonth,
           totalAmountCents,
           affiliateCount: uniqueAffiliates.size,
+          skippedCount: skippedEntries.length,
           notes,
           processableAfter,
         })
@@ -1074,6 +1146,13 @@ router.post("/admin/payouts/generate", async (req, res) => {
         { periodMonth, skippedCount: skippedEntries.length, skippedEntries },
         "ADMIN ALERT: Payout batch generated with skipped entries due to missing commission rates — these affiliates will NOT be paid until rates are configured and the batch is regenerated.",
       );
+      sendPayoutSkipAlert({
+        periodMonth,
+        batchId: batch.id,
+        skippedEntries,
+      }).catch((err) => {
+        logger.error({ err }, "payout skip alert email threw unexpectedly");
+      });
     }
 
     res.json({
@@ -1175,6 +1254,20 @@ router.post("/admin/payouts/:id/approve", async (req, res) => {
     }
     if (batch.status !== "draft") {
       res.status(409).json({ error: "batch_not_in_draft", status: batch.status });
+      return;
+    }
+
+    // Guard: if the batch has skipped entries (missing commission rates),
+    // block approval until the admin explicitly acknowledges the gap by
+    // passing { force: true } in the request body. This prevents silently
+    // approving an incomplete batch without noticing that some affiliates
+    // were excluded.
+    if (batch.skippedCount > 0 && !req.body?.force) {
+      res.status(409).json({
+        error: "batch_has_skipped_entries",
+        skippedCount: batch.skippedCount,
+        message: `This batch skipped ${batch.skippedCount} affiliate(s) due to missing commission rates. Fix the rates and regenerate, or pass { force: true } to approve the incomplete batch anyway.`,
+      });
       return;
     }
 
