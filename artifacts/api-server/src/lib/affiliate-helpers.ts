@@ -584,6 +584,11 @@ export async function processNextInstalment(conversionId: number): Promise<boole
     !conversion.instalmentMonthlyAmountCents
   ) return false;
 
+  if (conversion.nextPayoutDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (conversion.nextPayoutDate > today) return false;
+  }
+
   if (conversion.instalmentsPaid >= conversion.instalmentTotal) {
     await db
       .update(referralConversionsTable)

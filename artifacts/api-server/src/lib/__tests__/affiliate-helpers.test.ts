@@ -1,7 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+
+const mockDb = vi.hoisted(() => ({
+  query: {
+    referralConversionsTable: { findFirst: vi.fn() },
+    affiliatesTable: { findFirst: vi.fn() },
+  },
+  update: vi.fn(),
+  insert: vi.fn(),
+  transaction: vi.fn(),
+}));
 
 vi.mock("@workspace/db", () => ({
-  db: {},
+  db: mockDb,
   affiliatesTable: {},
   commissionLedgerTable: {},
   commissionPhasesTable: {},
@@ -16,6 +26,7 @@ vi.mock("../logger.js", () => ({
 import {
   resolveRateCents,
   ensureRatesLocked,
+  processNextInstalment,
   MissingCommissionRateError,
   type AffiliateWithRates,
 } from "../affiliate-helpers.js";
@@ -172,5 +183,262 @@ describe("ensureRatesLocked", () => {
     }
     const err = caught as MissingCommissionRateError;
     expect(err.planType).toMatch(/monthly/);
+  });
+});
+
+// ── processNextInstalment ─────────────────────────────────────────────────────
+
+function makeConversion(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 42,
+    referrerUserId: 7,
+    planType: "annual",
+    instalmentStatus: "active",
+    instalmentTotal: 12,
+    instalmentMonthlyAmountCents: 500,
+    instalmentsPaid: 0,
+    nextPayoutDate: null as string | null,
+    ...overrides,
+  };
+}
+
+function makeAffiliate() {
+  return { id: 1, userId: 7, tier: "standard" };
+}
+
+/** Build a mock update chain: .update().set().where() → returns { returning: vi.fn() } */
+function makeUpdateChain(returningValue?: unknown) {
+  const chain = {
+    set: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    returning: vi.fn().mockResolvedValue(returningValue ? [returningValue] : []),
+  };
+  return vi.fn().mockReturnValue(chain);
+}
+
+/** Build a mock insert chain: .insert().values() → resolves undefined */
+function makeInsertChain() {
+  const chain = { values: vi.fn().mockResolvedValue(undefined) };
+  return vi.fn().mockReturnValue(chain);
+}
+
+describe("processNextInstalment", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns false when nextPayoutDate is tomorrow (future date)", async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const futureDateStr = tomorrow.toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ nextPayoutDate: futureDateStr }),
+    );
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(false);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("returns false when nextPayoutDate is 30 days in the future", async () => {
+    const future = new Date();
+    future.setDate(future.getDate() + 30);
+    const futureDateStr = future.toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ nextPayoutDate: futureDateStr }),
+    );
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(false);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("processes when nextPayoutDate is today", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ nextPayoutDate: today }),
+    );
+    (mockDb.query.affiliatesTable.findFirst as Mock).mockResolvedValue(makeAffiliate());
+
+    let capturedSet: Record<string, unknown> = {};
+    (mockDb.transaction as Mock).mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
+      const tx = {
+        insert: makeInsertChain(),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockImplementation((vals: Record<string, unknown>) => {
+            capturedSet = vals;
+            return { where: vi.fn().mockResolvedValue(undefined) };
+          }),
+        }),
+      };
+      await fn(tx);
+    });
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(true);
+    expect(mockDb.transaction).toHaveBeenCalledOnce();
+    expect(capturedSet["instalmentsPaid"]).toBe(1);
+  });
+
+  it("processes when nextPayoutDate is in the past", async () => {
+    const past = new Date();
+    past.setDate(past.getDate() - 5);
+    const pastDateStr = past.toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ nextPayoutDate: pastDateStr }),
+    );
+    (mockDb.query.affiliatesTable.findFirst as Mock).mockResolvedValue(makeAffiliate());
+
+    (mockDb.transaction as Mock).mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
+      const tx = {
+        insert: makeInsertChain(),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
+        }),
+      };
+      await fn(tx);
+    });
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(true);
+  });
+
+  it("advances nextPayoutDate by approximately one month", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ nextPayoutDate: today, instalmentsPaid: 3 }),
+    );
+    (mockDb.query.affiliatesTable.findFirst as Mock).mockResolvedValue(makeAffiliate());
+
+    let capturedSet: Record<string, unknown> = {};
+    (mockDb.transaction as Mock).mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
+      const tx = {
+        insert: makeInsertChain(),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockImplementation((vals: Record<string, unknown>) => {
+            capturedSet = vals;
+            return { where: vi.fn().mockResolvedValue(undefined) };
+          }),
+        }),
+      };
+      await fn(tx);
+    });
+
+    await processNextInstalment(42);
+
+    const nextDate = capturedSet["nextPayoutDate"] as string;
+    expect(typeof nextDate).toBe("string");
+
+    const todayMs = new Date(today).getTime();
+    const nextMs = new Date(nextDate).getTime();
+    const diffDays = (nextMs - todayMs) / (1000 * 60 * 60 * 24);
+    expect(diffDays).toBeGreaterThanOrEqual(27);
+    expect(diffDays).toBeLessThanOrEqual(32);
+  });
+
+  it("flips instalmentStatus to complete and sets nextPayoutDate to null on the final instalment", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({
+        nextPayoutDate: today,
+        instalmentsPaid: 11,
+        instalmentTotal: 12,
+      }),
+    );
+    (mockDb.query.affiliatesTable.findFirst as Mock).mockResolvedValue(makeAffiliate());
+
+    let capturedSet: Record<string, unknown> = {};
+    (mockDb.transaction as Mock).mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
+      const tx = {
+        insert: makeInsertChain(),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockImplementation((vals: Record<string, unknown>) => {
+            capturedSet = vals;
+            return { where: vi.fn().mockResolvedValue(undefined) };
+          }),
+        }),
+      };
+      await fn(tx);
+    });
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(true);
+    expect(capturedSet["instalmentStatus"]).toBe("complete");
+    expect(capturedSet["nextPayoutDate"]).toBeNull();
+    expect(capturedSet["instalmentsPaid"]).toBe(12);
+  });
+
+  it("returns false (without inserting a ledger entry) if instalmentsPaid already equals instalmentTotal before processing", async () => {
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ instalmentsPaid: 12, instalmentTotal: 12 }),
+    );
+
+    (mockDb.update as Mock) = makeUpdateChain();
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(false);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("returns false if conversion is not found", async () => {
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(undefined);
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(false);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("returns false if instalmentStatus is not active", async () => {
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ instalmentStatus: "complete" }),
+    );
+
+    const result = await processNextInstalment(42);
+
+    expect(result).toBe(false);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("inserts a ledger entry with the correct amount for each processed instalment", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    (mockDb.query.referralConversionsTable.findFirst as Mock).mockResolvedValue(
+      makeConversion({ nextPayoutDate: today, instalmentMonthlyAmountCents: 750 }),
+    );
+    (mockDb.query.affiliatesTable.findFirst as Mock).mockResolvedValue(makeAffiliate());
+
+    let capturedInsertValues: Record<string, unknown> = {};
+    (mockDb.transaction as Mock).mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
+      const tx = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockImplementation((vals: Record<string, unknown>) => {
+            capturedInsertValues = vals;
+            return Promise.resolve();
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
+        }),
+      };
+      await fn(tx);
+    });
+
+    await processNextInstalment(42);
+
+    expect(capturedInsertValues["amountCents"]).toBe(750);
+    expect(capturedInsertValues["commissionType"]).toBe("instalment");
   });
 });
