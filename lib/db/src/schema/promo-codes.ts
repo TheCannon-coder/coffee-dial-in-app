@@ -21,7 +21,7 @@ export const promoCodeRedemptionsTable = pgTable(
     revenuecatCustomerId: text("revenuecat_customer_id").notNull(),
     redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
   },
-  (t) => [unique().on(t.promoCodeId, t.revenuecatCustomerId)],
+  (t) => [unique("pcr_unique_promo_customer").on(t.promoCodeId, t.revenuecatCustomerId)],
 );
 
 export type PromoCode = typeof promoCodesTable.$inferSelect;
