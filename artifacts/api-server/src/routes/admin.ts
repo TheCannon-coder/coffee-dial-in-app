@@ -1507,10 +1507,401 @@ router.get("/admin/rates", async (req, res) => {
       .select()
       .from(commissionPhasesTable)
       .orderBy(commissionPhasesTable.phaseNumber, commissionPhasesTable.tier);
-    res.json(phases);
+
+    // Serve HTML for browser navigation, JSON for API clients
+    const acceptsHtml = req.headers["accept"]?.includes("text/html");
+    if (!acceptsHtml) {
+      res.json(phases);
+      return;
+    }
+
+    // Group phases by phaseName (ordered by phaseNumber)
+    const phaseGroups = new Map<string, { phaseNumber: number; phaseName: string; rows: typeof phases }>();
+    for (const p of phases) {
+      const key = `${p.phaseNumber}:${p.phaseName}`;
+      if (!phaseGroups.has(key)) {
+        phaseGroups.set(key, { phaseNumber: p.phaseNumber, phaseName: p.phaseName, rows: [] });
+      }
+      phaseGroups.get(key)!.rows.push(p);
+    }
+
+    const TIER_ORDER = ["standard", "silver", "gold", "platinum"];
+    const PLAN_ORDER = ["monthly", "annual", "lifetime"];
+
+    const fmtDollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+    const fmtDate = (d: string | null | undefined) => {
+      if (!d) return "—";
+      return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+    };
+    const fmtTs = (d: Date | null | undefined) => {
+      if (!d) return "—";
+      return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+    };
+
+    const triggerLabel = (p: (typeof phases)[0]) => {
+      if (p.triggerType === "manual") return "Manual";
+      if (p.triggerType === "date") return `Date: ${fmtDate(p.scheduledFor)}`;
+      if (p.triggerType === "subscriber_count") return `${(p.triggerValue ?? 0).toLocaleString()} subscribers`;
+      if (p.triggerType === "gross_revenue") return `$${((p.triggerValue ?? 0) / 100).toLocaleString()} revenue`;
+      return p.triggerType;
+    };
+
+    const groupSections = [...phaseGroups.values()]
+      .sort((a, b) => a.phaseNumber - b.phaseNumber)
+      .map(({ phaseNumber, phaseName, rows }) => {
+        const allActive = rows.every(r => r.isActive);
+        const anyActive = rows.some(r => r.isActive);
+        const phaseStatus = allActive
+          ? `<span class="badge badge-active">active</span>`
+          : anyActive
+            ? `<span class="badge badge-partial">partial</span>`
+            : `<span class="badge badge-inactive">inactive</span>`;
+
+        const tableRows = [...rows]
+          .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || PLAN_ORDER.indexOf(a.planType) - PLAN_ORDER.indexOf(b.planType))
+          .map(p => {
+            const activateBtn = p.isActive
+              ? `<span style="color:#6B5040;font-size:12px">Active since ${fmtTs(p.activatedAt)}</span>`
+              : `<button class="btn-activate" onclick="activatePhase(${p.id}, this)">Activate</button>`;
+            return `<tr id="row-${p.id}">
+              <td><span class="tier-badge tier-${p.tier}">${p.tier}</span></td>
+              <td>${p.planType}</td>
+              <td style="font-family:monospace;font-size:14px">${fmtDollars(p.amountCents)}</td>
+              <td style="font-size:12px;color:#A89080">${triggerLabel(p)}</td>
+              <td>${p.isActive
+                ? `<span class="badge badge-active">active</span>`
+                : `<span class="badge badge-inactive" id="badge-${p.id}">inactive</span>`}</td>
+              <td>${activateBtn}</td>
+              <td style="font-size:12px;color:#6B5040;max-width:200px">${p.notes ?? "—"}</td>
+            </tr>`;
+          }).join("");
+
+        return `
+        <div class="phase-group">
+          <div class="phase-header">
+            <div>
+              <span class="phase-num">Phase ${phaseNumber}</span>
+              <span class="phase-name">${phaseName}</span>
+            </div>
+            ${phaseStatus}
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tier</th>
+                  <th>Plan</th>
+                  <th>Rate</th>
+                  <th>Trigger</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows || `<tr><td colspan="7" class="empty">No rows in this phase</td></tr>`}</tbody>
+            </table>
+          </div>
+        </div>`;
+      }).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dial In — Commission Rates</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,"DM Sans",system-ui,sans-serif;background:#1A100A;color:#FAF7F2;min-height:100vh}
+    header{padding:20px 32px;border-bottom:1px solid #3D2410;display:flex;align-items:center;gap:24px}
+    .wordmark{font-family:Georgia,serif;font-style:italic;font-size:15px;color:#8B6347}
+    .wordmark strong{color:#FAF7F2;font-style:normal}
+    nav a{font-size:13px;color:#8B6347;text-decoration:none}
+    nav a:hover{color:#FAF7F2}
+    .content{padding:28px 32px;max-width:1100px}
+    h1{font-family:Georgia,serif;font-size:22px;font-weight:500;margin-bottom:6px}
+    .subtitle{font-size:13px;color:#6B5040;margin-bottom:28px}
+    .phase-group{margin-bottom:32px}
+    .phase-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .phase-num{font-size:11px;font-weight:600;color:#8B6347;text-transform:uppercase;letter-spacing:.06em;margin-right:10px}
+    .phase-name{font-family:Georgia,serif;font-size:17px;color:#FAF7F2}
+    .table-wrap{border-radius:12px;overflow:hidden;border:1px solid #3D2410}
+    table{width:100%;border-collapse:collapse;background:#2C1A0E}
+    thead{background:#3D2410}
+    th{padding:9px 14px;text-align:left;font-size:11px;font-weight:600;color:#8B6347;text-transform:uppercase;letter-spacing:.06em}
+    td{padding:11px 14px;border-top:1px solid #3D2410;vertical-align:middle}
+    tr:hover td{background:#321c0f}
+    .empty{padding:24px;text-align:center;color:#6B5040;font-size:13px}
+    .badge{display:inline-block;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:600}
+    .badge-active{background:#1e4d22;color:#86efac}
+    .badge-inactive{background:#3D2410;color:#8B6347}
+    .badge-partial{background:#3d3510;color:#d4a93a}
+    .tier-badge{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600;text-transform:capitalize}
+    .tier-standard{background:#2C2C3A;color:#9BA3AF}
+    .tier-silver{background:#2A3040;color:#93C5FD}
+    .tier-gold{background:#3D2F10;color:#FCD34D}
+    .tier-platinum{background:#2A1A40;color:#C4B5FD}
+    .btn-activate{background:#2C4A2E;color:#86efac;border:1px solid #3a6b3d;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600}
+    .btn-activate:hover{background:#3a6b3d}
+    .btn-activate:disabled{opacity:.5;cursor:default}
+
+    /* Add phase form */
+    .form-section{margin-top:44px;padding-top:32px;border-top:1px solid #3D2410}
+    .form-section h2{font-family:Georgia,serif;font-size:18px;font-weight:500;margin-bottom:6px}
+    .form-section .sub{font-size:13px;color:#6B5040;margin-bottom:24px}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+    .form-full{grid-column:1/-1}
+    label{display:block;font-size:12px;font-weight:600;color:#8B6347;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+    input,select,textarea{width:100%;background:#2C1A0E;border:1px solid #3D2410;color:#FAF7F2;border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:#6B5040}
+    select option{background:#2C1A0E}
+    textarea{min-height:64px;resize:vertical}
+    .hint{font-size:11px;color:#6B5040;margin-top:4px}
+    .trigger-extras{display:none;margin-top:12px}
+    .trigger-extras.visible{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .btn-submit{margin-top:24px;background:#8B6347;color:#FAF7F2;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+    .btn-submit:hover{background:#a07355}
+    .btn-submit:disabled{opacity:.5;cursor:default}
+    #form-msg{margin-top:16px;padding:12px 16px;border-radius:8px;font-size:13px;display:none}
+    #form-msg.success{background:#1e4d22;color:#86efac;border:1px solid #3a6b3d}
+    #form-msg.error{background:#4d1e1e;color:#fca5a5;border:1px solid #6b3a3a}
+
+    #activate-msg{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;display:none;z-index:100}
+    #activate-msg.success{background:#1e4d22;color:#86efac;border:1px solid #3a6b3d}
+    #activate-msg.error{background:#4d1e1e;color:#fca5a5;border:1px solid #6b3a3a}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wordmark"><strong>Dial In</strong> — Admin</div>
+    <nav>
+      <a href="/api/admin">← Dashboard</a>
+    </nav>
+  </header>
+
+  <div class="content">
+    <h1>Commission Rates</h1>
+    <p class="subtitle">All commission phases — grouped by phase name. Activating a row makes it the effective rate for that tier + plan combination.</p>
+
+    ${phaseGroups.size === 0
+      ? `<div style="padding:48px;text-align:center;color:#6B5040;border:1px solid #3D2410;border-radius:12px">No commission phases configured yet. Add one below.</div>`
+      : groupSections
+    }
+
+    <!-- ── Add Phase Row Form ──────────────────────────────────────────── -->
+    <div class="form-section">
+      <h2>Add Phase Row</h2>
+      <p class="sub">Add a new row to an existing or new phase. Each row covers one tier + plan combination. A complete phase has 12 rows (4 tiers × 3 plans).</p>
+
+      <div class="form-grid">
+        <div>
+          <label for="f-phaseName">Phase Name</label>
+          <input id="f-phaseName" placeholder="e.g. Growth" />
+          <div class="hint">Human name for the phase group</div>
+        </div>
+        <div>
+          <label for="f-phaseNumber">Phase Number</label>
+          <input id="f-phaseNumber" type="number" min="1" placeholder="2" />
+          <div class="hint">Groups rows visually; higher = newer</div>
+        </div>
+        <div>
+          <label for="f-tier">Tier</label>
+          <select id="f-tier">
+            <option value="standard">Standard</option>
+            <option value="silver">Silver</option>
+            <option value="gold">Gold</option>
+            <option value="platinum">Platinum</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-planType">Plan</label>
+          <select id="f-planType">
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+            <option value="lifetime">Lifetime</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-amountDollars">Rate (USD)</label>
+          <input id="f-amountDollars" type="number" min="0.01" step="0.01" placeholder="1.00" />
+          <div class="hint">Per-conversion commission in dollars</div>
+        </div>
+        <div>
+          <label for="f-triggerType">Trigger Type</label>
+          <select id="f-triggerType" onchange="onTriggerChange()">
+            <option value="manual">Manual (activate by hand)</option>
+            <option value="date">Scheduled date</option>
+            <option value="subscriber_count">Subscriber count threshold</option>
+            <option value="gross_revenue">Gross revenue threshold</option>
+          </select>
+        </div>
+
+        <div class="trigger-extras form-full" id="trigger-extras">
+          <div id="te-date" style="display:none">
+            <label for="f-scheduledFor">Activate on date</label>
+            <input id="f-scheduledFor" type="date" />
+          </div>
+          <div id="te-value" style="display:none">
+            <label for="f-triggerValue" id="tv-label">Threshold value</label>
+            <input id="f-triggerValue" type="number" min="1" />
+            <div class="hint" id="tv-hint"></div>
+          </div>
+        </div>
+
+        <div class="form-full">
+          <label for="f-notes">Notes (optional)</label>
+          <textarea id="f-notes" placeholder="Why this phase was added, who approved it, etc."></textarea>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="btn-add" onclick="addPhaseRow()">Add Row</button>
+      <div id="form-msg"></div>
+    </div>
+  </div>
+
+  <div id="activate-msg"></div>
+
+  <script>
+    function onTriggerChange() {
+      var t = document.getElementById('f-triggerType').value;
+      var extras = document.getElementById('trigger-extras');
+      var teDate = document.getElementById('te-date');
+      var teVal = document.getElementById('te-value');
+      var tvLabel = document.getElementById('tv-label');
+      var tvHint = document.getElementById('tv-hint');
+
+      extras.classList.toggle('visible', t !== 'manual');
+      teDate.style.display = t === 'date' ? '' : 'none';
+      teVal.style.display = (t === 'subscriber_count' || t === 'gross_revenue') ? '' : 'none';
+
+      if (t === 'subscriber_count') {
+        tvLabel.textContent = 'Subscriber count threshold';
+        tvHint.textContent = 'Activate when active paid subscriber count reaches this number';
+      } else if (t === 'gross_revenue') {
+        tvLabel.textContent = 'Gross revenue threshold (cents)';
+        tvHint.textContent = 'Activate when cumulative gross revenue (in cents) reaches this amount';
+      }
+    }
+
+    async function activatePhase(id, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Activating…';
+      var msg = document.getElementById('activate-msg');
+      try {
+        var resp = await fetch('/api/admin/rates/' + id + '/activate', {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!resp.ok) {
+          var err = await resp.json().catch(function(){ return { error: resp.statusText }; });
+          throw new Error(err.error || resp.statusText);
+        }
+        // Update row in place
+        var badge = document.getElementById('badge-' + id);
+        if (badge) {
+          badge.className = 'badge badge-active';
+          badge.textContent = 'active';
+        }
+        btn.replaceWith(Object.assign(document.createElement('span'), {
+          style: 'color:#6B5040;font-size:12px',
+          textContent: 'Activated just now'
+        }));
+        msg.className = 'success';
+        msg.textContent = '✓ Phase row activated';
+        msg.style.display = 'block';
+        setTimeout(function(){ msg.style.display = 'none'; }, 3000);
+      } catch(e) {
+        btn.disabled = false;
+        btn.textContent = 'Activate';
+        msg.className = 'error';
+        msg.textContent = 'Error: ' + e.message;
+        msg.style.display = 'block';
+        setTimeout(function(){ msg.style.display = 'none'; }, 5000);
+      }
+    }
+
+    async function addPhaseRow() {
+      var phaseName = document.getElementById('f-phaseName').value.trim();
+      var phaseNumber = parseInt(document.getElementById('f-phaseNumber').value, 10);
+      var tier = document.getElementById('f-tier').value;
+      var planType = document.getElementById('f-planType').value;
+      var amountDollars = parseFloat(document.getElementById('f-amountDollars').value);
+      var triggerType = document.getElementById('f-triggerType').value;
+      var scheduledFor = document.getElementById('f-scheduledFor').value || undefined;
+      var triggerValueRaw = document.getElementById('f-triggerValue').value;
+      var triggerValue = triggerValueRaw ? parseInt(triggerValueRaw, 10) : undefined;
+      var notes = document.getElementById('f-notes').value.trim() || undefined;
+
+      var msg = document.getElementById('form-msg');
+      msg.style.display = 'none';
+
+      if (!phaseName || isNaN(phaseNumber) || !tier || !planType || isNaN(amountDollars) || amountDollars <= 0) {
+        msg.className = 'error';
+        msg.textContent = 'Phase name, phase number, tier, plan, and a positive rate are required.';
+        msg.style.display = 'block';
+        return;
+      }
+
+      var btn = document.getElementById('btn-add');
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+
+      try {
+        var resp = await fetch('/api/admin/rates/phase', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phaseName,
+            phaseNumber,
+            tier,
+            planType,
+            amountCents: Math.round(amountDollars * 100),
+            triggerType,
+            triggerValue,
+            scheduledFor,
+            notes,
+          }),
+        });
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || resp.statusText);
+
+        msg.className = 'success';
+        msg.textContent = '✓ Phase row added (ID ' + data.id + '). Refresh the page to see it in the table.';
+        msg.style.display = 'block';
+
+        // Clear fields
+        document.getElementById('f-phaseName').value = '';
+        document.getElementById('f-phaseNumber').value = '';
+        document.getElementById('f-amountDollars').value = '';
+        document.getElementById('f-notes').value = '';
+        document.getElementById('f-scheduledFor').value = '';
+        document.getElementById('f-triggerValue').value = '';
+        document.getElementById('f-triggerType').value = 'manual';
+        onTriggerChange();
+      } catch(e) {
+        msg.className = 'error';
+        msg.textContent = 'Error: ' + e.message;
+        msg.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Add Row';
+      }
+    }
+  </script>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
   } catch (err) {
     logger.error({ err }, "admin/rates list error");
-    res.status(500).json({ error: "internal_error" });
+    const acceptsHtml = req.headers["accept"]?.includes("text/html");
+    if (acceptsHtml) {
+      res.status(500).send("Internal error — check server logs.");
+    } else {
+      res.status(500).json({ error: "internal_error" });
+    }
   }
 });
 
