@@ -59,6 +59,8 @@ import {
   resolveRateCents,
   ensureRatesLocked,
   promoteAffiliateTierIfEligible,
+  assertRateWillExistForConversion,
+  MissingCommissionRateError,
 } from "../lib/affiliate-helpers";
 
 const router = Router();
@@ -557,12 +559,20 @@ router.post("/admin/affiliates/:id/set-rates", async (req, res) => {
       .returning();
 
     const globalRates = await getCurrentRates();
+    const resolveOrNull = (planType: string) => {
+      try {
+        return resolveRateCents(updated, planType, globalRates);
+      } catch (e) {
+        if (e instanceof MissingCommissionRateError) return null;
+        throw e;
+      }
+    };
     res.json({
       affiliate: updated,
       effectiveRates: {
-        monthly: resolveRateCents(updated, "monthly", globalRates),
-        annual: resolveRateCents(updated, "annual", globalRates),
-        lifetime: resolveRateCents(updated, "lifetime", globalRates),
+        monthly: resolveOrNull("monthly"),
+        annual: resolveOrNull("annual"),
+        lifetime: resolveOrNull("lifetime"),
       },
     });
   } catch (err) {
@@ -721,6 +731,30 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
     // payableAfter = 30 days after subscription — protects against refund fraud
     const payableAfter = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+    // ── Pre-flight: validate rates BEFORE any DB write ────────────────────────
+    // assertRateWillExistForConversion is read-only (counts subscribers,
+    // checks commission_phases). If it throws MissingCommissionRateError we
+    // return 422 with zero committed state — no tier changes, no platinum flags,
+    // no conversion row — so the admin can configure the rate and safely retry.
+    const rates = await getCurrentRates();
+    await assertRateWillExistForConversion(affiliate, planType, rates, 1);
+
+    // ── Rate config confirmed — now commit state ───────────────────────────────
+    // Recompute tier first — this conversion isn't marked active in the DB yet,
+    // so pass extraActiveCount=1 to count it toward the promotion check.
+    // On promotion, the affiliate's locked rate is refreshed to the new tier's
+    // current rate; otherwise lock at the current tier rate on first-ever
+    // subscription — guarantees they always earn at the rate they were
+    // promised, regardless of future phase step-downs.
+    const promotion = await promoteAffiliateTierIfEligible(affiliate.userId, 1);
+    const lockedAffiliate = promotion.promoted
+      ? (await db.query.affiliatesTable.findFirst({ where: eq(affiliatesTable.id, affiliate.id) }))!
+      : await ensureRatesLocked(affiliate, rates, { requiredPlanTypes: [planType] });
+
+    const amountCents = planType === "annual" || planType === "lifetime"
+      ? resolveRateCents(lockedAffiliate, planType, rates)
+      : null;
+
     await db
       .update(referralConversionsTable)
       .set({
@@ -732,39 +766,23 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
       })
       .where(eq(referralConversionsTable.id, id));
 
-    // Recompute tier first — this conversion isn't marked active in the DB yet,
-    // so pass extraActiveCount=1 to count it toward the promotion check.
-    // On promotion, the affiliate's locked rate is refreshed to the new tier's
-    // current rate; otherwise lock at the current tier rate on first-ever
-    // subscription — guarantees they always earn at the rate they were
-    // promised, regardless of future phase step-downs.
-    const promotion = await promoteAffiliateTierIfEligible(affiliate.userId, 1);
-    const rates = await getCurrentRates();
-    const lockedAffiliate = promotion.promoted
-      ? (await db.query.affiliatesTable.findFirst({ where: eq(affiliatesTable.id, affiliate.id) }))!
-      : await ensureRatesLocked(affiliate, rates);
-
     // For annual and lifetime: generate a one-time commission immediately
     let ledgerEntry = null;
-    if (planType === "annual" || planType === "lifetime") {
-      const amountCents = resolveRateCents(lockedAffiliate, planType, rates);
-
-      if (amountCents > 0) {
-        const [entry] = await db
-          .insert(commissionLedgerTable)
-          .values({
-            affiliateUserId: affiliate.userId,
-            conversionId: id,
-            periodMonth,
-            planType,
-            commissionType: "one_time",
-            amountCents,
-            tier: affiliate.tier,
-            status: "pending",
-          })
-          .returning();
-        ledgerEntry = entry;
-      }
+    if ((planType === "annual" || planType === "lifetime") && amountCents !== null && amountCents > 0) {
+      const [entry] = await db
+        .insert(commissionLedgerTable)
+        .values({
+          affiliateUserId: affiliate.userId,
+          conversionId: id,
+          periodMonth,
+          planType,
+          commissionType: "one_time",
+          amountCents,
+          tier: affiliate.tier,
+          status: "pending",
+        })
+        .returning();
+      ledgerEntry = entry;
     }
 
     res.json({
@@ -772,6 +790,14 @@ router.post("/admin/conversions/:id/subscribe", async (req, res) => {
       ledgerEntry,
     });
   } catch (err) {
+    if (err instanceof MissingCommissionRateError) {
+      logger.error(
+        { err, conversionId: id },
+        "ADMIN ALERT: Cannot record subscription — no active commission_phases rate for this affiliate's (tier, planType). Configure the rate then retry.",
+      );
+      res.status(422).json({ error: "missing_commission_rate", detail: err.message });
+      return;
+    }
     logger.error({ err }, "admin/conversions subscribe error");
     res.status(500).json({ error: "internal_error" });
   }
@@ -892,6 +918,9 @@ router.post("/admin/payouts/generate", async (req, res) => {
       (c) => !existingConversionIds.has(c.conversionId),
     );
 
+    const skippedEntries: { conversionId: number; affiliateUserId: number; tier: string; reason: string }[] = [];
+    let newEntriesInserted = 0;
+
     if (newEntries.length > 0) {
       // Self-healing tier check: recompute each affiliate's tier from their
       // current active referred subscriber count before locking rates for
@@ -902,34 +931,60 @@ router.post("/admin/payouts/generate", async (req, res) => {
 
       // Lock rates for any affiliate who hasn't had a subscription event yet
       // (edge case: monthly subscriber added without going through /subscribe).
-      const lockedEntries = await Promise.all(
+      // Guard: if commission_phases has no active row for the affiliate's (tier, planType),
+      // skip the entry and emit a prominent error log rather than inserting a $0 ledger row.
+      const resolvedEntries = await Promise.all(
         newEntries.map(async (c) => {
-          const fresh = await db.query.affiliatesTable.findFirst({
-            where: eq(affiliatesTable.id, c.affiliateId),
-          });
-          const affiliateForLock = fresh ?? {
-            id: c.affiliateId,
-            tier: c.tier,
-            customMonthlyRateCents: c.customMonthlyRateCents,
-            customAnnualRateCents: c.customAnnualRateCents,
-            customLifetimeRateCents: c.customLifetimeRateCents,
-          };
-          return { ...c, locked: await ensureRatesLocked(affiliateForLock, rates) };
+          try {
+            const fresh = await db.query.affiliatesTable.findFirst({
+              where: eq(affiliatesTable.id, c.affiliateId),
+            });
+            const affiliateForLock = fresh ?? {
+              id: c.affiliateId,
+              tier: c.tier,
+              customMonthlyRateCents: c.customMonthlyRateCents,
+              customAnnualRateCents: c.customAnnualRateCents,
+              customLifetimeRateCents: c.customLifetimeRateCents,
+            };
+            const locked = await ensureRatesLocked(affiliateForLock, rates, { requiredPlanTypes: ["monthly"] });
+            const amountCents = resolveRateCents(locked, "monthly", rates);
+            return { ok: true as const, entry: { ...c, locked, amountCents } };
+          } catch (err) {
+            if (err instanceof MissingCommissionRateError) {
+              logger.error(
+                { conversionId: c.conversionId, affiliateUserId: c.referrerUserId, tier: c.tier, err },
+                "ADMIN ALERT: Payout batch skipped ledger entry — no active commission_phases rate for this (tier, planType). Fix the rate configuration and regenerate the batch.",
+              );
+              return {
+                ok: false as const,
+                skipped: { conversionId: c.conversionId, affiliateUserId: c.referrerUserId, tier: c.tier, reason: err.message },
+              };
+            }
+            throw err;
+          }
         }),
       );
 
-      await db.insert(commissionLedgerTable).values(
-        lockedEntries.map(({ locked, conversionId, referrerUserId }) => ({
-          affiliateUserId: referrerUserId,
-          conversionId,
-          periodMonth,
-          planType: "monthly",
-          commissionType: "recurring",
-          amountCents: resolveRateCents(locked, "monthly", rates),
-          tier: locked.tier,
-          status: "pending",
-        })),
-      );
+      for (const result of resolvedEntries) {
+        if (!result.ok) skippedEntries.push(result.skipped);
+      }
+
+      const goodEntries = resolvedEntries.flatMap((r) => (r.ok ? [r.entry] : []));
+      if (goodEntries.length > 0) {
+        await db.insert(commissionLedgerTable).values(
+          goodEntries.map(({ locked, conversionId, referrerUserId, amountCents }) => ({
+            affiliateUserId: referrerUserId,
+            conversionId,
+            periodMonth,
+            planType: "monthly",
+            commissionType: "recurring",
+            amountCents,
+            tier: locked.tier,
+            status: "pending",
+          })),
+        );
+      }
+      newEntriesInserted = goodEntries.length;
     }
 
     // Also include any previously created but unpaid entries for this period
@@ -1014,10 +1069,18 @@ router.post("/admin/payouts/generate", async (req, res) => {
         );
     }
 
+    if (skippedEntries.length > 0) {
+      logger.error(
+        { periodMonth, skippedCount: skippedEntries.length, skippedEntries },
+        "ADMIN ALERT: Payout batch generated with skipped entries due to missing commission rates — these affiliates will NOT be paid until rates are configured and the batch is regenerated.",
+      );
+    }
+
     res.json({
       batch,
       lineItems: allPeriodEntries,
-      newEntriesCreated: newEntries.length,
+      newEntriesCreated: newEntriesInserted,
+      skippedEntries,
     });
   } catch (err) {
     logger.error({ err }, "admin/payouts generate error");

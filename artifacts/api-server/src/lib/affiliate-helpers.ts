@@ -4,6 +4,23 @@
  */
 
 import { eq, desc, and, gte, isNull, count, sql } from "drizzle-orm";
+
+/**
+ * Thrown when a commission rate lookup finds no active commission_phases row
+ * for a given (tier, planType) combination and the affiliate has no custom
+ * rate override for that planType. This is a configuration gap — it must be
+ * surfaced loudly rather than silently producing a $0 payout entry.
+ */
+export class MissingCommissionRateError extends Error {
+  constructor(
+    public readonly tier: string,
+    public readonly planType: string,
+  ) {
+    super(`No active commission rate for tier="${tier}" planType="${planType}" — check commission_phases table`);
+    this.name = "MissingCommissionRateError";
+  }
+}
+
 import {
   db,
   affiliatesTable,
@@ -147,17 +164,31 @@ export async function promoteAffiliateTierIfEligible(
   }
 
   const rates = await getCurrentRates();
-  const tierRates = rates[targetTier] ?? {};
+  const tierRates = rates[targetTier];
   const reachedPlatinum = targetTier === "platinum";
   const now = new Date();
+
+  const missingOnPromotion = (["monthly", "annual", "lifetime"] as const).filter(
+    (pt) => tierRates?.[pt] === undefined,
+  );
+  if (missingOnPromotion.length > 0) {
+    logger.error(
+      { affiliateUserId, targetTier, missingPlanTypes: missingOnPromotion },
+      "ADMIN ALERT: Affiliate promoted to new tier but commission_phases has no active rate row for one or more plan types — custom rates NOT locked; payout entries for this affiliate will fail until rates are configured",
+    );
+  }
 
   await db
     .update(affiliatesTable)
     .set({
       tier: targetTier,
-      customMonthlyRateCents: tierRates["monthly"] ?? 0,
-      customAnnualRateCents: tierRates["annual"] ?? 0,
-      customLifetimeRateCents: tierRates["lifetime"] ?? 0,
+      ...(missingOnPromotion.length === 0
+        ? {
+            customMonthlyRateCents: tierRates!["monthly"]!,
+            customAnnualRateCents: tierRates!["annual"]!,
+            customLifetimeRateCents: tierRates!["lifetime"]!,
+          }
+        : {}),
       ...(reachedPlatinum
         ? { platinumAchievedAt: now, founderOutreachPending: true }
         : {}),
@@ -174,6 +205,44 @@ export async function promoteAffiliateTierIfEligible(
   }
 
   return { promoted: true, newTier: targetTier, reachedPlatinum };
+}
+
+/**
+ * Read-only pre-flight check — throws MissingCommissionRateError if no rate
+ * will be available for the affiliate's would-be tier (after any pending
+ * promotion) for the given planType.
+ *
+ * Call this BEFORE any DB writes so that a missing-rate config error leaves
+ * no partial state (no tier changes, no platinum flags, no conversion rows).
+ *
+ * @param extraActiveCount subscribers not yet committed to the DB (e.g. 1
+ *   when about to mark a new subscription active), so the promotion check
+ *   reflects the event that triggered this call.
+ */
+export async function assertRateWillExistForConversion(
+  affiliate: AffiliateWithRates & { userId: number },
+  planType: string,
+  globalRates: Record<string, Record<string, number>>,
+  extraActiveCount = 0,
+): Promise<void> {
+  // If this affiliate already has a custom rate locked for this planType,
+  // resolveRateCents will use it — no global row needed.
+  const customMap: Record<string, number | null | undefined> = {
+    monthly: affiliate.customMonthlyRateCents,
+    annual: affiliate.customAnnualRateCents,
+    lifetime: affiliate.customLifetimeRateCents,
+  };
+  if (customMap[planType] !== null && customMap[planType] !== undefined) return;
+
+  // Compute the would-be effective tier after promotion (read-only — no DB writes).
+  const activeCount = (await countActiveReferredSubscribers(affiliate.userId)) + extraActiveCount;
+  const wouldBeTier = resolveTierForCount(activeCount);
+  const effectiveTier =
+    TIER_RANK[wouldBeTier]! > TIER_RANK[affiliate.tier]! ? wouldBeTier : affiliate.tier;
+
+  if (globalRates[effectiveTier]?.[planType] === undefined) {
+    throw new MissingCommissionRateError(effectiveTier, planType);
+  }
 }
 
 export async function getCurrentRates(): Promise<Record<string, Record<string, number>>> {
@@ -213,12 +282,32 @@ export function resolveRateCents(
   };
   const custom = customMap[planType];
   if (custom !== null && custom !== undefined) return custom;
-  return globalRates[affiliate.tier]?.[planType] ?? 75;
+
+  const globalRate = globalRates[affiliate.tier]?.[planType];
+  if (globalRate === undefined) {
+    throw new MissingCommissionRateError(affiliate.tier, planType);
+  }
+  return globalRate;
 }
 
+/**
+ * Locks commission rates for an affiliate if they aren't already set.
+ *
+ * @param requiredPlanTypes - Only these plan types must have an active rate
+ *   row; missing required plan types throw MissingCommissionRateError.
+ *   Defaults to all three ("monthly", "annual", "lifetime") when omitted.
+ *   Pass the specific plan type(s) relevant to the current operation to avoid
+ *   blocking valid payouts because of unrelated missing rate rows (e.g. the
+ *   monthly payout batch only requires "monthly").
+ *
+ *   Non-required plan types are locked to null if missing — they can be
+ *   configured and re-locked later; downstream resolveRateCents will throw if
+ *   they are ever needed without a rate configured.
+ */
 export async function ensureRatesLocked(
   affiliate: AffiliateWithRates,
   globalRates: Record<string, Record<string, number>>,
+  options: { requiredPlanTypes?: readonly string[] } = {},
 ): Promise<AffiliateWithRates> {
   const alreadyLocked =
     affiliate.customMonthlyRateCents !== null ||
@@ -227,10 +316,17 @@ export async function ensureRatesLocked(
 
   if (alreadyLocked) return affiliate;
 
-  const tierRates = globalRates[affiliate.tier] ?? {};
-  const monthly = tierRates["monthly"] ?? 75;
-  const annual = tierRates["annual"] ?? 0;
-  const lifetime = tierRates["lifetime"] ?? 0;
+  const tierRates = globalRates[affiliate.tier];
+  const required = options.requiredPlanTypes ?? (["monthly", "annual", "lifetime"] as const);
+
+  const missingRequired = required.filter((pt) => tierRates?.[pt] === undefined);
+  if (missingRequired.length > 0) {
+    throw new MissingCommissionRateError(affiliate.tier, missingRequired.join(", "));
+  }
+
+  const monthly = tierRates?.["monthly"] ?? null;
+  const annual = tierRates?.["annual"] ?? null;
+  const lifetime = tierRates?.["lifetime"] ?? null;
 
   const [updated] = await db
     .update(affiliatesTable)
@@ -388,13 +484,20 @@ export async function recordConversionSubscribed(
 
   if (isAffiliateConversion && affiliate) {
     // ── Affiliate track ──────────────────────────────────────────────────────
-    // Recompute tier first — this conversion isn't marked active in the DB yet,
-    // so pass extraActiveCount=1 to count it toward the promotion check.
-    const promotion = await promoteAffiliateTierIfEligible(affiliate.userId, 1);
+
+    // Pre-flight: validate rates before any DB write (tier promotion, conversion
+    // update, ledger insert). If the rate config is missing this throws
+    // MissingCommissionRateError — which bubbles to the Stripe webhook handler
+    // so the event is retried once the rate is configured, leaving no partial state.
     const rates = await getCurrentRates();
+    await assertRateWillExistForConversion(affiliate, planType, rates, 1);
+
+    // Rate config confirmed — recompute tier (extraActiveCount=1 since this
+    // conversion isn't marked active in the DB yet) then lock rates.
+    const promotion = await promoteAffiliateTierIfEligible(affiliate.userId, 1);
     const affiliateForRate = promotion.promoted
       ? (await db.query.affiliatesTable.findFirst({ where: eq(affiliatesTable.id, affiliate.id) }))!
-      : await ensureRatesLocked(affiliate, rates);
+      : await ensureRatesLocked(affiliate, rates, { requiredPlanTypes: [planType] });
     const rateCents = resolveRateCents(affiliateForRate, planType, rates);
 
     let instalmentTotal: number | null = null;

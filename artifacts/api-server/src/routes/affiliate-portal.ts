@@ -37,6 +37,7 @@ import {
   countActiveReferredSubscribers,
   getCurrentRates,
   resolveRateCents,
+  MissingCommissionRateError,
 } from "../lib/affiliate-helpers.js";
 import { logger } from "../lib/logger.js";
 
@@ -452,7 +453,17 @@ router.get("/affiliate/dashboard", requireAffiliateAuth, async (req, res) => {
     .from(commissionLedgerTable)
     .where(eq(commissionLedgerTable.affiliateUserId, affiliate.userId));
 
-  const monthlyRateCents = resolveRateCents(affiliate, "monthly", rates);
+  let monthlyRateCents: number | null;
+  try {
+    monthlyRateCents = resolveRateCents(affiliate, "monthly", rates);
+  } catch (e) {
+    if (e instanceof MissingCommissionRateError) {
+      logger.error({ affiliateId: affiliate.id, err: e }, "ADMIN ALERT: Affiliate dashboard loaded but no active commission rate found for monthly plan — commission_phases may have a gap");
+      monthlyRateCents = null;
+    } else {
+      throw e;
+    }
+  }
   const currentTierIdx = tierIndex(affiliate.tier);
   const nextTier = TIER_LADDER[currentTierIdx + 1];
 
@@ -544,7 +555,7 @@ router.get("/affiliate/dashboard", requireAffiliateAuth, async (req, res) => {
       <div class="label">Your tier</div>
       <div class="tier-row">
         <span class="tier-name">${TIER_LADDER[currentTierIdx]?.label}</span>
-        <span class="tier-rate">${centsToDollars(monthlyRateCents)}/mo per subscriber</span>
+        <span class="tier-rate">${monthlyRateCents !== null ? centsToDollars(monthlyRateCents) + "/mo per subscriber" : "Rate unavailable — contact support"}</span>
       </div>
       <div class="ladder">
         ${TIER_LADDER.map((_, i) => `<div class="ladder-seg ${i <= currentTierIdx ? "on" : ""}"></div>`).join("")}
