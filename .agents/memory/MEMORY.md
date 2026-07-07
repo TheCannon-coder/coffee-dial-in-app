@@ -2,6 +2,7 @@
 - [IAP Paid Apps Agreement](iap-paid-apps-agreement.md) — RevenueCat offerings fail to load in Apple sandbox if the Paid Apps Agreement isn't accepted in App Store Connect.
 - [EAS build number burn](eas-build-number-burn.md) — EAS Submit timeouts still register the build number with Apple; use Transporter + autoIncrement:true to avoid conflicts.
 - [Drizzle push in non-TTY](drizzle-non-tty.md) — drizzle-kit push hangs/errors in non-interactive shells when existing data triggers confirmation prompts; use direct SQL ALTER TABLE instead.
+- [Drizzle constraint naming](drizzle-constraint-naming.md) — PostgreSQL truncates identifiers at 63 chars; drizzle generates _unique suffix names that can exceed this — always give explicit short names in table-level unique() calls.
 - [Referral system design](referral-system-design.md) — same code, two tracks: affiliate (cash via Stripe Connect) vs friend (Pro credits); track determined at subscription time by affiliates table lookup; proPermanent flag must be immune to subscription.deleted webhook.
 - [RC entitlement grant](rc-entitlement-grant.md) — use REVENUECAT_SECRET_KEY + v2 SDK grantCustomerEntitlement; connectors.proxy lacks write scope and v1 API rejects the connector's auth format.
 - [Klaviyo API key scopes](klaviyo-api-key-scopes.md) — private key needs Profiles+Lists+Subscriptions all Write; also Replit Secrets UI can silently re-link to a stale Account Vault value on "paste new secret".

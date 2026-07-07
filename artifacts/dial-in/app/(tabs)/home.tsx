@@ -298,6 +298,32 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
+        <View style={[styles.affiliateRow, { borderTopColor: colors.border }]}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/affiliate');
+            }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text style={[styles.affiliateLinkText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+              Become an affiliate
+            </Text>
+          </Pressable>
+          <Text style={[styles.affiliateSep, { color: colors.border }]}>·</Text>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              WebBrowser.openBrowserAsync('https://www.coffeebrew.coach/affiliate/dashboard');
+            }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text style={[styles.affiliateLinkText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              Affiliate dashboard
+            </Text>
+          </Pressable>
+        </View>
+
       </ScrollView>
     </View>
   );
@@ -365,4 +391,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   seeAllText: { fontSize: 14 },
+  affiliateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 4,
+  },
+  affiliateLinkText: { fontSize: 13, textDecorationLine: 'underline' },
+  affiliateSep: { fontSize: 13 },
 });
