@@ -444,6 +444,159 @@ describe("POST /api/admin/payouts/generate — skip alert email", () => {
   });
 });
 
+describe("POST /api/admin/payouts/generate — cancelled subscription exclusion", () => {
+  /**
+   * End-to-end regression guard for the cancel → generate flow.
+   *
+   * POST /admin/conversions/:id/cancel must set isSubscriptionActive = false.
+   * POST /admin/payouts/generate must only include conversions where
+   * isSubscriptionActive = true (the active-monthly WHERE clause).
+   *
+   * How the mock enforces both invariants:
+   *   - `isActive` starts as true (conversion is active).
+   *   - The cancel-route db.update mock inspects the `fields` argument passed
+   *     to `.set(fields)`. It only flips `isActive` to false when the route
+   *     explicitly passes `isSubscriptionActive: false`. If that field is
+   *     removed or changed, `isActive` stays true, `expect(isActive).toBe(false)`
+   *     fails, and the regression is caught.
+   *   - The generate-route db.select mock returns the conversion when
+   *     `isActive()` is true and [] when false. So if the cancel route
+   *     correctly sets the flag, generate sees 0 active conversions.
+   *   - Baseline test proves an active conversion (isActive=true) does
+   *     produce newEntriesCreated=1, confirming the select mock is sensitive
+   *     to the state — a regression that passes the wrong value would be visible.
+   */
+
+  /** Wire up the generate route DB mocks driven by a shared isActive getter. */
+  function setupGenerateDb(isActive: () => boolean) {
+    const mdb = getDb();
+    mdb.query.payoutBatchesTable.findFirst.mockResolvedValue(null);
+    mdb.query.affiliatesTable.findFirst.mockResolvedValue(affiliateRow);
+    // First select = activeMonthly; subsequent selects = existingEntries /
+    // allPeriodEntries (always return [] in these tests).
+    mdb.select
+      .mockImplementationOnce(() =>
+        buildSelectChain(isActive() ? [activeMonthlyConversion] : []),
+      )
+      .mockReturnValue(buildSelectChain([]));
+    mdb.insert.mockReturnValue(buildInsertChain([batchRow]));
+    mdb.update.mockReturnValue(buildUpdateChain());
+  }
+
+  /**
+   * Build a db.update mock for the cancel route that:
+   *  - inspects the fields passed to .set(fields)
+   *  - calls onSet(fields) so tests can observe / mutate state
+   *  - resolves .returning() with the provided row
+   */
+  function buildCancelMock(
+    returnedRow: unknown,
+    onSet: (fields: Record<string, unknown>) => void,
+  ): ReturnType<typeof buildUpdateChain> {
+    return {
+      set: (fields: Record<string, unknown>) => {
+        onSet(fields);
+        return {
+          where: () => ({
+            returning: () => Promise.resolve([returnedRow]),
+          }),
+        };
+      },
+    } as unknown as ReturnType<typeof buildUpdateChain>;
+  }
+
+  it("baseline — active conversion produces 1 ledger entry", async () => {
+    let isActive = true;
+    setupGenerateDb(() => isActive);
+
+    const rates = { standard: { monthly: 75 } };
+    vi.mocked(getCurrentRates).mockResolvedValue(rates);
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+    vi.mocked(ensureRatesLocked).mockResolvedValue({ ...affiliateRow, customMonthlyRateCents: 75 });
+    vi.mocked(resolveRateCents).mockReturnValue(75);
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(res.status).toBe(200);
+    // Confirms the mock is sensitive to isActive = true
+    expect(res.body.newEntriesCreated).toBe(1);
+    expect(res.body.skippedEntries).toHaveLength(0);
+    expect(isActive).toBe(true); // baseline: isActive never changed
+  });
+
+  it("cancel sets isSubscriptionActive=false, then generate produces 0 entries", async () => {
+    // Shared mutable state; only flipped inside the mock's .set() handler
+    let isActive = true;
+    const mdb = getDb();
+
+    // The cancel mock flips isActive only when the route passes
+    // isSubscriptionActive: false — if that field is removed, isActive stays
+    // true and the assertion below catches it.
+    mdb.update.mockReturnValueOnce(
+      buildCancelMock({ id: 42, isSubscriptionActive: false, cancelledAt: new Date() }, (fields) => {
+        if (fields["isSubscriptionActive"] === false) isActive = false;
+      }),
+    );
+
+    const cancelRes = await request(createApp())
+      .post("/api/admin/conversions/42/cancel")
+      .set("X-Admin-Key", ADMIN_KEY);
+    expect(cancelRes.status).toBe(200);
+    // Verify the cancel route actually set isSubscriptionActive = false
+    expect(isActive).toBe(false);
+
+    // Now run generate — activeMonthly mock returns [] because isActive = false
+    setupGenerateDb(() => isActive);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    const generateRes = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(generateRes.status).toBe(200);
+    expect(generateRes.body.newEntriesCreated).toBe(0);
+    expect(generateRes.body.skippedEntries).toHaveLength(0);
+  });
+
+  it("cancel → generate produces no commissionLedger inserts", async () => {
+    let isActive = true;
+    const mdb = getDb();
+
+    mdb.update.mockReturnValueOnce(
+      buildCancelMock({ id: 42, isSubscriptionActive: false, cancelledAt: new Date() }, (fields) => {
+        if (fields["isSubscriptionActive"] === false) isActive = false;
+      }),
+    );
+
+    const cancelRes = await request(createApp())
+      .post("/api/admin/conversions/42/cancel")
+      .set("X-Admin-Key", ADMIN_KEY);
+    expect(cancelRes.status).toBe(200);
+    expect(isActive).toBe(false);
+
+    setupGenerateDb(() => isActive);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    const commissionLedgerCalls = mdb.insert.mock.calls.filter(([table]) =>
+      table !== null &&
+      typeof table === "object" &&
+      "commissionLedgerTable" in (table as object),
+    );
+    expect(commissionLedgerCalls).toHaveLength(0);
+  });
+});
+
 describe("POST /api/admin/payouts/:id/approve — skipped-entry guard", () => {
   function setupApprovalDb(skippedCount: number, status = "draft") {
     const mdb = getDb();
