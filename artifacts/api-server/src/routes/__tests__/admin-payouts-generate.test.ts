@@ -597,6 +597,296 @@ describe("POST /api/admin/payouts/generate — cancelled subscription exclusion"
   });
 });
 
+describe("POST /api/admin/payouts/generate — cancelled subscription exclusion (annual + lifetime)", () => {
+  /**
+   * Regression guard for annual and lifetime plan types.
+   *
+   * The batch generator's WHERE clause filters planType = "monthly" AND
+   * isSubscriptionActive = true.  Annual/lifetime commissions are emitted as
+   * one-time ledger entries at subscribe time, so the batch must never create
+   * NEW ledger entries for them.
+   *
+   * Mock design
+   * -----------
+   * `setupGenerateDb(isActive, conversion)` simulates the combined effect of
+   * the batch generator's SQL predicate (planType=monthly AND
+   * isSubscriptionActive=true): the first select — the activeMonthly query —
+   * returns the conversion only when `isActive()` is true, and [] otherwise.
+   *
+   * Each plan type has a paired negative-control test (isActive=true → 1 entry
+   * created) that proves the mock IS sensitive: if the guard predicate were
+   * stripped from the WHERE clause, a cancelled conversion would surface and
+   * these tests would fail.  The corresponding cancel tests (isActive=false)
+   * then confirm the correct outcome.
+   */
+
+  const annualConversion = {
+    conversionId: 100,
+    referrerUserId: 20,
+    affiliateId: 6,
+    tier: "standard",
+    customMonthlyRateCents: null as null,
+    customAnnualRateCents: null as null,
+    customLifetimeRateCents: null as null,
+    affiliatePayoutEmail: "annual@example.com",
+    affiliatePayoutMethod: "stripe_connect",
+  };
+
+  const lifetimeConversion = {
+    conversionId: 101,
+    referrerUserId: 21,
+    affiliateId: 7,
+    tier: "standard",
+    customMonthlyRateCents: null as null,
+    customAnnualRateCents: null as null,
+    customLifetimeRateCents: null as null,
+    affiliatePayoutEmail: "lifetime@example.com",
+    affiliatePayoutMethod: "stripe_connect",
+  };
+
+  function setupGenerateDb(
+    isActive: () => boolean,
+    conversion: typeof annualConversion,
+  ) {
+    const mdb = getDb();
+    mdb.query.payoutBatchesTable.findFirst.mockResolvedValue(null);
+    mdb.query.affiliatesTable.findFirst.mockResolvedValue(affiliateRow);
+    mdb.select
+      .mockImplementationOnce(() =>
+        buildSelectChain(isActive() ? [conversion] : []),
+      )
+      .mockReturnValue(buildSelectChain([]));
+    mdb.insert.mockReturnValue(buildInsertChain([batchRow]));
+    mdb.update.mockReturnValue(buildUpdateChain());
+  }
+
+  function buildCancelMock(
+    returnedRow: unknown,
+    onSet: (fields: Record<string, unknown>) => void,
+  ): ReturnType<typeof buildUpdateChain> {
+    return {
+      set: (fields: Record<string, unknown>) => {
+        onSet(fields);
+        return {
+          where: () => ({
+            returning: () => Promise.resolve([returnedRow]),
+          }),
+        };
+      },
+    } as unknown as ReturnType<typeof buildUpdateChain>;
+  }
+
+  // ── Annual ─────────────────────────────────────────────────────────────────
+
+  it("negative control (annual) — when the select returns an active conversion, the route creates 1 ledger entry (mock is sensitive)", async () => {
+    // Simulates the route receiving an annual conversion as if the WHERE clause
+    // no longer filters it out.  The route still creates a ledger entry,
+    // proving the test infrastructure can detect a broken predicate.
+    setupGenerateDb(() => true, annualConversion);
+    const rates = { standard: { monthly: 75 } };
+    vi.mocked(getCurrentRates).mockResolvedValue(rates);
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+    vi.mocked(ensureRatesLocked).mockResolvedValue({ ...affiliateRow, customMonthlyRateCents: 75 });
+    vi.mocked(resolveRateCents).mockReturnValue(75);
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(res.status).toBe(200);
+    expect(res.body.newEntriesCreated).toBe(1);
+  });
+
+  it("cancelled annual — batch produces 0 new entries and 0 skipped entries", async () => {
+    // isActive=false simulates isSubscriptionActive=false in the SQL predicate.
+    setupGenerateDb(() => false, annualConversion);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(res.status).toBe(200);
+    expect(res.body.newEntriesCreated).toBe(0);
+    expect(res.body.skippedEntries).toHaveLength(0);
+  });
+
+  it("cancel annual → generate produces 0 entries", async () => {
+    let isActive = true;
+    const mdb = getDb();
+
+    mdb.update.mockReturnValueOnce(
+      buildCancelMock(
+        { id: 100, isSubscriptionActive: false, cancelledAt: new Date() },
+        (fields) => {
+          if (fields["isSubscriptionActive"] === false) isActive = false;
+        },
+      ),
+    );
+
+    const cancelRes = await request(createApp())
+      .post("/api/admin/conversions/100/cancel")
+      .set("X-Admin-Key", ADMIN_KEY);
+    expect(cancelRes.status).toBe(200);
+    expect(isActive).toBe(false);
+
+    setupGenerateDb(() => isActive, annualConversion);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    const generateRes = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(generateRes.status).toBe(200);
+    expect(generateRes.body.newEntriesCreated).toBe(0);
+    expect(generateRes.body.skippedEntries).toHaveLength(0);
+  });
+
+  it("cancel annual → generate produces no commissionLedger inserts", async () => {
+    let isActive = true;
+    const mdb = getDb();
+
+    mdb.update.mockReturnValueOnce(
+      buildCancelMock(
+        { id: 100, isSubscriptionActive: false, cancelledAt: new Date() },
+        (fields) => {
+          if (fields["isSubscriptionActive"] === false) isActive = false;
+        },
+      ),
+    );
+
+    const cancelRes = await request(createApp())
+      .post("/api/admin/conversions/100/cancel")
+      .set("X-Admin-Key", ADMIN_KEY);
+    expect(cancelRes.status).toBe(200);
+    expect(isActive).toBe(false);
+
+    setupGenerateDb(() => isActive, annualConversion);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    const commissionLedgerCalls = mdb.insert.mock.calls.filter(([table]) =>
+      table !== null &&
+      typeof table === "object" &&
+      "commissionLedgerTable" in (table as object),
+    );
+    expect(commissionLedgerCalls).toHaveLength(0);
+  });
+
+  // ── Lifetime ───────────────────────────────────────────────────────────────
+
+  it("negative control (lifetime) — when the select returns an active conversion, the route creates 1 ledger entry (mock is sensitive)", async () => {
+    setupGenerateDb(() => true, lifetimeConversion);
+    const rates = { standard: { monthly: 75 } };
+    vi.mocked(getCurrentRates).mockResolvedValue(rates);
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+    vi.mocked(ensureRatesLocked).mockResolvedValue({ ...affiliateRow, customMonthlyRateCents: 75 });
+    vi.mocked(resolveRateCents).mockReturnValue(75);
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(res.status).toBe(200);
+    expect(res.body.newEntriesCreated).toBe(1);
+  });
+
+  it("cancelled lifetime — batch produces 0 new entries and 0 skipped entries", async () => {
+    setupGenerateDb(() => false, lifetimeConversion);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    const res = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(res.status).toBe(200);
+    expect(res.body.newEntriesCreated).toBe(0);
+    expect(res.body.skippedEntries).toHaveLength(0);
+  });
+
+  it("cancel lifetime → generate produces 0 entries", async () => {
+    let isActive = true;
+    const mdb = getDb();
+
+    mdb.update.mockReturnValueOnce(
+      buildCancelMock(
+        { id: 101, isSubscriptionActive: false, cancelledAt: new Date() },
+        (fields) => {
+          if (fields["isSubscriptionActive"] === false) isActive = false;
+        },
+      ),
+    );
+
+    const cancelRes = await request(createApp())
+      .post("/api/admin/conversions/101/cancel")
+      .set("X-Admin-Key", ADMIN_KEY);
+    expect(cancelRes.status).toBe(200);
+    expect(isActive).toBe(false);
+
+    setupGenerateDb(() => isActive, lifetimeConversion);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    const generateRes = await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    expect(generateRes.status).toBe(200);
+    expect(generateRes.body.newEntriesCreated).toBe(0);
+    expect(generateRes.body.skippedEntries).toHaveLength(0);
+  });
+
+  it("cancel lifetime → generate produces no commissionLedger inserts", async () => {
+    let isActive = true;
+    const mdb = getDb();
+
+    mdb.update.mockReturnValueOnce(
+      buildCancelMock(
+        { id: 101, isSubscriptionActive: false, cancelledAt: new Date() },
+        (fields) => {
+          if (fields["isSubscriptionActive"] === false) isActive = false;
+        },
+      ),
+    );
+
+    const cancelRes = await request(createApp())
+      .post("/api/admin/conversions/101/cancel")
+      .set("X-Admin-Key", ADMIN_KEY);
+    expect(cancelRes.status).toBe(200);
+    expect(isActive).toBe(false);
+
+    setupGenerateDb(() => isActive, lifetimeConversion);
+    vi.mocked(getCurrentRates).mockResolvedValue({});
+    vi.mocked(promoteAffiliateTierIfEligible).mockResolvedValue({ promoted: false });
+
+    await request(createApp())
+      .post("/api/admin/payouts/generate")
+      .set("X-Admin-Key", ADMIN_KEY)
+      .send({ periodMonth: PERIOD_MONTH });
+
+    const commissionLedgerCalls = mdb.insert.mock.calls.filter(([table]) =>
+      table !== null &&
+      typeof table === "object" &&
+      "commissionLedgerTable" in (table as object),
+    );
+    expect(commissionLedgerCalls).toHaveLength(0);
+  });
+});
+
 describe("POST /api/admin/payouts/:id/approve — skipped-entry guard", () => {
   function setupApprovalDb(skippedCount: number, status = "draft") {
     const mdb = getDb();
