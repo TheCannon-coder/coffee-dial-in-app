@@ -159,7 +159,9 @@ export default function TastingScreen() {
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStage('result');
-        setTimeout(() => setShowFeedback(true), 700);
+        if (adjustmentHistory.length > 0) {
+          setTimeout(() => setShowFeedback(true), 700);
+        }
       }
     } catch {
       setStage('selecting');

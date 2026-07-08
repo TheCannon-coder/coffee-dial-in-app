@@ -76,10 +76,10 @@ export function FeedbackModal({ visible, onFeedback }: FeedbackModalProps) {
           <View style={styles.handle} />
 
           <Text style={[styles.title, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-            Was this tip helpful?
+            Better than your last brew?
           </Text>
           <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            Your feedback helps us improve.
+            Compare this cup to the previous one.
           </Text>
 
           <View style={styles.btnRow}>
@@ -90,9 +90,9 @@ export function FeedbackModal({ visible, onFeedback }: FeedbackModalProps) {
               ]}
               onPress={() => handlePress(false)}
             >
-              <Text style={styles.emoji}>👎</Text>
+              <Text style={styles.emoji}>😕</Text>
               <Text style={[styles.btnLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>
-                Not really
+                Same or worse
               </Text>
             </Pressable>
 
@@ -103,9 +103,9 @@ export function FeedbackModal({ visible, onFeedback }: FeedbackModalProps) {
               ]}
               onPress={() => handlePress(true)}
             >
-              <Text style={styles.emoji}>👍</Text>
+              <Text style={styles.emoji}>☕️</Text>
               <Text style={[styles.btnLabel, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-                Yes, helpful!
+                Yes, better!
               </Text>
             </Pressable>
           </View>

@@ -167,14 +167,14 @@ export default function HomeScreen() {
         {pendingFeedback ? (
           <View style={[styles.brewCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
             <Text style={[styles.feedbackGateLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Rate your last brew to continue
+              Before your next brew
             </Text>
             <Text style={[styles.feedbackGateQuestion, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-              {adjustmentPrompt(pendingFeedback.adjustment)}
+              Was your last{pendingFeedback.method ? ` ${pendingFeedback.method}` : ''} brew better?
             </Text>
             {pendingFeedback.coffeeName ? (
               <Text style={[styles.feedbackGateContext, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                {pendingFeedback.coffeeName}{pendingFeedback.method ? ` · ${pendingFeedback.method}` : ''}
+                {pendingFeedback.coffeeName}
               </Text>
             ) : null}
             <View style={styles.feedbackGateBtns}>
@@ -192,8 +192,8 @@ export default function HomeScreen() {
                   setFeedbackSubmitting(false);
                 }}
               >
-                <Text style={styles.feedbackGateBtnEmoji}>👎</Text>
-                <Text style={[styles.feedbackGateBtnLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>Not really</Text>
+                <Text style={styles.feedbackGateBtnEmoji}>😕</Text>
+                <Text style={[styles.feedbackGateBtnLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>Same or worse</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -209,8 +209,8 @@ export default function HomeScreen() {
                   setFeedbackSubmitting(false);
                 }}
               >
-                <Text style={styles.feedbackGateBtnEmoji}>👍</Text>
-                <Text style={[styles.feedbackGateBtnLabel, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Yes, it helped!</Text>
+                <Text style={styles.feedbackGateBtnEmoji}>☕️</Text>
+                <Text style={[styles.feedbackGateBtnLabel, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Yes, better!</Text>
               </Pressable>
             </View>
           </View>
