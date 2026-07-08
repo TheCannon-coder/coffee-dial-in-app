@@ -212,3 +212,13 @@ export function getFriendReferralStats(email: string): Promise<FriendReferralSta
   return fetch(url).then((r) => r.json()) as Promise<FriendReferralStats>;
 }
 
+export interface UpdateReferralCodeResult {
+  success?: boolean;
+  code?: string;
+  error?: string;
+}
+
+export function updateReferralCode(email: string, newCode: string): Promise<UpdateReferralCodeResult> {
+  return post<UpdateReferralCodeResult>('/referral/update-code', { email, newCode });
+}
+

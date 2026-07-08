@@ -278,4 +278,70 @@ router.get("/referral/friend-stats", async (req, res) => {
   });
 });
 
+// ── POST /referral/update-code ────────────────────────────────────────────────
+
+/**
+ * Allows a user to change their referral code, but only if no one has been
+ * referred via it yet (zero rows in referral_conversions for this user).
+ *
+ * Body: { email: string, newCode: string }
+ */
+router.post("/referral/update-code", async (req, res) => {
+  const { email, newCode } = req.body as { email?: string; newCode?: string };
+
+  if (!email || !newCode) {
+    res.status(400).json({ error: "email and newCode are required" });
+    return;
+  }
+
+  const code = newCode.trim().toUpperCase();
+
+  if (!/^[A-Z0-9][A-Z0-9-]{1,18}[A-Z0-9]$/.test(code)) {
+    res
+      .status(400)
+      .json({ error: "Code must be 3–20 characters: letters, numbers, and hyphens only." });
+    return;
+  }
+
+  const user = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, email),
+  });
+
+  if (!user) {
+    res.status(404).json({ error: "User not found." });
+    return;
+  }
+
+  // Block change if anyone has already used this user's code.
+  const [existing] = await db
+    .select({ cnt: count() })
+    .from(referralConversionsTable)
+    .where(eq(referralConversionsTable.referrerUserId, user.id));
+
+  if (Number(existing?.cnt ?? 0) > 0) {
+    res.status(409).json({
+      error:
+        "Your code has already been used by someone — it can no longer be changed.",
+    });
+    return;
+  }
+
+  // Make sure the new code isn't taken by another user.
+  const taken = await db.query.usersTable.findFirst({
+    where: eq(usersTable.referralCode, code),
+  });
+
+  if (taken && taken.id !== user.id) {
+    res.status(409).json({ error: "That code is already taken. Please choose another." });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ referralCode: code })
+    .where(eq(usersTable.id, user.id));
+
+  res.json({ success: true, code });
+});
+
 export default router;

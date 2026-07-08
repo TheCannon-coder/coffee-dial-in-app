@@ -20,7 +20,6 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { ReferralCard } from '@/components/ReferralCard';
 import { getUser, getCustomerPortal } from '@/lib/api';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
@@ -219,12 +218,6 @@ export default function HomeScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-          </View>
-        )}
-
-        {email && (
-          <View style={styles.section}>
-            <ReferralCard />
           </View>
         )}
 

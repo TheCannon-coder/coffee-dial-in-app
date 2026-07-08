@@ -61,6 +61,12 @@ function centsToDollars(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+// ── GET /affiliate — redirect bare path to the explainer ─────────────────────
+
+router.get("/affiliate", (_req, res) => {
+  res.redirect(301, "/affiliate/become");
+});
+
 // ── GET /affiliate/become — public explainer page ────────────────────────────
 
 router.get("/affiliate/become", (_req, res) => {

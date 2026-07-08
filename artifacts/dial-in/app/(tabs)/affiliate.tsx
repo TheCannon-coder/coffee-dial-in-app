@@ -23,12 +23,11 @@ import {
   getAffiliateMetrics,
   getConnectStatus,
   startConnectOnboarding,
-  getFriendReferralStats,
   joinAffiliate,
+  updateReferralCode,
   AffiliateStats,
   AffiliateMonth,
   ConnectStatusResult,
-  FriendReferralStats,
 } from '@/lib/api';
 
 // ── Calculator constants ─────────────────────────────────────────────────────
@@ -71,7 +70,7 @@ function formatMonth(key: string): string {
 export default function AffiliateScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { email, referralCode } = useUser();
+  const { email, referralCode, setReferralCode } = useUser();
 
   const [stats, setStats] = useState<AffiliateStats | null>(null);
   const [months, setMonths] = useState<AffiliateMonth[]>([]);
@@ -80,7 +79,9 @@ export default function AffiliateScreen() {
   const [connectStatus, setConnectStatus] = useState<ConnectStatusResult | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
 
-  const [friendStats, setFriendStats] = useState<FriendReferralStats | null>(null);
+  const [editingCode, setEditingCode] = useState(false);
+  const [editCodeValue, setEditCodeValue] = useState('');
+  const [editCodeLoading, setEditCodeLoading] = useState(false);
 
   const [audienceIdx, setAudienceIdx] = useState(4);
   const [copied, setCopied] = useState(false);
@@ -105,14 +106,12 @@ export default function AffiliateScreen() {
     if (!email) return;
     setLoadingStats(true);
     try {
-      const [s, m, fs] = await Promise.all([
+      const [s, m] = await Promise.all([
         getAffiliateStats(email),
         getAffiliateMetrics(email),
-        getFriendReferralStats(email),
       ]);
       setStats(s);
-      setMonths(m.months);
-      setFriendStats(fs);
+      setMonths(m.months ?? []);
     } catch {
       // silently ignore
     } finally {
@@ -213,9 +212,26 @@ export default function AffiliateScreen() {
 
   const hasActivity = months.some(m => m.newConversions > 0 || m.earningsCents > 0);
 
-  const qualifyingCount = friendStats?.qualifyingCount ?? 0;
-  const proPermanent = friendStats?.proPermanent ?? false;
-  const friendProgress = Math.min(qualifyingCount, 10);
+  const handleSaveCode = useCallback(async () => {
+    if (!email || !editCodeValue.trim()) return;
+    const newCode = editCodeValue.trim().toUpperCase();
+    if (newCode === referralCode) { setEditingCode(false); return; }
+    setEditCodeLoading(true);
+    try {
+      const result = await updateReferralCode(email, newCode);
+      if (result.error) {
+        Alert.alert('Could Not Update', result.error);
+        return;
+      }
+      setReferralCode(result.code ?? newCode);
+      setEditingCode(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setEditCodeLoading(false);
+    }
+  }, [email, editCodeValue, referralCode, setReferralCode]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -241,86 +257,92 @@ export default function AffiliateScreen() {
           Refer {'&'} Earn
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Share Coffee Brew Coach. Friends get 1 month free — you earn rewards.
+          Share Coffee Brew Coach and earn cash commissions for every Pro subscriber you refer.
         </Text>
 
-        {/* Referral link row */}
-        {referralLink && (
-          <View style={[styles.linkCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.linkUrl, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]} numberOfLines={1}>
-              {referralLink}
-            </Text>
-            <View style={styles.linkActions}>
-              <Pressable
-                style={({ pressed }) => [styles.linkBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 }]}
-                onPress={handleCopy}
-              >
-                <Feather name={copied ? 'check' : 'copy'} size={13} color={colors.cream} />
-                <Text style={[styles.linkBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-                  {copied ? 'Copied' : 'Copy'}
+        {/* ── Referral code card ── */}
+        {referralCode && (
+          <View style={[styles.codeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {editingCode ? (
+              <>
+                <TextInput
+                  style={[styles.codeEditInput, { color: colors.espresso, borderColor: colors.border, fontFamily: 'DMSans_500Medium' }]}
+                  value={editCodeValue}
+                  onChangeText={v => setEditCodeValue(v.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
+                  autoCapitalize="characters"
+                  autoFocus
+                  maxLength={20}
+                  placeholder="YOUR-CODE"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+                <Text style={[styles.editCodeNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  Letters, numbers, hyphens. Can only change if your code hasn't been used yet.
                 </Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.linkBtn, { backgroundColor: colors.secondary, opacity: pressed ? 0.8 : 1 }]}
-                onPress={handleShare}
-              >
-                <Feather name="share-2" size={13} color={colors.espresso} />
-                <Text style={[styles.linkBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                  Share
+                <View style={styles.editCodeActions}>
+                  <Pressable
+                    style={({ pressed }) => [styles.editCodeSaveBtn, { backgroundColor: colors.espresso, opacity: pressed || editCodeLoading ? 0.7 : 1 }]}
+                    onPress={handleSaveCode}
+                    disabled={editCodeLoading}
+                  >
+                    {editCodeLoading
+                      ? <ActivityIndicator size="small" color={colors.cream} />
+                      : <Text style={[styles.editCodeBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Save</Text>}
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.editCodeCancelBtn, { borderColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
+                    onPress={() => { setEditingCode(false); setEditCodeValue(''); }}
+                  >
+                    <Text style={[styles.editCodeBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.codeDisplayRow}>
+                  <Text style={[styles.codeBig, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                    {referralCode}
+                  </Text>
+                  <Pressable
+                    hitSlop={12}
+                    onPress={() => { setEditingCode(true); setEditCodeValue(referralCode); }}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+                  >
+                    <Feather name="edit-2" size={16} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+                <Text style={[styles.codeUrl, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]} numberOfLines={1}>
+                  coffeebrew.coach?ref={referralCode}
                 </Text>
-              </Pressable>
-            </View>
+                <View style={styles.linkActions}>
+                  <Pressable
+                    style={({ pressed }) => [styles.linkBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 }]}
+                    onPress={handleCopy}
+                  >
+                    <Feather name={copied ? 'check' : 'copy'} size={13} color={colors.cream} />
+                    <Text style={[styles.linkBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                      {copied ? 'Copied' : 'Copy link'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.linkBtn, { backgroundColor: colors.secondary, opacity: pressed ? 0.8 : 1 }]}
+                    onPress={handleShare}
+                  >
+                    <Feather name="share-2" size={13} color={colors.espresso} />
+                    <Text style={[styles.linkBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                      Share
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
         )}
 
-        {/* ── Friend referral progress ── */}
+        {/* ── Affiliate stats / join ── */}
         {loadingStats ? (
           <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />
         ) : (
           <>
-            {proPermanent ? (
-              <View style={[styles.permanentProCard, { backgroundColor: colors.espresso }]}>
-                <Feather name="star" size={20} color={colors.accent} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.permanentProTitle, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
-                    Free Pro forever
-                  </Text>
-                  <Text style={[styles.permanentProBody, { color: 'rgba(250,247,242,0.6)', fontFamily: 'DMSans_400Regular' }]}>
-                    You've earned permanent Pro access through referrals. The paywall will never show again.
-                  </Text>
-                </View>
-              </View>
-            ) : (
-              <View style={[styles.progressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={styles.progressHeader}>
-                  <Feather name="gift" size={16} color={colors.accent} />
-                  <Text style={[styles.progressTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                    Free Pro forever at 10 referrals
-                  </Text>
-                </View>
-                <View style={[styles.progressBar, { backgroundColor: colors.secondary }]}>
-                  <View style={[
-                    styles.progressFill,
-                    {
-                      backgroundColor: colors.accent,
-                      width: `${(friendProgress / 10) * 100}%` as any,
-                    },
-                  ]} />
-                </View>
-                <Text style={[styles.progressLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                  {qualifyingCount} of 10 qualifying referrals
-                  {qualifyingCount === 0
-                    ? ' — share your link to get started'
-                    : qualifyingCount < 10
-                    ? ` — ${10 - qualifyingCount} more to go`
-                    : ''}
-                </Text>
-                <Text style={[styles.progressNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                  A referral qualifies once your friend completes 3 brews. Each qualifying referral also earns you 30 days of Pro.
-                </Text>
-              </View>
-            )}
-
             {/* ── Affiliate stats (if enrolled) ── */}
             {stats?.isAffiliate ? (
               <>
@@ -739,15 +761,60 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: 24,
   },
-  linkCard: {
-    borderRadius: 14,
+  codeCard: {
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
-    gap: 10,
+    padding: 20,
+    gap: 12,
     marginBottom: 20,
   },
-  linkUrl: {
+  codeDisplayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  codeBig: {
+    fontSize: 32,
+    letterSpacing: 1,
+  },
+  codeUrl: {
     fontSize: 13,
+    marginTop: -4,
+  },
+  codeEditInput: {
+    fontSize: 24,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    letterSpacing: 1,
+  },
+  editCodeNote: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  editCodeActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editCodeSaveBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 100,
+    paddingVertical: 11,
+    minHeight: 40,
+  },
+  editCodeCancelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 100,
+    borderWidth: 1,
+    paddingVertical: 11,
+  },
+  editCodeBtnText: {
+    fontSize: 14,
   },
   linkActions: {
     flexDirection: 'row',
@@ -768,54 +835,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 12,
     marginTop: 20,
-  },
-  permanentProCard: {
-    flexDirection: 'row',
-    gap: 14,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-    alignItems: 'flex-start',
-  },
-  permanentProTitle: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  permanentProBody: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  progressCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 20,
-    gap: 10,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressTitle: {
-    fontSize: 15,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-    minWidth: 6,
-  },
-  progressLabel: {
-    fontSize: 13,
-  },
-  progressNote: {
-    fontSize: 12,
-    lineHeight: 18,
   },
   statsGrid: {
     flexDirection: 'row',
