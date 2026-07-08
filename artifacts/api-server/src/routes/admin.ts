@@ -355,6 +355,14 @@ router.get("/admin", async (_req, res) => {
     </div>
   </div>
 
+  <div class="section" style="padding-bottom:8px">
+    <h2>Brew data</h2>
+    <a href="/api/admin/brews/export.csv" style="display:inline-flex;align-items:center;gap:8px;background:#2C1A0E;border:1px solid #3D2410;color:#FAF7F2;text-decoration:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+      ↓ Download brew data CSV
+    </a>
+    <p style="margin-top:8px;font-size:12px;color:#6B5040">All brews · includes tasting notes, AI advice, adjustment, and wasHelpful feedback</p>
+  </div>
+
   <div class="section">
     <h2>Recent sign-ups <span style="font-family:system-ui;font-size:13px;color:#6B5040;font-weight:400">(last 200)</span></h2>
     <div class="table-wrap">
@@ -383,6 +391,107 @@ router.get("/admin", async (_req, res) => {
   } catch (err) {
     logger.error({ err }, "admin dashboard error");
     res.status(500).send("Internal error — check server logs.");
+  }
+});
+
+// ── Brew data CSV export ────────────────────────────────────────────────────────
+
+router.get("/admin/brews/export.csv", async (_req, res) => {
+  try {
+    const rows = await db.execute(sql`
+      SELECT
+        b.created_at,
+        b.session_id,
+        u.email,
+        b.method,
+        b.coffee_name,
+        b.dose,
+        b.water,
+        b.brew_time,
+        b.water_temp,
+        b.grinder_notes,
+        b.tasting_notes,
+        b.free_notes,
+        b.advice,
+        b.adjustment,
+        b.was_helpful,
+        b.ai_model,
+        b.adjustment_history,
+        b.compared_to_previous
+      FROM brews b
+      LEFT JOIN users u ON u.id = b.user_id
+      ORDER BY b.created_at DESC
+    `);
+
+    function csvCell(v: unknown): string {
+      if (v === null || v === undefined) return "";
+      if (Array.isArray(v)) return `"${v.join("|").replace(/"/g, '""')}"`;
+      const s = String(v);
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    }
+
+    const headers = [
+      "date", "session_id", "user_email", "method", "coffee_name",
+      "dose", "water", "brew_time", "water_temp", "grinder_notes",
+      "tasting_notes", "free_notes", "advice", "adjustment",
+      "was_helpful", "ai_model", "adjustment_history", "compared_to_previous",
+    ];
+
+    type BrewExportRow = {
+      created_at: string;
+      session_id: string | null;
+      email: string | null;
+      method: string | null;
+      coffee_name: string | null;
+      dose: string | null;
+      water: string | null;
+      brew_time: string | null;
+      water_temp: string | null;
+      grinder_notes: string | null;
+      tasting_notes: string;
+      free_notes: string | null;
+      advice: string;
+      adjustment: string;
+      was_helpful: boolean | null;
+      ai_model: string | null;
+      adjustment_history: string[] | null;
+      compared_to_previous: string | null;
+    };
+
+    const lines = [headers.join(",")];
+    for (const r of rows.rows as BrewExportRow[]) {
+      lines.push([
+        csvCell(new Date(r.created_at).toISOString()),
+        csvCell(r.session_id),
+        csvCell(r.email ?? "anonymous"),
+        csvCell(r.method),
+        csvCell(r.coffee_name),
+        csvCell(r.dose),
+        csvCell(r.water),
+        csvCell(r.brew_time),
+        csvCell(r.water_temp),
+        csvCell(r.grinder_notes),
+        csvCell(r.tasting_notes),
+        csvCell(r.free_notes),
+        csvCell(r.advice),
+        csvCell(r.adjustment),
+        csvCell(r.was_helpful === null ? "" : r.was_helpful ? "true" : "false"),
+        csvCell(r.ai_model),
+        csvCell(r.adjustment_history),
+        csvCell(r.compared_to_previous),
+      ].join(","));
+    }
+
+    const filename = `dial-in-brews-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(lines.join("\n"));
+  } catch (err) {
+    logger.error({ err }, "brew CSV export error");
+    res.status(500).send("Export failed — check server logs.");
   }
 });
 
