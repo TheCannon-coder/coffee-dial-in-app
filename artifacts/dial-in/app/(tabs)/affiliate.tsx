@@ -435,7 +435,7 @@ export default function AffiliateScreen() {
                 {!showJoinForm ? (
                   <View style={[styles.joinCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[styles.joinBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                      Join the affiliate program to earn a monthly cash commission for every Pro subscriber you bring in — instead of (or in addition to) Pro access credits.
+                      Join the affiliate program to earn a monthly cash commission for every Pro subscriber you bring in.
                     </Text>
 
                     <View style={styles.joinFeatures}>

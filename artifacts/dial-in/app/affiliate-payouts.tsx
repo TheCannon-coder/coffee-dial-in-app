@@ -202,40 +202,22 @@ export default function AffiliatePayoutsScreen() {
           Everything you need to know about earning and getting paid — no surprises.
         </Text>
 
-        {/* ── Two reward tracks ── */}
-        <SectionHeader title="Two ways to earn" colors={colors} />
+        {/* ── How to earn ── */}
+        <SectionHeader title="How it works" colors={colors} />
 
-        <TrackCard title="Friend track" icon="users" badge="Everyone" colors={colors}>
+        <TrackCard title="Share your link" icon="trending-up" badge="Affiliate" colors={colors} highlight>
           <BulletRow
-            text="Share your referral link. Friends who sign up get 1 month of Pro free."
-            colors={colors}
-          />
-          <BulletRow
-            text="After your friend completes 3 brew sessions, you earn 30 days of Pro."
-            colors={colors}
-          />
-          <BulletRow
-            text="Reach 10 qualifying referrals (3+ brews each) and you get Pro free forever — no paywall, ever."
-            colors={colors}
-          />
-          <Text style={[styles.trackNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            No cash involved. Rewards are Pro access credits.
-          </Text>
-        </TrackCard>
-
-        <TrackCard title="Affiliate track" icon="trending-up" badge="Opt-in" colors={colors} highlight>
-          <BulletRow
-            text="Join the affiliate program to earn cash commissions instead of Pro credits."
-            colors={colors}
-            highlight
-          />
-          <BulletRow
-            text="Same referral link — the system automatically applies the cash track once you're enrolled."
+            text="Share your unique referral link. When someone signs up for Pro, you earn a monthly cash commission."
             colors={colors}
             highlight
           />
           <BulletRow
             text="Commissions are paid monthly via Stripe to your connected bank account."
+            colors={colors}
+            highlight
+          />
+          <BulletRow
+            text="Earn more as you grow — Silver, Gold, and Platinum tiers unlock higher rates."
             colors={colors}
             highlight
           />
