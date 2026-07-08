@@ -33,7 +33,7 @@ import {
 // ── Calculator constants ─────────────────────────────────────────────────────
 const CONV_SIGNUP = 0.25;
 const CONV_PRO = 0.18;
-const DEFAULT_RATE_CENTS = 150;
+const DEFAULT_RATE_CENTS = 200; // Platinum tier — shown in the marketing calculator
 
 const AUDIENCE_PRESETS = [
   { label: '1K', value: 1_000 },
@@ -618,7 +618,10 @@ export default function AffiliateScreen() {
         </View>
 
         <Text style={[styles.finePrint, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Based on 25% signup rate · 18% Pro conversion · {fmtMoney(rateCents)}/sub/month commission
+          Estimates based on 25% signup rate · 18% Pro conversion.{' '}
+          {stats?.isAffiliate
+            ? `Your locked rate: ${fmtMoney(rateCents)}/sub/month.`
+            : `Platinum tier rate shown ($2.00/sub/mo). Standard tier starts at $0.75.`}
         </Text>
       </ScrollView>
     </View>

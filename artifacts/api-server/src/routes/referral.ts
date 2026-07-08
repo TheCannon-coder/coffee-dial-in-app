@@ -278,6 +278,89 @@ router.get("/referral/friend-stats", async (req, res) => {
   });
 });
 
+// ── POST /referral/redeem ─────────────────────────────────────────────────────
+
+/**
+ * Simpler claim variant for the onboarding screen: takes { email, code }.
+ * Looks up both user and referrer server-side, then follows the same flow as
+ * /referral/claim. RC entitlement is granted using the email as the RC user ID
+ * (best-effort — conversion is always recorded even if RC grant fails).
+ */
+router.post("/referral/redeem", async (req, res) => {
+  const { email, code } = req.body as { email?: string; code?: string };
+
+  if (!email || !code) {
+    res.status(400).json({ error: "email and code are required" });
+    return;
+  }
+
+  const normalized = code.trim().toUpperCase();
+
+  const user = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, email),
+  });
+  if (!user) {
+    res.status(404).json({ error: "Account not found. Please sign in first." });
+    return;
+  }
+
+  const referrer = await db.query.usersTable.findFirst({
+    where: eq(usersTable.referralCode, normalized),
+  });
+  if (!referrer) {
+    res.status(404).json({ error: "Referral code not found." });
+    return;
+  }
+
+  if (referrer.id === user.id) {
+    res.status(400).json({ error: "You can't use your own referral code." });
+    return;
+  }
+
+  if (user.referredByCode) {
+    res.status(409).json({ error: "You've already redeemed a referral code." });
+    return;
+  }
+
+  const existing = await db.query.referralConversionsTable.findFirst({
+    where: eq(referralConversionsTable.referredUserId, user.id),
+  });
+  if (existing) {
+    res.status(409).json({ error: "Referral already recorded for this account." });
+    return;
+  }
+
+  await db.update(usersTable)
+    .set({ referredByCode: normalized })
+    .where(eq(usersTable.id, user.id));
+
+  await db.insert(referralConversionsTable).values({
+    referralCode: normalized,
+    referrerUserId: referrer.id,
+    referredUserId: user.id,
+    isSubscriptionActive: false,
+    brewCount: 0,
+    isAffiliateConversion: false,
+    instalmentsPaid: 0,
+    instalmentStatus: "na",
+  });
+
+  const granted = await grantRcProEntitlement(email, 1);
+  if (granted) {
+    await db.update(usersTable)
+      .set({ isPro: true })
+      .where(eq(usersTable.id, user.id));
+  }
+
+  res.json({
+    success: true,
+    rcGranted: granted,
+    message: granted
+      ? "Code applied! You've got 1 month of Pro free."
+      : "Code recorded — Pro access will activate shortly.",
+  });
+});
+
 // ── POST /referral/update-code ────────────────────────────────────────────────
 
 /**

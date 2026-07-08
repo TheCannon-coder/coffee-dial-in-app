@@ -17,7 +17,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { useColors } from '@/hooks/useColors';
 import { useUser } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
-import { signInWithApple } from '@/lib/api';
+import { signInWithApple, redeemReferralCode } from '@/lib/api';
 import { NotificationSheet } from '@/components/NotificationSheet';
 
 const FEATURES = [
@@ -51,6 +51,9 @@ export default function OnboardingScreen() {
   const [navigateOnDismiss, setNavigateOnDismiss] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
 
+  const [showCodeField, setShowCodeField] = useState(false);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+
   useEffect(() => {
     AppleAuthentication.isAvailableAsync()
       .then(setAppleAvailable)
@@ -59,6 +62,16 @@ export default function OnboardingScreen() {
 
   function isValidEmail(e: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+  }
+
+  async function applyPendingCode(signedInEmail: string) {
+    const code = referralCodeInput.trim().toUpperCase();
+    if (!code) return;
+    try {
+      await redeemReferralCode(signedInEmail, code);
+    } catch {
+      // best-effort — never block sign-in
+    }
   }
 
   async function handleStart() {
@@ -70,7 +83,9 @@ export default function OnboardingScreen() {
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await setEmail(email.trim().toLowerCase());
+      const normalised = email.trim().toLowerCase();
+      await setEmail(normalised);
+      await applyPendingCode(normalised);
       setShowNotifPrompt(true);
     } catch {
       setError('Something went wrong. Please try again.');
@@ -92,6 +107,7 @@ export default function OnboardingScreen() {
       });
       const result = await signInWithApple(credential.user, credential.email ?? undefined);
       await setEmail(result.email);
+      await applyPendingCode(result.email);
       setShowNotifPrompt(true);
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code;
@@ -225,6 +241,32 @@ export default function OnboardingScreen() {
               </Text>
             </Pressable>
 
+            {/* Referral code */}
+            {!showCodeField ? (
+              <Pressable onPress={() => setShowCodeField(true)} hitSlop={8}>
+                <Text style={[styles.codeLink, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  Have a referral code?
+                </Text>
+              </Pressable>
+            ) : (
+              <View style={[styles.codeRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <TextInput
+                  style={[styles.codeInput, { color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
+                  placeholder="Enter code (e.g. BREW-ABC1)"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={referralCodeInput}
+                  onChangeText={v => setReferralCodeInput(v.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  autoFocus
+                  maxLength={24}
+                />
+                {referralCodeInput.length > 0 && (
+                  <Feather name="check" size={16} color={colors.accent} />
+                )}
+              </View>
+            )}
+
             <Text style={[styles.footnote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
               10 free coaching sessions every month. No password needed.
             </Text>
@@ -274,4 +316,15 @@ const styles = StyleSheet.create({
   footnote: { fontSize: 13, textAlign: 'center' },
   skip: { alignItems: 'center', paddingVertical: 8 },
   skipText: { fontSize: 14 },
+  codeLink: { fontSize: 13, textAlign: 'center', textDecorationLine: 'underline' },
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  codeInput: { flex: 1, fontSize: 15, letterSpacing: 1 },
 });

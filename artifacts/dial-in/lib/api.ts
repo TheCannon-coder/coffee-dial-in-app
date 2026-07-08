@@ -212,6 +212,17 @@ export function getFriendReferralStats(email: string): Promise<FriendReferralSta
   return fetch(url).then((r) => r.json()) as Promise<FriendReferralStats>;
 }
 
+export interface RedeemReferralResult {
+  success?: boolean;
+  rcGranted?: boolean;
+  message?: string;
+  error?: string;
+}
+
+export function redeemReferralCode(email: string, code: string): Promise<RedeemReferralResult> {
+  return post<RedeemReferralResult>('/referral/redeem', { email, code });
+}
+
 export interface UpdateReferralCodeResult {
   success?: boolean;
   code?: string;

@@ -99,6 +99,7 @@ export default function HomeScreen() {
     }
   }
 
+  const showProNudge = !isPro && !!email;
   const coffeeGroups = groupCoffees(savedCoffees);
   const earnedBadges = ALL_BADGES.filter(b => earnedBadgeIds.includes(b.id));
 
@@ -162,6 +163,35 @@ export default function HomeScreen() {
             </View>
           </View>
         </Pressable>
+
+        {showProNudge && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.proNudge,
+              { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/paywall');
+            }}
+          >
+            <View style={styles.proNudgeLeft}>
+              <Text style={[styles.proNudgeTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                {Number.isFinite(usesRemaining) && (usesRemaining as number) <= 3
+                  ? `Only ${usesRemaining} session${usesRemaining === 1 ? '' : 's'} left this month`
+                  : 'Upgrade to Pro'}
+              </Text>
+              <Text style={[styles.proNudgeSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                Unlimited coaching · No monthly cap
+              </Text>
+            </View>
+            <View style={[styles.proNudgeBtn, { backgroundColor: colors.espresso }]}>
+              <Text style={[styles.proNudgeBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
+                Go Pro
+              </Text>
+            </View>
+          </Pressable>
+        )}
 
         {coffeeGroups.length > 0 && (
           <View style={styles.section}>
@@ -340,7 +370,22 @@ const styles = StyleSheet.create({
   proBadge: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 },
   proBadgeText: { fontSize: 13 },
   usesText: { fontSize: 13 },
-  brewCard: { borderRadius: 16, padding: 20, marginBottom: 28 },
+  brewCard: { borderRadius: 16, padding: 20, marginBottom: 12 },
+  proNudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  proNudgeLeft: { flex: 1, marginRight: 12 },
+  proNudgeTitle: { fontSize: 15, marginBottom: 2 },
+  proNudgeSub: { fontSize: 12 },
+  proNudgeBtn: { borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8 },
+  proNudgeBtnText: { fontSize: 14 },
   brewCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brewCardTitle: { fontSize: 20, marginBottom: 4 },
   brewCardSub: { fontSize: 14 },
