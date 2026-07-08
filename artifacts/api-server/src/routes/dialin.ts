@@ -303,6 +303,18 @@ Respond ONLY with valid JSON, no markdown:
       .set({ usesThisMonth: newCount })
       .where(eq(usersTable.id, user.id));
 
+    // Find the previous brew's session ID (before inserting current) so the
+    // client can write wasHelpful feedback to the brew that gave the advice.
+    const prevBrew = await db.query.brewsTable.findFirst({
+      where: and(
+        eq(brewsTable.userId, user.id),
+        ne(brewsTable.adjustment, "none"),
+      ),
+      orderBy: [desc(brewsTable.createdAt)],
+      columns: { sessionId: true },
+    });
+    const prevSessionId = prevBrew?.sessionId ?? null;
+
     // Log the brew for training / anomaly detection
     await db.insert(brewsTable).values({
       userId: user.id,
@@ -326,7 +338,7 @@ Respond ONLY with valid JSON, no markdown:
     const limit = email ? FREE_BREW_LIMIT : ANON_BREW_LIMIT;
     const usesRemaining = user.isPro ? FREE_BREW_LIMIT : Math.max(0, limit - newCount);
 
-    res.json({ advice, adjustment, usesRemaining, isPro: user.isPro, sessionId });
+    res.json({ advice, adjustment, usesRemaining, isPro: user.isPro, sessionId, prevSessionId });
 
     recordBrewForReferral(user.id).catch((err) => {
       logger.warn({ err, userId: user.id }, "recordBrewForReferral failed (non-fatal)");

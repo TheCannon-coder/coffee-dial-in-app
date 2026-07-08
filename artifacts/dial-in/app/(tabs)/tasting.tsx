@@ -63,6 +63,7 @@ export default function TastingScreen() {
   const [badgeIndex, setBadgeIndex] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [resultSessionId, setResultSessionId] = useState<string | null>(null);
+  const [prevSessionId, setPrevSessionId] = useState<string | null>(null);
 
   const adjustmentHistory: string[] = (() => {
     try {
@@ -136,6 +137,7 @@ export default function TastingScreen() {
         setAdjustment(result.adjustment);
         setUsesRemaining(result.usesRemaining);
         setResultSessionId(result.sessionId);
+        setPrevSessionId(result.prevSessionId ?? null);
         updateUserStats(result.isPro, FREE_BREW_LIMIT - result.usesRemaining, FREE_BREW_LIMIT);
 
         if (email) {
@@ -171,8 +173,10 @@ export default function TastingScreen() {
 
   async function handleFeedback(helpful: boolean) {
     setShowFeedback(false);
-    if (resultSessionId) {
-      submitFeedback(resultSessionId, helpful).catch(() => {});
+    // wasHelpful belongs on the PREVIOUS brew — that's the one whose advice
+    // we're evaluating. The current brew's session is for the next comparison.
+    if (prevSessionId) {
+      submitFeedback(prevSessionId, helpful).catch(() => {});
     }
     if (helpful) {
       const available = await StoreReview.isAvailableAsync();

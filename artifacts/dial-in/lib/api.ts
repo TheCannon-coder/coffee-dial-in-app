@@ -26,6 +26,7 @@ export interface DialInSuccess {
   usesRemaining: number;
   isPro: boolean;
   sessionId: string;
+  prevSessionId: string | null;
 }
 
 export interface DialInLimit {
