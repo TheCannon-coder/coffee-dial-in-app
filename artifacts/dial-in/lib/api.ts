@@ -212,6 +212,19 @@ export function getFriendReferralStats(email: string): Promise<FriendReferralSta
   return fetch(url).then((r) => r.json()) as Promise<FriendReferralStats>;
 }
 
+export interface PendingFeedback {
+  sessionId: string;
+  adjustment: string;
+  method: string | null;
+  coffeeName: string | null;
+}
+
+export async function getPendingFeedback(email: string): Promise<PendingFeedback | null> {
+  const url = `${API_BASE}/brews/pending-feedback?email=${encodeURIComponent(email)}`;
+  const res = await fetch(url).then(r => r.json()) as { pending: PendingFeedback | null };
+  return res.pending ?? null;
+}
+
 export interface RedeemReferralResult {
   success?: boolean;
   rcGranted?: boolean;

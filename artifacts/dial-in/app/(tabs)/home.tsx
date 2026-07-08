@@ -20,9 +20,29 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { getUser, getCustomerPortal } from '@/lib/api';
+import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, type PendingFeedback } from '@/lib/api';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
+
+const ADJUSTMENT_LABELS: Record<string, string> = {
+  grind_finer: 'grinding finer',
+  grind_coarser: 'grinding coarser',
+  steep_shorter: 'steeping shorter',
+  steep_longer: 'steeping longer',
+  more_coffee: 'using more coffee',
+  less_coffee: 'using less coffee',
+  more_water: 'using more water',
+  less_water: 'using less water',
+  lower_temp: 'a lower water temp',
+  higher_temp: 'a higher water temp',
+  pre_infusion: 'adding a pre-infusion',
+  bloom: 'blooming longer',
+};
+
+function adjustmentPrompt(adjustment: string): string {
+  const label = ADJUSTMENT_LABELS[adjustment] ?? adjustment.replace(/_/g, ' ');
+  return `Did ${label} help?`;
+}
 
 function greeting() {
   const h = new Date().getHours();
@@ -55,6 +75,8 @@ export default function HomeScreen() {
   const { enabled: notificationsEnabled, toggle: toggleNotifications, permission, reminderHour, reminderMinute, setReminderTime } = useNotifications();
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<BadgeId[]>([]);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   useEffect(() => {
     getEarnedBadgeIds().then(setEarnedBadgeIds).catch(() => {});
@@ -67,6 +89,9 @@ export default function HomeScreen() {
           updateUserStats(data.isPro, data.usesThisMonth, data.monthlyLimit);
           if (data.referralCode) setReferralCode(data.referralCode);
         })
+        .catch(() => {});
+      getPendingFeedback(email)
+        .then(setPendingFeedback)
         .catch(() => {});
     }
   }, [email]);
@@ -139,30 +164,82 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.brewCard,
-            { backgroundColor: colors.espresso, opacity: pressed ? 0.88 : 1 },
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/brew-setup');
-          }}
-        >
-          <View style={styles.brewCardContent}>
-            <View>
-              <Text style={[styles.brewCardTitle, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
-                Brew a new coffee
+        {pendingFeedback ? (
+          <View style={[styles.brewCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
+            <Text style={[styles.feedbackGateLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              Rate your last brew to continue
+            </Text>
+            <Text style={[styles.feedbackGateQuestion, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+              {adjustmentPrompt(pendingFeedback.adjustment)}
+            </Text>
+            {pendingFeedback.coffeeName ? (
+              <Text style={[styles.feedbackGateContext, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                {pendingFeedback.coffeeName}{pendingFeedback.method ? ` · ${pendingFeedback.method}` : ''}
               </Text>
-              <Text style={[styles.brewCardSub, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
-                Perfect your next cup
-              </Text>
-            </View>
-            <View style={[styles.brewArrow, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-              <Feather name="arrow-right" size={20} color={colors.cream} />
+            ) : null}
+            <View style={styles.feedbackGateBtns}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.feedbackGateBtn,
+                  { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed || feedbackSubmitting ? 0.6 : 1 },
+                ]}
+                disabled={feedbackSubmitting}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setFeedbackSubmitting(true);
+                  await submitFeedback(pendingFeedback.sessionId, false).catch(() => {});
+                  setPendingFeedback(null);
+                  setFeedbackSubmitting(false);
+                }}
+              >
+                <Text style={styles.feedbackGateBtnEmoji}>👎</Text>
+                <Text style={[styles.feedbackGateBtnLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>Not really</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.feedbackGateBtn,
+                  { backgroundColor: colors.espresso, borderColor: colors.espresso, opacity: pressed || feedbackSubmitting ? 0.6 : 1 },
+                ]}
+                disabled={feedbackSubmitting}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setFeedbackSubmitting(true);
+                  await submitFeedback(pendingFeedback.sessionId, true).catch(() => {});
+                  setPendingFeedback(null);
+                  setFeedbackSubmitting(false);
+                }}
+              >
+                <Text style={styles.feedbackGateBtnEmoji}>👍</Text>
+                <Text style={[styles.feedbackGateBtnLabel, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Yes, it helped!</Text>
+              </Pressable>
             </View>
           </View>
-        </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [
+              styles.brewCard,
+              { backgroundColor: colors.espresso, opacity: pressed ? 0.88 : 1 },
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/brew-setup');
+            }}
+          >
+            <View style={styles.brewCardContent}>
+              <View>
+                <Text style={[styles.brewCardTitle, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
+                  Brew a new coffee
+                </Text>
+                <Text style={[styles.brewCardSub, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+                  Perfect your next cup
+                </Text>
+              </View>
+              <View style={[styles.brewArrow, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+                <Feather name="arrow-right" size={20} color={colors.cream} />
+              </View>
+            </View>
+          </Pressable>
+        )}
 
         {showProNudge && (
           <Pressable
@@ -386,6 +463,13 @@ const styles = StyleSheet.create({
   proNudgeSub: { fontSize: 12 },
   proNudgeBtn: { borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8 },
   proNudgeBtnText: { fontSize: 14 },
+  feedbackGateLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
+  feedbackGateQuestion: { fontSize: 20, marginBottom: 4 },
+  feedbackGateContext: { fontSize: 13, marginBottom: 16 },
+  feedbackGateBtns: { flexDirection: 'row', gap: 10 },
+  feedbackGateBtn: { flex: 1, borderRadius: 14, borderWidth: 1.5, paddingVertical: 16, alignItems: 'center', gap: 6 },
+  feedbackGateBtnEmoji: { fontSize: 24 },
+  feedbackGateBtnLabel: { fontSize: 14 },
   brewCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brewCardTitle: { fontSize: 20, marginBottom: 4 },
   brewCardSub: { fontSize: 14 },

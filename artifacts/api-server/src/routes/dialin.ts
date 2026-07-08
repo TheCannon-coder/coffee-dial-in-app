@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull, ne, desc } from "drizzle-orm";
 import { db, usersTable, brewsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
@@ -335,6 +335,44 @@ Respond ONLY with valid JSON, no markdown:
     logger.error({ err }, "dialin error");
     res.status(500).json({ error: "internal_error" });
   }
+});
+
+// ── GET /brews/pending-feedback ──────────────────────────────────────────────
+// Returns the most recent unrated brew (adjustment != none, wasHelpful null)
+// for the given email user. Used by the home screen to gate the next brew.
+router.get("/brews/pending-feedback", async (req, res) => {
+  const { email } = req.query as { email?: string };
+  if (!email) {
+    res.status(400).json({ error: "email required" });
+    return;
+  }
+  const user = await db.query.usersTable.findFirst({
+    where: eq(usersTable.email, email),
+  });
+  if (!user) {
+    res.json({ pending: null });
+    return;
+  }
+  const brew = await db.query.brewsTable.findFirst({
+    where: and(
+      eq(brewsTable.userId, user.id),
+      isNull(brewsTable.wasHelpful),
+      ne(brewsTable.adjustment, "none"),
+    ),
+    orderBy: [desc(brewsTable.createdAt)],
+  });
+  if (!brew) {
+    res.json({ pending: null });
+    return;
+  }
+  res.json({
+    pending: {
+      sessionId: brew.sessionId,
+      adjustment: brew.adjustment,
+      method: brew.method,
+      coffeeName: brew.coffeeName,
+    },
+  });
 });
 
 router.post("/feedback", async (req, res) => {
