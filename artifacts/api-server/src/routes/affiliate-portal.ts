@@ -108,20 +108,22 @@ router.get("/affiliate/become", (_req, res) => {
 <section class="cbc-section" id="waitlist">
   <div class="cbc-inner">
     <h2>Get on the affiliate waitlist</h2>
-    <p>We're onboarding affiliates in small batches while we finish rolling out the program. Drop your email and we'll reach out with an invite and next steps.</p>
-    <form class="wl-form" id="affiliate-wl-form" novalidate style="max-width:420px;">
+    <p>We're onboarding affiliates in small batches while we finish rolling out the program. Drop your email below to join the waitlist.</p>
+    <p style="margin-top:10px;"><strong>Joining the waitlist doesn't create your affiliate account or dashboard access on its own.</strong> Once we review your application and confirm you, we'll email you directly to let you know your account is active — that's your signal to log in below for the first time.</p>
+    <form class="wl-form" id="affiliate-wl-form" novalidate style="max-width:420px; margin-top:16px;">
       <input class="wl-input" type="email" name="email" placeholder="your@email.com" required autocomplete="email" />
       <button class="wl-submit" type="submit">Join the waitlist</button>
     </form>
-    <p class="wl-success" id="affiliate-wl-success" hidden style="margin-top:14px;">You're on the list — we'll be in touch with an invite soon.</p>
+    <p class="wl-success" id="affiliate-wl-success" hidden style="margin-top:14px;">You're on the list — we'll email you directly once your affiliate account is confirmed.</p>
     <p class="wl-error" id="affiliate-wl-error" hidden></p>
   </div>
 </section>
 
 <section class="cta-section">
   <h2>Already confirmed as an affiliate?</h2>
-  <p>Sign in to see your live earnings, tier progress, and payout history.</p>
-  <a class="store-btn store-btn-ios" href="/affiliate/login" style="display:inline-flex;">
+  <p>If you've received a confirmation email from us that your affiliate account is active, sign in below to see your live earnings, tier progress, and payout history.</p>
+  <p style="margin-top:8px; font-size:14px; opacity:0.85;">Not sure if you're confirmed yet? If you haven't heard from us, your account isn't active yet — the login link only works for confirmed affiliates, so there's nothing to troubleshoot on your end. Join the waitlist above and we'll reach out.</p>
+  <a class="store-btn store-btn-ios" href="/affiliate/login" style="display:inline-flex; margin-top:14px;">
     <span class="store-btn-text"><span class="store-btn-main">Log in to your dashboard</span></span>
   </a>
 </section>
