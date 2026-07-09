@@ -112,10 +112,10 @@ async function sendPlatinumCongratulationsEmail(affiliate: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Dial In <hello@coffeebrew.coach>",
+        from: "Coffee Brew Coach <hello@coffeebrew.coach>",
         to: affiliate.payoutEmail,
         subject: "You've reached Platinum status 🎉",
-        html: `<p>Hi ${affiliate.name ?? "there"},</p><p>You've just crossed 1,000 active referred subscribers and unlocked our Platinum tier — our highest commission rate. Thank you for driving so much growth for Dial In.</p><p>Someone from our founding team will be reaching out personally soon.</p>`,
+        html: `<p>Hi ${affiliate.name ?? "there"},</p><p>You've just crossed 1,000 active referred subscribers and unlocked our Platinum tier — our highest commission rate. Thank you for driving so much growth for Coffee Brew Coach.</p><p>Someone from our founding team will be reaching out personally soon.</p>`,
       }),
     });
     if (!response.ok) {

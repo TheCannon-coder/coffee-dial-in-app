@@ -264,7 +264,7 @@ router.get("/affiliate/login", (_req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Affiliate Log In | Dial In — Coffee Coach</title>
+  <title>Affiliate Log In | Coffee Brew Coach</title>
   <meta name="robots" content="noindex, nofollow" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -291,7 +291,7 @@ router.get("/affiliate/login", (_req, res) => {
   <div class="card">
     <div class="logo">☕</div>
     <h1>Partner Dashboard</h1>
-    <p class="sub">Dial In — Coffee Coach</p>
+    <p class="sub">Coffee Brew Coach</p>
     <p class="desc">Enter the email on file for your affiliate account and we'll send you a one-time login link. No password needed.</p>
     <form id="login-form" novalidate>
       <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
@@ -382,9 +382,9 @@ router.post("/api/affiliate/login-request", async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Dial In <hello@coffeebrew.coach>",
+        from: "Coffee Brew Coach <hello@coffeebrew.coach>",
         to: affiliate.payoutEmail,
-        subject: "Your Dial In affiliate login link",
+        subject: "Your Coffee Brew Coach affiliate login link",
         html: `<p>Hi ${affiliate.name ?? "there"},</p><p>Click below to sign in to your affiliate dashboard. This link expires in 15 minutes and can only be used once.</p><p><a href="${link}">${link}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
       }),
     });
@@ -497,7 +497,7 @@ router.get("/affiliate/dashboard", requireAffiliateAuth, async (req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Affiliate Dashboard | Dial In — Coffee Coach</title>
+  <title>Affiliate Dashboard | Coffee Brew Coach</title>
   <meta name="robots" content="noindex, nofollow" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
