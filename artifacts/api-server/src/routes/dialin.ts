@@ -369,6 +369,7 @@ router.get("/brews/pending-feedback", async (req, res) => {
     where: and(
       eq(brewsTable.userId, user.id),
       isNull(brewsTable.wasHelpful),
+      eq(brewsTable.feedbackIgnored, false),
       ne(brewsTable.adjustment, "none"),
     ),
     orderBy: [desc(brewsTable.createdAt)],
@@ -385,6 +386,27 @@ router.get("/brews/pending-feedback", async (req, res) => {
       coffeeName: brew.coffeeName,
     },
   });
+});
+
+// Dismisses a pending feedback prompt without recording wasHelpful. Used when
+// the user swipes away the home-screen gate instead of answering it — we
+// don't want to record a false "same or worse" signal for data we never got.
+router.post("/brews/dismiss-feedback", async (req, res) => {
+  const { sessionId } = req.body as { sessionId?: string };
+  if (!sessionId) {
+    res.status(400).json({ error: "sessionId required" });
+    return;
+  }
+  try {
+    await db
+      .update(brewsTable)
+      .set({ feedbackIgnored: true })
+      .where(eq(brewsTable.sessionId, sessionId));
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "dismiss-feedback error");
+    res.status(500).json({ error: "internal_error" });
+  }
 });
 
 router.post("/feedback", async (req, res) => {

@@ -155,6 +155,10 @@ export function submitFeedback(sessionId: string, wasHelpful: boolean): Promise<
   return post<{ ok: boolean }>('/feedback', { sessionId, wasHelpful });
 }
 
+export function dismissFeedback(sessionId: string): Promise<{ ok: boolean }> {
+  return post<{ ok: boolean }>('/brews/dismiss-feedback', { sessionId });
+}
+
 export interface PromoRedeemResult {
   message?: string;
   error?: string;

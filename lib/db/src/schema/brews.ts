@@ -28,6 +28,7 @@ export const brewsTable = pgTable("brews", {
   comparedToPrevious: text("compared_to_previous"),
 
   wasHelpful: boolean("was_helpful"),
+  feedbackIgnored: boolean("feedback_ignored").default(false).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

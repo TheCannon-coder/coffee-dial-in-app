@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Dimensions,
   Linking,
   Pressable,
   ScrollView,
@@ -14,13 +15,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useColors } from '@/hooks/useColors';
 import { useUser, SavedCoffee } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, type PendingFeedback } from '@/lib/api';
+import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, type PendingFeedback } from '@/lib/api';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
 
@@ -64,6 +72,97 @@ function groupCoffees(coffees: SavedCoffee[]): { name: string; sessions: SavedCo
       sessions: sessions.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()),
     }))
     .sort((a, b) => new Date(b.sessions[0].savedAt).getTime() - new Date(a.sessions[0].savedAt).getTime());
+}
+
+const SWIPE_DISMISS_THRESHOLD = Dimensions.get('window').width * 0.3;
+
+function SwipeableFeedbackCard({
+  pendingFeedback,
+  feedbackSubmitting,
+  colors,
+  onAnswer,
+  onDismiss,
+}: {
+  pendingFeedback: PendingFeedback;
+  feedbackSubmitting: boolean;
+  colors: ReturnType<typeof useColors>;
+  onAnswer: (wasHelpful: boolean) => void;
+  onDismiss: () => void;
+}) {
+  const translateX = useSharedValue(0);
+  const cardOpacity = useSharedValue(1);
+
+  const pan = Gesture.Pan()
+    .onUpdate((e) => {
+      translateX.value = e.translationX;
+    })
+    .onEnd((e) => {
+      if (Math.abs(e.translationX) > SWIPE_DISMISS_THRESHOLD) {
+        const direction = e.translationX > 0 ? 1 : -1;
+        translateX.value = withTiming(direction * Dimensions.get('window').width, { duration: 200 });
+        cardOpacity.value = withTiming(0, { duration: 200 }, (finished) => {
+          if (finished) runOnJS(onDismiss)();
+        });
+      } else {
+        translateX.value = withTiming(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    opacity: cardOpacity.value,
+  }));
+
+  return (
+    <GestureDetector gesture={pan}>
+      <Animated.View
+        style={[
+          styles.brewCard,
+          { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth },
+          animatedStyle,
+        ]}
+      >
+        <Text style={[styles.feedbackGateLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+          Before your next brew
+        </Text>
+        <Text style={[styles.feedbackGateQuestion, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+          Was your last{pendingFeedback.method ? ` ${pendingFeedback.method}` : ''} brew better?
+        </Text>
+        {pendingFeedback.coffeeName ? (
+          <Text style={[styles.feedbackGateContext, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            {pendingFeedback.coffeeName}
+          </Text>
+        ) : null}
+        <View style={styles.feedbackGateBtns}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.feedbackGateBtn,
+              { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed || feedbackSubmitting ? 0.6 : 1 },
+            ]}
+            disabled={feedbackSubmitting}
+            onPress={() => onAnswer(false)}
+          >
+            <Text style={styles.feedbackGateBtnEmoji}>😕</Text>
+            <Text style={[styles.feedbackGateBtnLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>Same or worse</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.feedbackGateBtn,
+              { backgroundColor: colors.espresso, borderColor: colors.espresso, opacity: pressed || feedbackSubmitting ? 0.6 : 1 },
+            ]}
+            disabled={feedbackSubmitting}
+            onPress={() => onAnswer(true)}
+          >
+            <Text style={styles.feedbackGateBtnEmoji}>☕️</Text>
+            <Text style={[styles.feedbackGateBtnLabel, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Yes, better!</Text>
+          </Pressable>
+        </View>
+        <Text style={[styles.feedbackGateSwipeHint, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+          Swipe to dismiss
+        </Text>
+      </Animated.View>
+    </GestureDetector>
+  );
 }
 
 export default function HomeScreen() {
@@ -165,55 +264,23 @@ export default function HomeScreen() {
         </View>
 
         {pendingFeedback ? (
-          <View style={[styles.brewCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
-            <Text style={[styles.feedbackGateLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Before your next brew
-            </Text>
-            <Text style={[styles.feedbackGateQuestion, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-              Was your last{pendingFeedback.method ? ` ${pendingFeedback.method}` : ''} brew better?
-            </Text>
-            {pendingFeedback.coffeeName ? (
-              <Text style={[styles.feedbackGateContext, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                {pendingFeedback.coffeeName}
-              </Text>
-            ) : null}
-            <View style={styles.feedbackGateBtns}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.feedbackGateBtn,
-                  { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed || feedbackSubmitting ? 0.6 : 1 },
-                ]}
-                disabled={feedbackSubmitting}
-                onPress={async () => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  setFeedbackSubmitting(true);
-                  await submitFeedback(pendingFeedback.sessionId, false).catch(() => {});
-                  setPendingFeedback(null);
-                  setFeedbackSubmitting(false);
-                }}
-              >
-                <Text style={styles.feedbackGateBtnEmoji}>😕</Text>
-                <Text style={[styles.feedbackGateBtnLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_500Medium' }]}>Same or worse</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.feedbackGateBtn,
-                  { backgroundColor: colors.espresso, borderColor: colors.espresso, opacity: pressed || feedbackSubmitting ? 0.6 : 1 },
-                ]}
-                disabled={feedbackSubmitting}
-                onPress={async () => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  setFeedbackSubmitting(true);
-                  await submitFeedback(pendingFeedback.sessionId, true).catch(() => {});
-                  setPendingFeedback(null);
-                  setFeedbackSubmitting(false);
-                }}
-              >
-                <Text style={styles.feedbackGateBtnEmoji}>☕️</Text>
-                <Text style={[styles.feedbackGateBtnLabel, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Yes, better!</Text>
-              </Pressable>
-            </View>
-          </View>
+          <SwipeableFeedbackCard
+            pendingFeedback={pendingFeedback}
+            feedbackSubmitting={feedbackSubmitting}
+            colors={colors}
+            onAnswer={async (wasHelpful) => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setFeedbackSubmitting(true);
+              await submitFeedback(pendingFeedback.sessionId, wasHelpful).catch(() => {});
+              setPendingFeedback(null);
+              setFeedbackSubmitting(false);
+            }}
+            onDismiss={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              dismissFeedback(pendingFeedback.sessionId).catch(() => {});
+              setPendingFeedback(null);
+            }}
+          />
         ) : (
           <Pressable
             style={({ pressed }) => [
@@ -470,6 +537,7 @@ const styles = StyleSheet.create({
   feedbackGateBtn: { flex: 1, borderRadius: 14, borderWidth: 1.5, paddingVertical: 16, alignItems: 'center', gap: 6 },
   feedbackGateBtnEmoji: { fontSize: 24 },
   feedbackGateBtnLabel: { fontSize: 14 },
+  feedbackGateSwipeHint: { fontSize: 11, textAlign: 'center', marginTop: 12 },
   brewCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brewCardTitle: { fontSize: 20, marginBottom: 4 },
   brewCardSub: { fontSize: 14 },
