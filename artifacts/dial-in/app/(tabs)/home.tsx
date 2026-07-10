@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -189,11 +189,21 @@ export default function HomeScreen() {
           if (data.referralCode) setReferralCode(data.referralCode);
         })
         .catch(() => {});
-      getPendingFeedback(email)
-        .then(setPendingFeedback)
-        .catch(() => {});
     }
   }, [email]);
+
+  // Refetch on every focus (not just mount) so that answering the in-tasting
+  // "Better than your last brew?" question clears wasHelpful server-side and
+  // this fallback doesn't show a stale prompt when the user returns home.
+  useFocusEffect(
+    React.useCallback(() => {
+      if (email) {
+        getPendingFeedback(email)
+          .then(setPendingFeedback)
+          .catch(() => {});
+      }
+    }, [email])
+  );
 
   async function handleManageSubscription() {
     if (!email) return;
