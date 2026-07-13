@@ -78,3 +78,9 @@ id = "SofZSjsLaQOgS-nNa_6cb"
 uri = "file://attached_assets/paywall-screenshot-1290x2796.png"
 type = "image"
 title = "Paywall Screenshot — 1290×2796 (App Store ready)"
+
+[[outputs]]
+id = "3y2NeNW1nGLXNCMzaXU6g"
+uri = "file://dial-in-analytics.md"
+type = "text"
+title = "Dial In — App Usage Analytics"
