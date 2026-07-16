@@ -13,6 +13,11 @@ export const APP_SCHEMA = {
     "Coffee coaching that diagnoses why your coffee tastes wrong and gives you one specific fix per brew.",
   "url": "https://www.coffeebrew.coach",
   "downloadUrl": "https://apps.apple.com/app/id6777418888",
+  "creator": {
+    "@type": "Organization",
+    "name": "The Cannon",
+    "url": "https://thecannon.coffee",
+  },
 };
 
 export const COMMON_CSS = `
@@ -167,6 +172,8 @@ export const COMMON_CSS = `
   .footer-links a { color: #6B5040; font-size: 12px; text-decoration: none; }
   .footer-links a:hover { color: #A89080; }
   .footer-copy { font-size: 11px; color: #3D2410; }
+  .footer-copy a { color: #6B5040; text-decoration: none; }
+  .footer-copy a:hover { color: #A89080; }
 
   /* ── Waitlist modal ─── */
   .wl-overlay {
@@ -360,6 +367,7 @@ export function renderFooter(): string {
       <a href="/api/privacy">Privacy</a>
       <a href="/api/terms">Terms</a>
     </div>
+    <p class="footer-copy">Built by <a href="https://thecannon.coffee" target="_blank" rel="noopener">The Cannon</a> &mdash; coffee, waffles &amp; brunch in Hamilton, Ontario</p>
     <p class="footer-copy">&copy; ${new Date().getFullYear()} Coffee Brew Coach</p>
   </div>
 </footer>`;

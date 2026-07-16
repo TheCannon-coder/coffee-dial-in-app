@@ -458,6 +458,7 @@ ${renderNav()}
   <div class="free-tier-inner">
     <h2 id="free-heading">Start free.<br/>No credit card needed.</h2>
     <p>Every account gets 10 free coached brews per month — enough to dial in a new coffee or fix a persistent problem. Upgrade to Pro for unlimited sessions.</p>
+    <p>Coffee Brew Coach was built by the team at <a href="https://thecannon.coffee" target="_blank" rel="noopener" style="color:#6B4226;text-underline-offset:3px;">The Cannon</a>, a caf&eacute; in Hamilton, Ontario, where we dial in our espresso every morning.</p>
     <div class="free-tier-perks">
       <span class="perk-chip">10 free coaching sessions/month</span>
       <span class="perk-chip">All brew methods included</span>
