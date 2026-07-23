@@ -501,12 +501,12 @@ function referralBanner(code: string): string {
 <div id="ref-banner" style="background:#2C1A0E;color:#FAF7F2;text-align:center;padding:20px 20px 18px;font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;">
   <div style="max-width:480px;margin:0 auto;">
     <p style="margin:0 0 4px;font-size:13px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Your friend sent you</p>
-    <p style="margin:0 0 10px;font-size:20px;font-weight:600;">One free month of Dial In Pro ☕️</p>
+    <p style="margin:0 0 10px;font-size:20px;font-weight:600;">One free month of Coffee Brew Coach Pro ☕️</p>
     <strong style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 20px;font-size:22px;letter-spacing:3px;margin-bottom:14px;">${safe}</strong>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:6px;">
       <a href="${deepLink}"
          style="display:inline-block;background:#FAF7F2;color:#2C1A0E;text-decoration:none;border-radius:100px;padding:11px 22px;font-size:15px;font-weight:600;">
-        Open in Dial In →
+        Open in Coffee Brew Coach →
       </a>
     </div>
     <p style="margin:8px 0 0;font-size:12px;opacity:0.6;">Already have the app? Tap above. Otherwise download below, then enter this code at sign-in.</p>
