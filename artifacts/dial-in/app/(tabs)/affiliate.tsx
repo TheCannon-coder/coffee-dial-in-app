@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -204,10 +205,19 @@ export default function AffiliateScreen() {
   const handleShare = useCallback(async () => {
     if (!referralLink) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
-      message: `I've been using Coffee Brew Coach to perfect my espresso — try it free for a month with my link: ${referralLink}`,
-      url: referralLink,
-    });
+    // On iOS, Share.share appends `url` after `message` — including the URL in
+    // both fields creates two link-preview cards in iMessage. Pass text-only in
+    // `message` and the URL separately so the system produces one clean preview.
+    Share.share(
+      Platform.OS === 'ios'
+        ? {
+            message: "I've been using Coffee Brew Coach to perfect my espresso — try it free for a month with my link:",
+            url: referralLink,
+          }
+        : {
+            message: `I've been using Coffee Brew Coach to perfect my espresso — try it free for a month with my link: ${referralLink}`,
+          }
+    );
   }, [referralLink]);
 
   const hasActivity = months.some(m => m.newConversions > 0 || m.earningsCents > 0);

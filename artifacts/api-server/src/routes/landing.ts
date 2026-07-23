@@ -492,7 +492,49 @@ ${renderFooter()}
 </body>
 </html>`;
 
-router.get("/", (_req, res) => {
+// Referral banner — injected when ?ref=CODE is present
+function referralBanner(code: string): string {
+  const safe = code.replace(/[^A-Z0-9-]/gi, "").toUpperCase().slice(0, 30);
+  if (!safe) return "";
+  return `
+<div id="ref-banner" style="background:#2C1A0E;color:#FAF7F2;text-align:center;padding:14px 20px;font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;">
+  ☕️ Your friend gave you a free month of Coffee Brew Coach Pro.
+  <strong style="display:block;margin-top:6px;font-size:18px;letter-spacing:2px;">${safe}</strong>
+  <span style="font-size:13px;opacity:0.75;">Download the app, then enter this code at sign-in to claim your free month.</span>
+</div>`;
+}
+
+router.get("/", (req, res) => {
+  const ref = typeof req.query.ref === "string" ? req.query.ref : "";
+  const banner = referralBanner(ref);
+
+  if (ref) {
+    // Referral visit: dynamic page — no long-lived cache, referral-specific OG tags
+    const safe = ref.replace(/[^A-Z0-9-]/gi, "").toUpperCase().slice(0, 30);
+    const refHtml = html
+      .replace(
+        '<meta property="og:title" content="Coffee Brew Coach — Coffee Coaching App" />',
+        `<meta property="og:title" content="Your friend is sharing Dial In with you 🎁" />`
+      )
+      .replace(
+        '<meta property="og:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup. Free for iOS and Android." />',
+        `<meta property="og:description" content="Use code ${safe} at sign-in to get your first month of Pro free. AI coffee coaching for espresso, pour over, and more." />`
+      )
+      .replace(
+        '<meta name="twitter:title" content="Coffee Brew Coach — Coffee Coaching App" />',
+        `<meta name="twitter:title" content="Your friend is sharing Dial In with you 🎁" />`
+      )
+      .replace(
+        '<meta name="twitter:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup." />',
+        `<meta name="twitter:description" content="Use code ${safe} at sign-in to get your first month of Pro free." />`
+      )
+      .replace("<body>", `<body>${banner}`);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(refHtml);
+    return;
+  }
+
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
   res.send(html);

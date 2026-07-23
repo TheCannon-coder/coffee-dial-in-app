@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -34,10 +34,18 @@ export function ReferralCard() {
     if (!code) return;
     const link = `https://www.coffeebrew.coach?ref=${code}`;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
-      message: `I've been using Coffee Brew Coach to dial in my coffee — give it a try: ${link}`,
-      url: link,
-    });
+    // On iOS, `url` is appended after `message` — passing the URL in both fields
+    // produces two link-preview cards in iMessage. Split them so there's one preview.
+    Share.share(
+      Platform.OS === 'ios'
+        ? {
+            message: "I've been using Coffee Brew Coach to dial in my coffee — give it a try:",
+            url: link,
+          }
+        : {
+            message: `I've been using Coffee Brew Coach to dial in my coffee — give it a try: ${link}`,
+          }
+    );
   }
 
   async function handleCopy() {
