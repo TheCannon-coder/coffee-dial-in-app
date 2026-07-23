@@ -19,11 +19,27 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { UserProvider } from '@/context/UserContext';
 import { AppStripeProvider } from '@/lib/stripe-provider';
 import { initializeRevenueCat, SubscriptionProvider } from '@/lib/revenuecat';
+import { setItem, KEYS } from '@/lib/storage';
+
+/**
+ * Extract a referral code from any incoming URL.
+ * Handles both:
+ *  • https://www.coffeebrew.coach?ref=CODE  (universal links / web share)
+ *  • dial-in://ref?code=CODE               (custom scheme from in-app banner)
+ */
+function extractRefCode(url: string): string | null {
+  try {
+    const match = url.match(/[?&](?:ref|code)=([A-Z0-9][A-Z0-9-]*)/i);
+    return match ? match[1].trim().toUpperCase() : null;
+  } catch {
+    return null;
+  }
+}
 
 try {
   initializeRevenueCat();
@@ -59,6 +75,22 @@ export default function RootLayout() {
 
   const fontsLoaded = frauncesFontsLoaded && dmSansFontsLoaded;
   const fontError = frauncesError || dmSansError;
+
+  // Capture referral code from deep-link / universal link on cold launch
+  useEffect(() => {
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        const code = extractRefCode(url);
+        if (code) setItem(KEYS.REF, code).catch(() => {});
+      }
+    }).catch(() => {});
+
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      const code = extractRefCode(url);
+      if (code) setItem(KEYS.REF, code).catch(() => {});
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

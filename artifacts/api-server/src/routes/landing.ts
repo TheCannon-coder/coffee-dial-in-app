@@ -496,11 +496,21 @@ ${renderFooter()}
 function referralBanner(code: string): string {
   const safe = code.replace(/[^A-Z0-9-]/gi, "").toUpperCase().slice(0, 30);
   if (!safe) return "";
+  const deepLink = `dial-in://ref?code=${encodeURIComponent(safe)}`;
   return `
-<div id="ref-banner" style="background:#2C1A0E;color:#FAF7F2;text-align:center;padding:14px 20px;font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;">
-  ☕️ Your friend gave you a free month of Coffee Brew Coach Pro.
-  <strong style="display:block;margin-top:6px;font-size:18px;letter-spacing:2px;">${safe}</strong>
-  <span style="font-size:13px;opacity:0.75;">Download the app, then enter this code at sign-in to claim your free month.</span>
+<div id="ref-banner" style="background:#2C1A0E;color:#FAF7F2;text-align:center;padding:20px 20px 18px;font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;">
+  <div style="max-width:480px;margin:0 auto;">
+    <p style="margin:0 0 4px;font-size:13px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Your friend sent you</p>
+    <p style="margin:0 0 10px;font-size:20px;font-weight:600;">One free month of Dial In Pro ☕️</p>
+    <strong style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 20px;font-size:22px;letter-spacing:3px;margin-bottom:14px;">${safe}</strong>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:6px;">
+      <a href="${deepLink}"
+         style="display:inline-block;background:#FAF7F2;color:#2C1A0E;text-decoration:none;border-radius:100px;padding:11px 22px;font-size:15px;font-weight:600;">
+        Open in Dial In →
+      </a>
+    </div>
+    <p style="margin:8px 0 0;font-size:12px;opacity:0.6;">Already have the app? Tap above. Otherwise download below, then enter this code at sign-in.</p>
+  </div>
 </div>`;
 }
 
@@ -527,6 +537,11 @@ router.get("/", (req, res) => {
       .replace(
         '<meta name="twitter:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup." />',
         `<meta name="twitter:description" content="Use code ${safe} at sign-in to get your first month of Pro free." />`
+      )
+      // Smart App Banner: include app-argument so iOS opens the app at the right URL
+      .replace(
+        '<meta name="apple-itunes-app" content="app-id=6777418888" />',
+        `<meta name="apple-itunes-app" content="app-id=6777418888, app-argument=dial-in://ref?code=${encodeURIComponent(safe)}" />`
       )
       .replace("<body>", `<body>${banner}`);
     res.setHeader("Content-Type", "text/html; charset=utf-8");

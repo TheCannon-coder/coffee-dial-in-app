@@ -24,6 +24,7 @@
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.dialin.coffeecoach",
       "buildNumber": "51",
+      "associatedDomains": ["applinks:coffeebrew.coach", "applinks:www.coffeebrew.coach"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "Coffee Brew Coach can remind you to brew and notify you about referral rewards.",

@@ -19,6 +19,7 @@ import { useUser } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { signInWithApple, redeemReferralCode } from '@/lib/api';
 import { NotificationSheet } from '@/components/NotificationSheet';
+import { getItem, removeItem, KEYS } from '@/lib/storage';
 
 const FEATURES = [
   {
@@ -54,6 +55,16 @@ export default function OnboardingScreen() {
   const [showCodeField, setShowCodeField] = useState(false);
   const [referralCodeInput, setReferralCodeInput] = useState('');
 
+  // Pre-fill referral code from deep-link (stored by _layout.tsx URL handler)
+  useEffect(() => {
+    getItem<string>(KEYS.REF).then(stored => {
+      if (stored) {
+        setReferralCodeInput(stored);
+        setShowCodeField(true);
+      }
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     AppleAuthentication.isAvailableAsync()
       .then(setAppleAvailable)
@@ -69,6 +80,8 @@ export default function OnboardingScreen() {
     if (!code) return;
     try {
       await redeemReferralCode(signedInEmail, code);
+      // Clear the stored deep-link code once it has been applied
+      await removeItem(KEYS.REF);
     } catch {
       // best-effort — never block sign-in
     }

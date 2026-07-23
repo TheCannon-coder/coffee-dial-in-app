@@ -66,6 +66,28 @@ if (process.env.REFERRAL_PROGRAM === "true") {
 
 app.use(affiliatePortalRouter);
 
+// Apple App Site Association — required for Universal Links (referral deep-links).
+// Replace APPLE_TEAM_ID env var with your 10-character Apple Team ID from
+// developer.apple.com → Membership. Until set, universal links won't activate;
+// the custom-scheme fallback (dial-in://) still works without it.
+app.get("/.well-known/apple-app-site-association", (_req, res) => {
+  const teamId = process.env.APPLE_TEAM_ID ?? "XXXXXXXXXX";
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.json({
+    applinks: {
+      details: [
+        {
+          appIDs: [`${teamId}.com.dialin.coffeecoach`],
+          components: [
+            { "/": "/", "?": { ref: "?*" }, comment: "Referral links — pass ?ref=CODE into the app" },
+          ],
+        },
+      ],
+    },
+  });
+});
+
 app.use("/api", promoRouter);
 app.use("/api", router);
 

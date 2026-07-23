@@ -28,7 +28,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, type PendingFeedback } from '@/lib/api';
+import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, type PendingFeedback } from '@/lib/api';
+import { getItem, removeItem, KEYS } from '@/lib/storage';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
 
@@ -195,12 +196,42 @@ export default function HomeScreen() {
   // Refetch on every focus (not just mount) so that answering the in-tasting
   // "Better than your last brew?" question clears wasHelpful server-side and
   // this fallback doesn't show a stale prompt when the user returns home.
+  // Also check for a pending referral code from a deep-link.
   useFocusEffect(
     React.useCallback(() => {
       if (email) {
         getPendingFeedback(email)
           .then(setPendingFeedback)
           .catch(() => {});
+
+        // If the user opened the app via a referral link, claim the code now
+        getItem<string>(KEYS.REF).then(async pendingCode => {
+          if (!pendingCode) return;
+          // Clear it immediately so it doesn't prompt again on the next focus
+          await removeItem(KEYS.REF);
+          Alert.alert(
+            '🎁 You have a referral code',
+            `Apply code "${pendingCode}" to get a free month of Pro?`,
+            [
+              { text: 'Not now', style: 'cancel' },
+              {
+                text: 'Apply it',
+                onPress: async () => {
+                  try {
+                    const result = await redeemReferralCode(email, pendingCode);
+                    if (result.error) {
+                      Alert.alert('Code not applied', result.error);
+                    } else {
+                      Alert.alert('✓ Code applied', result.message ?? 'You have one free month of Pro!');
+                    }
+                  } catch {
+                    Alert.alert('Something went wrong', 'Please try again later.');
+                  }
+                },
+              },
+            ],
+          );
+        }).catch(() => {});
       }
     }, [email])
   );
