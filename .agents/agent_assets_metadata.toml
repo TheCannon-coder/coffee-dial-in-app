@@ -84,3 +84,9 @@ id = "3y2NeNW1nGLXNCMzaXU6g"
 uri = "file://dial-in-analytics.md"
 type = "text"
 title = "Dial In — App Usage Analytics"
+
+[[outputs]]
+id = "skKYx8qnww2_tNAs8HE0F"
+uri = "file://cbc-source.zip"
+type = "unspecified"
+title = "Coffee Brew Coach — source code"
