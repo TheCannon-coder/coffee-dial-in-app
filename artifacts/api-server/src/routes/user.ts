@@ -2,6 +2,7 @@ import { Router } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, usersTable, referralConversionsTable, affiliatesTable, commissionLedgerTable } from "@workspace/db";
 import { getStripe } from "../lib/stripe";
+import { publicBaseUrl } from "../lib/base-url";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -195,8 +196,7 @@ router.post("/create-checkout", async (req, res) => {
       }
     }
 
-    const domains = (process.env["REPLIT_DOMAINS"] ?? "localhost").split(",");
-    const baseUrl = `https://${domains[0]}`;
+    const baseUrl = publicBaseUrl();
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -230,8 +230,7 @@ router.post("/customer-portal", async (req, res) => {
     }
 
     const stripe = getStripe();
-    const domains = (process.env["REPLIT_DOMAINS"] ?? "localhost").split(",");
-    const baseUrl = `https://${domains[0]}`;
+    const baseUrl = publicBaseUrl();
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,

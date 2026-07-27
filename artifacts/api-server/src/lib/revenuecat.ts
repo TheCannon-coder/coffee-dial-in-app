@@ -1,17 +1,6 @@
-import { createClient, createConfig } from "@replit/revenuecat-sdk/client";
-import { grantCustomerEntitlement } from "@replit/revenuecat-sdk";
 import { logger } from "./logger";
 
-function getRcClient() {
-  const secretKey = process.env["REVENUECAT_SECRET_KEY"];
-  if (!secretKey) throw new Error("REVENUECAT_SECRET_KEY not set");
-  return createClient(
-    createConfig({
-      baseUrl: "https://api.revenuecat.com/v2",
-      headers: { Authorization: `Bearer ${secretKey}` },
-    }),
-  );
-}
+const RC_API_BASE = "https://api.revenuecat.com/v2";
 
 const RC_MONTHS_MS: Record<number, number> = {
   1:  30  * 24 * 60 * 60 * 1000,
@@ -27,6 +16,9 @@ const RC_MONTHS_MS: Record<number, number> = {
  * Returns true on success.
  */
 export async function grantProEntitlement(rcId: string, months: number): Promise<boolean> {
+  const secretKey = process.env["REVENUECAT_SECRET_KEY"];
+  if (!secretKey) throw new Error("REVENUECAT_SECRET_KEY not set");
+
   const projectId = process.env["REVENUECAT_PROJECT_ID"];
   const entitlementId = process.env["REVENUECAT_PRO_ENTITLEMENT_ID"];
   if (!projectId || !entitlementId) {
@@ -38,19 +30,24 @@ export async function grantProEntitlement(rcId: string, months: number): Promise
   const expiresAt = Date.now() + durationMs;
 
   try {
-    const client = getRcClient();
-    const { error, response } = await grantCustomerEntitlement({
-      client,
-      path: { project_id: projectId, customer_id: rcId },
-      body: { entitlement_id: entitlementId, expires_at: expiresAt },
-    });
+    const response = await fetch(
+      `${RC_API_BASE}/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(rcId)}/actions/grant_entitlement`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ entitlement_id: entitlementId, expires_at: expiresAt }),
+      },
+    );
 
-    const status = response?.status ?? 0;
-    if (error) {
-      logger.error({ rcId, months, status, error }, "grantProEntitlement: RC grant error");
+    if (!response.ok) {
+      const error = await response.text().catch(() => "");
+      logger.error({ rcId, months, status: response.status, error }, "grantProEntitlement: RC grant error");
       return false;
     }
-    logger.info({ rcId, months, status, expiresAt }, "grantProEntitlement: granted");
+    logger.info({ rcId, months, status: response.status, expiresAt }, "grantProEntitlement: granted");
     return true;
   } catch (err) {
     logger.error({ err, rcId, months }, "grantProEntitlement: unexpected error");

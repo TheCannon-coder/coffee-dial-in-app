@@ -1,18 +1,18 @@
 import OpenAI from "openai";
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+// Direct OpenAI API access via OPENAI_API_KEY. The Replit-managed proxy vars
+// (AI_INTEGRATIONS_OPENAI_*) are honored as a fallback so the code still runs
+// on Replit until the hosting cutover completes.
+const directKey = process.env.OPENAI_API_KEY;
+const proxyKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+const proxyBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+
+if (!directKey && !(proxyKey && proxyBaseUrl)) {
   throw new Error(
-    "AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?",
+    "OPENAI_API_KEY must be set (or AI_INTEGRATIONS_OPENAI_API_KEY + AI_INTEGRATIONS_OPENAI_BASE_URL when running on Replit).",
   );
 }
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_API_KEY must be set. Did you forget to provision the OpenAI AI integration?",
-  );
-}
-
-export const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+export const openai = directKey
+  ? new OpenAI({ apiKey: directKey })
+  : new OpenAI({ apiKey: proxyKey, baseURL: proxyBaseUrl });

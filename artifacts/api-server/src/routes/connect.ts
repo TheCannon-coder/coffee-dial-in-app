@@ -11,6 +11,7 @@ import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, affiliatesTable } from "@workspace/db";
 import { getStripe } from "../lib/stripe";
+import { publicBaseUrl } from "../lib/base-url";
 import { logger } from "../lib/logger";
 
 /**
@@ -112,11 +113,7 @@ router.post("/affiliate/connect/onboard", async (req, res) => {
       return;
     }
 
-    const baseUrl = (() => {
-      const domains = process.env["REPLIT_DOMAINS"]?.split(",") ?? [];
-      const prod = domains.find((d) => !d.includes("dev"));
-      return prod ? `https://${prod}` : `https://${domains[0] ?? "localhost"}`;
-    })();
+    const baseUrl = publicBaseUrl();
 
     const link = await stripe.accountLinks.create({
       account: accountId,
