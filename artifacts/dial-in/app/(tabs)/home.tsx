@@ -28,7 +28,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, type PendingFeedback } from '@/lib/api';
+import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, getAffiliateStats, type PendingFeedback } from '@/lib/api';
 import { getItem, removeItem, KEYS } from '@/lib/storage';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
@@ -75,7 +75,8 @@ function groupCoffees(coffees: SavedCoffee[]): { name: string; sessions: SavedCo
     .sort((a, b) => new Date(b.sessions[0].savedAt).getTime() - new Date(a.sessions[0].savedAt).getTime());
 }
 
-const SWIPE_DISMISS_THRESHOLD = Dimensions.get('window').width * 0.3;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SWIPE_DISMISS_THRESHOLD = SCREEN_WIDTH * 0.3;
 
 function SwipeableFeedbackCard({
   pendingFeedback,
@@ -94,13 +95,15 @@ function SwipeableFeedbackCard({
   const cardOpacity = useSharedValue(1);
 
   const pan = Gesture.Pan()
+    .activeOffsetX([-15, 15])
+    .failOffsetY([-15, 15])
     .onUpdate((e) => {
       translateX.value = e.translationX;
     })
     .onEnd((e) => {
       if (Math.abs(e.translationX) > SWIPE_DISMISS_THRESHOLD) {
         const direction = e.translationX > 0 ? 1 : -1;
-        translateX.value = withTiming(direction * Dimensions.get('window').width, { duration: 200 });
+        translateX.value = withTiming(direction * SCREEN_WIDTH, { duration: 200 });
         cardOpacity.value = withTiming(0, { duration: 200 }, (finished) => {
           if (finished) runOnJS(onDismiss)();
         });
@@ -177,6 +180,7 @@ export default function HomeScreen() {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [isAffiliate, setIsAffiliate] = useState(false);
 
   useEffect(() => {
     getEarnedBadgeIds().then(setEarnedBadgeIds).catch(() => {});
@@ -202,6 +206,12 @@ export default function HomeScreen() {
       if (email) {
         getPendingFeedback(email)
           .then(setPendingFeedback)
+          .catch(() => {});
+
+        // Refresh on focus so the footer link flips to "Affiliate dashboard"
+        // right after the user is approved on the affiliate screen.
+        getAffiliateStats(email)
+          .then(stats => setIsAffiliate(!!stats.isAffiliate))
           .catch(() => {});
 
         // If the user opened the app via a referral link, claim the code now
@@ -515,19 +525,7 @@ export default function HomeScreen() {
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
             <Text style={[styles.affiliateLinkText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
-              Become an affiliate
-            </Text>
-          </Pressable>
-          <Text style={[styles.affiliateSep, { color: colors.border }]}>·</Text>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              WebBrowser.openBrowserAsync('https://www.coffeebrew.coach/affiliate/dashboard');
-            }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-          >
-            <Text style={[styles.affiliateLinkText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Affiliate dashboard
+              {isAffiliate ? 'Affiliate dashboard' : 'Become an affiliate'}
             </Text>
           </Pressable>
         </View>
@@ -632,5 +630,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   affiliateLinkText: { fontSize: 13, textDecorationLine: 'underline' },
-  affiliateSep: { fontSize: 13 },
 });
