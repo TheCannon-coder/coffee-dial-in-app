@@ -11,12 +11,12 @@
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.34.5",
   "devDependencies": {
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
-  },
-  "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1",
-    "@replit/revenuecat-sdk": "^4.2.0"
   }
 }
