@@ -6,6 +6,8 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useUser, SavedCoffee } from '@/context/UserContext';
+import { useSubscription } from '@/lib/revenuecat';
+import { visibleBrews } from '@/lib/brew-history';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 
 function groupCoffees(coffees: SavedCoffee[]): { name: string; sessions: SavedCoffee[] }[] {
@@ -26,9 +28,12 @@ function groupCoffees(coffees: SavedCoffee[]): { name: string; sessions: SavedCo
 export default function AllCoffeesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { savedCoffees } = useUser();
+  const { savedCoffees, isPro: isProFromDB } = useUser();
+  const { isSubscribed } = useSubscription();
+  const isPro = isProFromDB || isSubscribed;
 
-  const coffeeGroups = groupCoffees(savedCoffees);
+  const { visible, hiddenCount } = visibleBrews(savedCoffees, isPro);
+  const coffeeGroups = groupCoffees(visible);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -57,6 +62,30 @@ export default function AllCoffeesScreen() {
             }}
           />
         ))}
+
+        {hiddenCount > 0 && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/paywall');
+            }}
+            style={({ pressed }) => [
+              styles.lockedRow,
+              { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Feather name="lock" size={16} color={colors.mutedForeground} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.lockedTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                {hiddenCount} older brew{hiddenCount !== 1 ? 's' : ''} in your history
+              </Text>
+              <Text style={[styles.lockedSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                Free accounts keep the last 3 — go Pro for unlimited brew history
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -73,6 +102,17 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   topTitle: { fontSize: 17 },
+  lockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 8,
+  },
+  lockedTitle: { fontSize: 15 },
+  lockedSub: { fontSize: 13, marginTop: 2 },
   scroll: {
     paddingHorizontal: 20,
     paddingTop: 16,

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
-import { eq, and, isNull, ne, desc } from "drizzle-orm";
+import { eq, and, ne, desc } from "drizzle-orm";
 import { db, usersTable, brewsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
@@ -365,16 +365,19 @@ router.get("/brews/pending-feedback", async (req, res) => {
     res.json({ pending: null });
     return;
   }
+  // Only the LATEST brew can ever be pending. Walking back through older
+  // unrated brews would resurface the prompt forever for users with a
+  // backlog of history, and a stale answer is useless for calibration.
   const brew = await db.query.brewsTable.findFirst({
-    where: and(
-      eq(brewsTable.userId, user.id),
-      isNull(brewsTable.wasHelpful),
-      eq(brewsTable.feedbackIgnored, false),
-      ne(brewsTable.adjustment, "none"),
-    ),
+    where: eq(brewsTable.userId, user.id),
     orderBy: [desc(brewsTable.createdAt)],
   });
-  if (!brew) {
+  if (
+    !brew ||
+    brew.wasHelpful !== null ||
+    brew.feedbackIgnored ||
+    brew.adjustment === "none"
+  ) {
     res.json({ pending: null });
     return;
   }

@@ -24,6 +24,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useColors } from '@/hooks/useColors';
 import { useUser, SavedCoffee } from '@/context/UserContext';
+import { visibleBrews } from '@/lib/brew-history';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
@@ -275,7 +276,8 @@ export default function HomeScreen() {
   }
 
   const showProNudge = !isPro && !!email;
-  const coffeeGroups = groupCoffees(savedCoffees);
+  const { visible: visibleCoffees } = visibleBrews(savedCoffees, isPro);
+  const coffeeGroups = groupCoffees(visibleCoffees);
   const earnedBadges = ALL_BADGES.filter(b => earnedBadgeIds.includes(b.id));
 
   return (
