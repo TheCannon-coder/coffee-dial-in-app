@@ -1193,7 +1193,11 @@ router.post("/admin/payouts/generate", async (req, res) => {
       )
       .where(
         and(
-          eq(commissionLedgerTable.periodMonth, periodMonth),
+          // Sweep this period AND any still-unpaid earlier periods: affiliates
+          // who complete Stripe onboarding late must receive everything they
+          // banked while unpaid, not just the latest month. ("YYYY-MM" compares
+          // correctly as text.)
+          lte(commissionLedgerTable.periodMonth, periodMonth),
           eq(commissionLedgerTable.status, "pending"),
         ),
       );
