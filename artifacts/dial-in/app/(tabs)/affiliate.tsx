@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -185,6 +185,8 @@ export default function AffiliateScreen() {
     ? stats.monthlyRateCents
     : DEFAULT_RATE_CENTS;
 
+  const scrollRef = useRef<ScrollView>(null);
+
   const audience = AUDIENCE_PRESETS[audienceIdx].value;
   const signups = Math.round(audience * CONV_SIGNUP);
   const pro = Math.round(signups * CONV_PRO);
@@ -246,6 +248,7 @@ export default function AffiliateScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.scroll,
           { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 48 },
@@ -269,6 +272,45 @@ export default function AffiliateScreen() {
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
           Share Coffee Brew Coach and earn cash commissions for every Pro subscriber you refer.
         </Text>
+
+        {/* ── Status banner: answers "am I an affiliate?" at a glance ── */}
+        {!loadingStats && (
+          stats?.isAffiliate ? (
+            <View style={[styles.statusBanner, { backgroundColor: colors.card, borderColor: colors.accent }]}>
+              <Feather name="check-circle" size={18} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.statusTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                  You're an affiliate — {(stats.tier ?? 'standard').charAt(0).toUpperCase() + (stats.tier ?? 'standard').slice(1)} tier
+                </Text>
+                <Text style={[styles.statusSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  Earning {fmtMoney(rateCents)}/active subscriber/month — stats below
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.statusBanner, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Feather name="user-plus" size={18} color={colors.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.statusTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                  You're not an affiliate yet
+                </Text>
+                <Text style={[styles.statusSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  Apply in two minutes to earn cash for every Pro subscriber you refer
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowJoinForm(true);
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+                }}
+                style={({ pressed }) => [styles.statusCta, { backgroundColor: colors.espresso, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={[styles.statusCtaText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>Apply</Text>
+              </Pressable>
+            </View>
+          )
+        )}
 
         {/* ── Referral code card ── */}
         {referralCode && (
@@ -764,6 +806,23 @@ const styles = StyleSheet.create({
   topRow: {
     marginBottom: 20,
   },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 16,
+  },
+  statusTitle: { fontSize: 15 },
+  statusSub: { fontSize: 12.5, marginTop: 2 },
+  statusCta: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+  },
+  statusCtaText: { fontSize: 14 },
   title: {
     fontSize: 28,
     lineHeight: 34,
