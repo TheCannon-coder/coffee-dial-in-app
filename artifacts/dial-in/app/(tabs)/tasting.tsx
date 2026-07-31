@@ -17,7 +17,8 @@ import * as StoreReview from 'expo-store-review';
 import { useColors } from '@/hooks/useColors';
 import { dialIn, submitFeedback } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
-import { generateId, FREE_BREW_LIMIT } from '@/lib/storage';
+import { generateId, getItem, setItem, getBrewCount, KEYS, FREE_BREW_LIMIT } from '@/lib/storage';
+import { scheduleWeekOneNudges } from '@/lib/notifications';
 import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
 import { ShareModal } from '@/components/ShareModal';
 import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
@@ -158,6 +159,17 @@ export default function TastingScreen() {
           });
           setSaved(true);
         }
+
+        // First-week habit nudges: schedule once, right after the first brew,
+        // when notification permission is already granted.
+        getItem<boolean>(KEYS.WEEK1_NUDGES_SCHEDULED).then(async scheduled => {
+          if (scheduled) return;
+          const count = await getBrewCount();
+          if (count <= 1) {
+            await setItem(KEYS.WEEK1_NUDGES_SCHEDULED, true);
+            scheduleWeekOneNudges().catch(() => {});
+          }
+        }).catch(() => {});
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStage('result');

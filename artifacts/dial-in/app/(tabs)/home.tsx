@@ -25,6 +25,8 @@ import Animated, {
 import { useColors } from '@/hooks/useColors';
 import { useUser, SavedCoffee } from '@/context/UserContext';
 import { visibleBrews } from '@/lib/brew-history';
+import { computeStreak } from '@/lib/streaks';
+import { WeeklyRecap } from '@/components/WeeklyRecap';
 import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
@@ -293,6 +295,9 @@ export default function HomeScreen() {
   const showProNudge = !isPro && !!email;
   const { visible: visibleCoffees } = visibleBrews(savedCoffees, isPro);
   const coffeeGroups = groupCoffees(visibleCoffees);
+  // Streak and recap read the FULL local history — habit tracking is not
+  // gated by tier, only the visible brew list is.
+  const streak = computeStreak(savedCoffees);
   const earnedBadges = ALL_BADGES.filter(b => earnedBadgeIds.includes(b.id));
 
   return (
@@ -315,6 +320,11 @@ export default function HomeScreen() {
             <Text style={[styles.subgreeting, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
               Ready to brew?
             </Text>
+            {streak.current >= 2 && (
+              <Text style={[styles.streakText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+                🔥 {streak.current}-day streak{streak.brewedToday ? '' : ' — brew today to keep it'}
+              </Text>
+            )}
           </View>
           {email && (
             <View style={styles.statsBadge}>
@@ -437,6 +447,8 @@ export default function HomeScreen() {
             )}
           </View>
         )}
+
+        <WeeklyRecap coffees={savedCoffees} />
 
         {earnedBadges.length > 0 && (
           <View style={styles.section}>
@@ -566,6 +578,7 @@ const styles = StyleSheet.create({
   wordmark: { fontSize: 16, marginBottom: 8 },
   greeting: { fontSize: 26, lineHeight: 32 },
   subgreeting: { fontSize: 15, marginTop: 2 },
+  streakText: { fontSize: 13, marginTop: 6 },
   statsBadge: { alignItems: 'flex-end', paddingTop: 4 },
   proBadge: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 },
   proBadgeText: { fontSize: 13 },

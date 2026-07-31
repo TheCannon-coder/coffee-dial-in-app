@@ -134,3 +134,46 @@ export async function scheduleReminders(hour = DEFAULT_REMINDER_HOUR, minute = D
     });
   } catch {}
 }
+
+/**
+ * Week-1 nudge series — three gentle check-ins after the user's FIRST brew,
+ * timed for when new users typically drift away. Copy implies progress
+ * without promising a specific dial-in count (we can't know how many brews
+ * a coffee will take). Scheduled once per install; guarded by the caller.
+ */
+export async function scheduleWeekOneNudges(): Promise<void> {
+  if (!isNative) return;
+  const status = await getPermissionStatus();
+  if (status !== 'granted') return;
+
+  const DAY = 24 * 60 * 60;
+  const nudges: { seconds: number; title: string; body: string }[] = [
+    {
+      seconds: 1 * DAY,
+      title: 'Your perfect brew could be today ☕',
+      body: "One small tweak at a time — let's see how today's cup improves.",
+    },
+    {
+      seconds: 3 * DAY,
+      title: 'Every brew teaches you something',
+      body: "Ready to make today's cup better than the last?",
+    },
+    {
+      seconds: 7 * DAY,
+      title: 'A week of better coffee ✨',
+      body: 'The tweaks are adding up. Brew today and taste the difference.',
+    },
+  ];
+
+  try {
+    for (const n of nudges) {
+      await Notifications.scheduleNotificationAsync({
+        content: { title: n.title, body: n.body },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: n.seconds,
+        },
+      });
+    }
+  } catch {}
+}

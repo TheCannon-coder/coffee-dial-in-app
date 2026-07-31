@@ -11,6 +11,7 @@ export const KEYS = {
   REMINDER_MINUTE: 'dialin_reminder_minute',
   BREW_COUNT: 'dialin_brew_count',
   BREW_COUNT_MONTH: 'dialin_brew_count_month',
+  WEEK1_NUDGES_SCHEDULED: 'dialin_week1_nudges',
 } as const;
 
 export const FREE_BREW_LIMIT = 10;
