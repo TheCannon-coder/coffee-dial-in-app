@@ -18,7 +18,8 @@
       "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium"
-      }
+      },
+      "config": "ios-production.yml"
     }
   },
   "submit": {
