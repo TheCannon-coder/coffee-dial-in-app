@@ -287,6 +287,18 @@ export default function HomeScreen() {
       const result = await getCustomerPortal(email);
       if ('url' in result && result.url) {
         WebBrowser.openBrowserAsync(result.url);
+      } else if (isProFromDB) {
+        // Pro without a billed subscription on this device: permanent Pro
+        // from referrals, granted free months, or an Apple sub the sandbox
+        // can't see (TestFlight). Nothing to manage — say so, don't error.
+        Alert.alert(
+          'Pro Access Active',
+          'Your Pro access is active on this account. If you subscribed through the App Store, you can manage it in Settings → Apple ID → Subscriptions.',
+          [
+            { text: 'Open Settings', onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions') },
+            { text: 'OK', style: 'cancel' },
+          ],
+        );
       } else {
         Alert.alert('No Subscription Found', 'We couldn\'t find an active subscription linked to this account.');
       }
