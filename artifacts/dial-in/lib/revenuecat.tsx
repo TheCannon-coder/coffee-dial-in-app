@@ -97,3 +97,13 @@ export function useSubscription() {
   if (!ctx) throw new Error("useSubscription must be used within a SubscriptionProvider");
   return ctx;
 }
+
+/** RevenueCat app user id for server-side entitlement verification. */
+export async function getRcAppUserId(): Promise<string | null> {
+  if (!_configured) return null;
+  try {
+    return await Purchases.getAppUserID();
+  } catch {
+    return null;
+  }
+}

@@ -29,7 +29,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, getAffiliateStats, type PendingFeedback } from '@/lib/api';
+import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, getAffiliateStats, syncSubscription, type PendingFeedback } from '@/lib/api';
+import { getRcAppUserId } from '@/lib/revenuecat';
 import { getItem, removeItem, KEYS } from '@/lib/storage';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
@@ -190,13 +191,27 @@ export default function HomeScreen() {
   useEffect(() => {
     if (email) {
       getUser(email)
-        .then(data => {
+        .then(async data => {
+          // Apple purchases never reach the server on their own — if the
+          // device has an active entitlement the server doesn't know about,
+          // sync it (server re-verifies with RevenueCat before trusting us).
+          if (!data.isPro && isSubscribed) {
+            const rcId = await getRcAppUserId();
+            if (rcId) {
+              const synced = await syncSubscription(email, rcId).catch(() => null);
+              if (synced?.isPro) {
+                updateUserStats(true, data.usesThisMonth, data.monthlyLimit);
+                if (data.referralCode) setReferralCode(data.referralCode);
+                return;
+              }
+            }
+          }
           updateUserStats(data.isPro, data.usesThisMonth, data.monthlyLimit);
           if (data.referralCode) setReferralCode(data.referralCode);
         })
         .catch(() => {});
     }
-  }, [email]);
+  }, [email, isSubscribed]);
 
   // Refetch on every focus (not just mount) so that answering the in-tasting
   // "Better than your last brew?" question clears wasHelpful server-side and

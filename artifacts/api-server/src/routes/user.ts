@@ -81,6 +81,60 @@ router.post("/user", async (req, res) => {
   }
 });
 
+// ── POST /user/sync-subscription ─────────────────────────────────────────────
+// Called by the app when RevenueCat reports an active "pro" entitlement that
+// the server doesn't know about (Apple purchases never hit our Stripe webhook).
+// We verify the entitlement directly with RevenueCat before flipping isPro —
+// the client's claim alone is never trusted. Upgrade-only: expiry/downgrade is
+// left to the entitlement's own lifecycle, never inferred here.
+router.post("/user/sync-subscription", async (req, res) => {
+  const { email, rcAppUserId } = req.body as { email?: string; rcAppUserId?: string };
+  if (!email || !rcAppUserId) {
+    res.status(400).json({ error: "email and rcAppUserId required" });
+    return;
+  }
+  try {
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
+    if (!user) {
+      res.status(404).json({ error: "user_not_found" });
+      return;
+    }
+    if (user.isPro) {
+      res.json({ isPro: true });
+      return;
+    }
+
+    const secretKey = process.env["REVENUECAT_SECRET_KEY"];
+    if (!secretKey) {
+      logger.error("sync-subscription: REVENUECAT_SECRET_KEY not set");
+      res.status(500).json({ error: "internal_error" });
+      return;
+    }
+    const rcRes = await fetch(
+      `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(rcAppUserId)}`,
+      { headers: { Authorization: `Bearer ${secretKey}` } },
+    );
+    if (!rcRes.ok) {
+      logger.warn({ email, status: rcRes.status }, "sync-subscription: RC lookup failed");
+      res.json({ isPro: false });
+      return;
+    }
+    const rcData = (await rcRes.json()) as {
+      subscriber?: { entitlements?: Record<string, { expires_date: string | null }> };
+    };
+    const pro = rcData.subscriber?.entitlements?.["pro"];
+    const active = !!pro && (pro.expires_date === null || new Date(pro.expires_date) > new Date());
+    if (active) {
+      await db.update(usersTable).set({ isPro: true }).where(eq(usersTable.id, user.id));
+      logger.info({ email }, "sync-subscription: isPro set from RC entitlement");
+    }
+    res.json({ isPro: active });
+  } catch (err) {
+    logger.error({ err }, "sync-subscription error");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
 router.post("/user/apple", async (req, res) => {
   const { appleUserId, email } = req.body as { appleUserId?: string; email?: string };
   if (!appleUserId) {

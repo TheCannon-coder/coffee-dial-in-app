@@ -151,6 +151,13 @@ export function getConnectStatus(email: string): Promise<ConnectStatusResult> {
   return fetch(url).then((r) => r.json()) as Promise<ConnectStatusResult>;
 }
 
+/** Tell the server about an active RevenueCat entitlement it doesn't know
+ *  about (Apple purchases don't hit the Stripe webhook). Server re-verifies
+ *  with RevenueCat before trusting it. */
+export function syncSubscription(email: string, rcAppUserId: string): Promise<{ isPro: boolean }> {
+  return post<{ isPro: boolean }>('/user/sync-subscription', { email, rcAppUserId });
+}
+
 export function submitFeedback(sessionId: string, wasHelpful: boolean): Promise<{ ok: boolean }> {
   return post<{ ok: boolean }>('/feedback', { sessionId, wasHelpful });
 }
