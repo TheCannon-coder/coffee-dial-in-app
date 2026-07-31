@@ -33,7 +33,7 @@ import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
 import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, getAffiliateStats, syncSubscription, type PendingFeedback } from '@/lib/api';
 import { getRcAppUserId } from '@/lib/revenuecat';
-import { getItem, removeItem, KEYS } from '@/lib/storage';
+import { getItem, removeItem, getBrewCount, KEYS } from '@/lib/storage';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
 import { useSubscription } from '@/lib/revenuecat';
 
@@ -181,6 +181,8 @@ export default function HomeScreen() {
   const isPro = isProFromDB || isSubscribed;
   const { enabled: notificationsEnabled, toggle: toggleNotifications, permission, reminderHour, reminderMinute, setReminderTime } = useNotifications();
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<BadgeId[]>([]);
+  // null = unknown (don't flash either layout while loading)
+  const [hasBrewed, setHasBrewed] = useState<boolean | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
@@ -221,6 +223,7 @@ export default function HomeScreen() {
   // Also check for a pending referral code from a deep-link.
   useFocusEffect(
     React.useCallback(() => {
+      getBrewCount().then(c => setHasBrewed(c > 0)).catch(() => setHasBrewed(true));
       if (email) {
         getPendingFeedback(email)
           .then(setPendingFeedback)
@@ -299,6 +302,42 @@ export default function HomeScreen() {
   // gated by tier, only the visible brew list is.
   const streak = computeStreak(savedCoffees);
   const earnedBadges = ALL_BADGES.filter(b => earnedBadgeIds.includes(b.id));
+
+  // ── First-brew railroad: brand-new users see one focused path and nothing
+  // else. Everything unlocks after brew #1. (null = still loading; render
+  // nothing rather than flashing the wrong layout.)
+  if (hasBrewed === null && savedCoffees.length === 0) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+  if (hasBrewed === false && savedCoffees.length === 0) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 20, paddingTop: insets.top + 20 }}>
+        <Text style={[styles.wordmark, { color: colors.espresso, fontFamily: 'Fraunces_300Light_Italic' }]}>
+          Coffee Brew Coach
+        </Text>
+        <View style={{ flex: 1, justifyContent: 'center', paddingBottom: insets.bottom + 80 }}>
+          <Text style={[styles.firstBrewTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+            Let's brew your{'\n'}first coffee.
+          </Text>
+          <Text style={[styles.firstBrewSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            Pick your brewer, follow along, and get your first personalized tip. Everything else unlocks after your first cup.
+          </Text>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/first-brew');
+            }}
+            style={({ pressed }) => [styles.firstBrewBtn, { backgroundColor: colors.espresso, opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Text style={[styles.firstBrewBtnText, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
+              Start my first brew
+            </Text>
+            <Feather name="arrow-right" size={20} color={colors.cream} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -579,6 +618,17 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 26, lineHeight: 32 },
   subgreeting: { fontSize: 15, marginTop: 2 },
   streakText: { fontSize: 13, marginTop: 6 },
+  firstBrewTitle: { fontSize: 36, lineHeight: 42 },
+  firstBrewSub: { fontSize: 16, lineHeight: 23, marginTop: 14, marginBottom: 32 },
+  firstBrewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 24,
+    paddingVertical: 20,
+  },
+  firstBrewBtnText: { fontSize: 19 },
   statsBadge: { alignItems: 'flex-end', paddingTop: 4 },
   proBadge: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 },
   proBadgeText: { fontSize: 13 },

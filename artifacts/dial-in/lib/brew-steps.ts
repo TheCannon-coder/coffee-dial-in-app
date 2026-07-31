@@ -10,7 +10,7 @@ export interface BrewParams {
   waterTemp?: string;
 }
 
-const RECIPE_DEFAULTS: Record<string, { dose: string; water: number; temp: string }> = {
+export const RECIPE_DEFAULTS: Record<string, { dose: string; water: number; temp: string }> = {
   'V60':         { dose: '15g', water: 250, temp: '93°C' },
   'Pour over':   { dose: '15g', water: 250, temp: '93°C' },
   'Chemex':      { dose: '42g', water: 700, temp: '94°C' },
