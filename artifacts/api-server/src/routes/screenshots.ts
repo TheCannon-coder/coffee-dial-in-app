@@ -1,4 +1,5 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
+import { OG_IMAGE_PNG } from "../lib/og-image.js";
 
 const router = Router();
 
@@ -221,43 +222,17 @@ router.get("/screenshots/5", (_req, res) => {
 ${CLOSE}`);
 });
 
-// ── OG image (1200×630 SVG) ──────────────────────────────────────────────────
-router.get("/screenshots/og", (_req, res) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#2C1A0E"/>
-  <rect x="0" y="0" width="1200" height="630" fill="url(#grain)" opacity="0.04"/>
-  <defs>
-    <pattern id="grain" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
-      <rect width="1" height="1" fill="#FAF7F2"/>
-    </pattern>
-  </defs>
-
-  <!-- Decorative arc -->
-  <circle cx="1100" cy="-80" r="380" fill="none" stroke="#3D2410" stroke-width="80"/>
-  <circle cx="1100" cy="-80" r="280" fill="none" stroke="#3D2410" stroke-width="40"/>
-
-  <!-- Brand label -->
-  <text x="80" y="130" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-style="italic" fill="#A89080" letter-spacing="1">Coffee Brew Coach</text>
-
-  <!-- Headline -->
-  <text x="80" y="260" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="bold" fill="#FAF7F2" letter-spacing="-2">Brew better</text>
-  <text x="80" y="360" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="bold" fill="#FAF7F2" letter-spacing="-2">coffee.</text>
-
-  <!-- Subline -->
-  <text x="80" y="440" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#A89080">Describe how it tasted. Get one specific fix.</text>
-
-  <!-- CTA pill -->
-  <rect x="80" y="500" width="220" height="62" rx="31" fill="#FAF7F2"/>
-  <text x="190" y="539" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="bold" fill="#2C1A0E" text-anchor="middle">Free for iOS</text>
-
-  <!-- App Store star row -->
-  <text x="330" y="539" font-family="Arial, sans-serif" font-size="22" fill="#A89080">★★★★★</text>
-  <text x="488" y="539" font-family="Arial, sans-serif" font-size="18" fill="#6B5040">4.8 · 200+ ratings</text>
-</svg>`;
-
-  res.setHeader("Content-Type", "image/svg+xml");
+// ── OG image (1200×630 PNG) ──────────────────────────────────────────────────
+// Social crawlers (Facebook, X, iMessage, Slack) don't render SVG og:images, so
+// this must stay a raster format. Regenerate with scripts/make-og-image.py.
+// /screenshots/og is the legacy URL some scrapers may have cached; both serve
+// the same PNG.
+const serveOgImage = (_req: Request, res: Response): void => {
+  res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "public, max-age=86400");
-  res.send(svg);
-});
+  res.send(OG_IMAGE_PNG);
+};
+router.get("/screenshots/og.png", serveOgImage);
+router.get("/screenshots/og", serveOgImage);
 
 export default router;

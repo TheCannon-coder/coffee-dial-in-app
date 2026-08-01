@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { buildPage, DOWNLOAD_BTNS } from "../lib/page-template.js";
+import { buildPage, DOWNLOAD_BTNS, injectAppRating } from "../lib/page-template.js";
+import { getAppRating } from "../lib/app-rating.js";
 
 const router = Router();
 
@@ -118,6 +119,7 @@ const chemexHtml = page({
   cbcHtml: `<p>When you finish a Chemex brew and it tastes off, Coffee Brew Coach walks you through a quick tasting session — you describe what you noticed (bitter, sour, weak, papery) and the app pinpoints whether the problem is grind size, water temperature, pour technique, or dose. Instead of guessing which variable to change, you get one targeted adjustment to make on the next brew.</p>
 <p>Over time the app builds a history of every brew, so you can see exactly how your Chemex technique has improved bean by bean.</p>`,
   related: [
+    { href: "/v60", label: "How to brew V60 coffee" },
     { href: "/kalita-wave", label: "Kalita Wave brewing guide" },
     { href: "/cold-brew", label: "Cold brew coffee ratio guide" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
@@ -164,6 +166,7 @@ const kalitaHtml = page({
   cbcHtml: `<p>Coffee Brew Coach is built for exactly the trial-and-error cycle of dialling in a new coffee on your Kalita Wave. You log your recipe — dose, grind setting, water temperature, brew time — then rate how it tasted. The app identifies the variable most likely causing the problem and gives you one specific thing to change next brew.</p>
 <p>It also tracks your brewing history by bean, so you can see the exact recipe that worked for a particular coffee when you buy it again.</p>`,
   related: [
+    { href: "/v60", label: "How to brew V60 coffee" },
     { href: "/chemex", label: "How to brew Chemex coffee" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
@@ -373,6 +376,7 @@ const espressoFastHtml = page({
 <p>A properly extracted espresso starts as a slow drip 5–8 seconds after the pump starts, then builds to a steady, honey-like flow. The colour should be a warm amber-brown — not pale yellow (under-extracted, too fast) and not dark brown that fades to black (over-extracted, too slow). Aim for 25–35 seconds total and a yield of roughly 1.5–2× your dose weight.</p>`,
   cbcHtml: `<p>Coffee Brew Coach is built for exactly this kind of systematic espresso troubleshooting. You log your shot time, yield, and dose, then describe the taste — sour, thin, sharp, weak. The app tells you whether the primary cause is grind, dose, tamp, or distribution, and gives you one specific number to change on the next shot rather than suggesting you experiment with everything at once.</p>`,
   related: [
+    { href: "/espresso", label: "How to make espresso at home" },
     { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
@@ -432,9 +436,10 @@ const grindSizeHtml = page({
 <p>Use a coarse grind and press at exactly 4 minutes. Pour immediately after pressing — leaving the plunger down allows the grounds to continue extracting even after pressing.</p>`,
   cbcHtml: `<p>Coffee Brew Coach helps you identify grind problems from taste alone. You don't need to know your exact grind setting — you describe the taste, the brew time, and the flow characteristics, and the app tells you whether to grind finer or coarser and by approximately how much. It tracks your adjustments over time so you can see exactly where you landed for each coffee and method.</p>`,
   related: [
+    { href: "/v60", label: "How to brew V60 coffee" },
+    { href: "/espresso", label: "How to make espresso at home" },
     { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
-    { href: "/aeropress-too-weak", label: "AeroPress coffee too weak — fix it" },
-    { href: "/cold-brew", label: "Cold brew coffee ratio guide" },
+    { href: "/aeropress", label: "AeroPress brewing guide" },
   ],
   ctaHeading: "Find the right grind for your brew.",
 });
@@ -486,6 +491,7 @@ const dialInEspressoHtml = page({
 <p>Write down every shot: grind setting, dose, yield, time, and a taste note. Without notes you'll forget what worked and repeat the same mistakes. You only need two or three shots to dial in most coffees — with notes. Without notes, you can chase the same problem for weeks.</p>`,
   cbcHtml: `<p>Coffee Brew Coach is designed specifically for the espresso dialling-in process. Log your dose, yield, shot time, and grind setting, then describe the taste. The app tells you exactly which variable to change and by approximately how much. It stores your brewing history by bean, so when you buy the same coffee again, you can start from where you left off instead of starting from scratch.</p>`,
   related: [
+    { href: "/espresso", label: "How to make espresso at home" },
     { href: "/espresso-pulling-too-fast", label: "Espresso pulling too fast — how to fix it" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
@@ -534,9 +540,9 @@ const aeropressWeakHtml = page({
 <p>The inverted method (placing the AeroPress upside down while steeping) prevents any drip-through during the steep, giving you full contact time between the coffee and water. If your standard AeroPress keeps coming out weak, try the inverted method — you'll notice the difference immediately because none of the brew escapes before you're ready.</p>`,
   cbcHtml: `<p>Coffee Brew Coach asks you the right questions to diagnose weak AeroPress coffee: your dose, water volume, grind setting, steep time, and water temperature. Based on your answers, it identifies which variable is most likely causing the problem and gives you one specific change to make. You don't have to guess whether it's the ratio, the grind, or the time — the app tells you.</p>`,
   related: [
+    { href: "/aeropress", label: "AeroPress brewing guide" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
     { href: "/cold-brew", label: "Cold brew coffee ratio guide" },
-    { href: "/drip-machine", label: "Drip coffee maker tips" },
   ],
   ctaHeading: "Fix your AeroPress coffee.",
 });
@@ -599,9 +605,202 @@ const frenchPressHtml = page({
   ctaHeading: "Fix your French press coffee.",
 });
 
+/* ─── 14. V60 ────────────────────────────────────────────────────────────── */
+
+const v60Html = page({
+  path: "/v60",
+  title: "How to Brew V60 Coffee | Coffee Brew Coach",
+  description:
+    "The complete V60 brewing guide — grind size, ratio, pour technique, and how to fix bitter, sour, or stalled brews.",
+  h1: "How to brew V60 coffee",
+  lead:
+    "The Hario V60 is the most popular pour-over brewer in specialty coffee — and the least forgiving. Your pour technique and grind do all the work. Here's a recipe that produces a sweet, clear cup, and how to fix it when it goes wrong.",
+  contentHtml: `
+<h2>What makes the V60 different</h2>
+<p>The V60 is a simple 60-degree cone with one large hole at the bottom and spiral ribs along the walls. Unlike flat-bottom brewers that regulate flow for you, the V60's open design means <strong>you</strong> control the flow rate — with your grind size and your pour. That control is why cafés love it: a well-poured V60 has remarkable clarity and sweetness. It's also why home brews are inconsistent: small changes in technique show up directly in the cup.</p>
+<p>The spiral ribs keep the paper filter slightly off the cone wall so air can escape and the bed drains evenly. Rinse the filter before brewing and the paper seals to the ribs exactly as designed.</p>
+
+<h2>The recipe</h2>
+<ul>
+  <li><strong>Dose:</strong> 15 g coffee to 250 g water (1:16.7 ratio)</li>
+  <li><strong>Grind:</strong> Medium-fine to medium-coarse — like rough sand, finer than Chemex</li>
+  <li><strong>Water temperature:</strong> 92–96 °C (198–205 °F) — hotter for light roasts</li>
+  <li><strong>Total brew time:</strong> 2:30–3:30</li>
+</ul>
+<p>If the brew finishes under 2:15, grind finer. Over 3:45, grind coarser. The V60 responds to grind changes faster than almost any other brewer, so adjust one step at a time.</p>
+
+<h2>Step-by-step brew guide</h2>
+<p><strong>1. Rinse the filter.</strong> Set the paper filter in the cone and pour hot water through it to remove the papery taste and preheat the brewer and vessel. Discard the rinse water.</p>
+<p><strong>2. Bloom.</strong> Add your ground coffee, make a small well in the centre, and start your timer as you pour 45 g of water (three times your dose). Give the cone a gentle swirl so every ground is wet. Wait 30–45 seconds while the CO₂ escapes.</p>
+<p><strong>3. First main pour.</strong> Pour in slow, steady spirals from the centre outward up to 150 g total. Avoid pouring directly onto the filter walls — water that runs down the paper bypasses the coffee entirely.</p>
+<p><strong>4. Second pour.</strong> At around 1:15, pour from 150 g up to 250 g. Finish with a gentle swirl to knock grounds off the walls and flatten the bed.</p>
+<p><strong>5. Drawdown.</strong> Let the water drain fully. A flat bed of grounds at the end means your extraction was even; a crater or high walls of grounds means the pour was too aggressive.</p>
+
+<h2>Common problems and how to fix them</h2>
+<h3>Bitter or harsh</h3>
+<p>Over-extraction. Grind coarser first. If the brew also ran long, that confirms it. Water above 96 °C on a medium or dark roast will also push the cup bitter — drop the temperature a few degrees.</p>
+<h3>Sour, thin, or weak</h3>
+<p>Under-extraction. Grind finer, use hotter water, or slow your pours down. A brew that finishes under 2:15 hasn't had enough contact time to extract the sweetness.</p>
+<h3>Brew stalling or draining slowly</h3>
+<p>Usually excess fines clogging the filter — common with blade grinders and worn burrs. Grind slightly coarser and pour more gently; aggressive pouring drives fine particles into the paper.</p>`,
+  cbcHtml: `<p>The V60's sensitivity is exactly why Coffee Brew Coach works so well with it. After each brew, describe what you tasted — bitter, sour, thin, hollow — along with your brew time, and the app pinpoints whether grind, temperature, or pour technique is the problem. You change one thing, not three, and the next cup tells you if it worked.</p>
+<p>The app also keeps every V60 recipe by bean, so when a new bag behaves differently you can see exactly what you changed last time a coffee ran fast or brewed bitter.</p>`,
+  related: [
+    { href: "/kalita-wave", label: "Kalita Wave brewing guide" },
+    { href: "/chemex", label: "How to brew Chemex coffee" },
+    { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
+    { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
+  ],
+  ctaHeading: "Dial in your V60.",
+});
+
+/* ─── 15. AeroPress ──────────────────────────────────────────────────────── */
+
+const aeropressHtml = page({
+  path: "/aeropress",
+  title: "AeroPress Brewing Guide | Coffee Brew Coach",
+  description:
+    "How to brew AeroPress coffee — standard and inverted methods, the right grind and ratio, and fixes for weak or bitter cups.",
+  h1: "How to brew AeroPress coffee",
+  lead:
+    "The AeroPress is the most forgiving and most versatile brewer you can own. It makes everything from a bright filter-style cup to a short espresso-style concentrate — once you stop following the instructions printed on the box.",
+  contentHtml: `
+<h2>Why the AeroPress is different</h2>
+<p>The AeroPress combines full immersion (like a French press) with pressure filtering (a gentle push through a paper filter). Immersion makes it forgiving — contact time is fully in your control, with no drainage rate to manage. The paper filter makes it clean — none of the sludge or heaviness of a metal mesh. That combination means almost any grind size can produce a good cup if you match the steep time to it.</p>
+<p>The stock instructions — one scoop, water to the number 4, press immediately — produce a weak, diluted cup. The recipe below is closer to how the specialty coffee world actually brews with it.</p>
+
+<h2>The recipe</h2>
+<ul>
+  <li><strong>Coffee:</strong> 16 g</li>
+  <li><strong>Water:</strong> 220 g at 90–92 °C</li>
+  <li><strong>Grind:</strong> Medium — like beach sand or sea salt</li>
+  <li><strong>Steep:</strong> 1 minute, then plunge slowly over 30 seconds</li>
+  <li><strong>Ratio:</strong> roughly 1:14</li>
+</ul>
+
+<h2>Standard method, step by step</h2>
+<p><strong>1. Set up.</strong> Put a paper filter in the cap, twist it onto the chamber, and rinse with hot water — this removes papery flavour and preheats everything. Place it on a sturdy mug or server.</p>
+<p><strong>2. Add coffee and water.</strong> Add 16 g of medium-ground coffee, start your timer, and pour 220 g of water in about 15 seconds, making sure no dry pockets remain. Give it one gentle stir.</p>
+<p><strong>3. Insert the plunger.</strong> Rest the plunger just inside the rim without pressing. This creates a vacuum seal that stops the brew dripping through early.</p>
+<p><strong>4. Steep for 1 minute.</strong> Longer steeps extract more — if your cup tastes thin, extend to 90–120 seconds before changing anything else.</p>
+<p><strong>5. Press slowly.</strong> Plunge with steady pressure over about 30 seconds, stopping at the hiss. Pressing hard and fast forces bitter fines through the filter and into the cup.</p>
+
+<h2>The inverted method</h2>
+<p>Flip the AeroPress upside down (plunger in, chamber on top) and brew in the open chamber, then cap, flip onto your mug, and press. Inversion guarantees zero drip-through during the steep, which makes long immersion recipes more repeatable. It's worth trying if your standard brews taste inconsistent — just flip carefully with a mug that fits the cap snugly.</p>
+
+<h2>Espresso-style concentrate</h2>
+<p>For a short, intense cup (or the base of a latte): 20 g of coffee ground medium-fine, 100 g of water at 85–88 °C, stir, steep 45 seconds, press firmly. It isn't true espresso — there's no 9 bars of pressure — but it's a rich, concentrated shot that takes milk well.</p>
+
+<h2>Common problems</h2>
+<h3>Weak or watery</h3>
+<p>The most common AeroPress complaint, and almost always ratio, grind, or steep time. We cover the full diagnosis in <a href="/aeropress-too-weak">AeroPress coffee too weak — how to fix it</a>.</p>
+<h3>Bitter</h3>
+<p>Grind coarser, drop your water temperature to 85–88 °C, or shorten the steep. Pressing too hard at the end also drives bitterness into the cup — stop at the hiss.</p>
+<h3>Sour</h3>
+<p>Under-extracted: grind finer, use hotter water (92 °C), or steep longer. Sourness with a very short total brew time is the classic sign.</p>`,
+  cbcHtml: `<p>Because the AeroPress has so many workable recipes, the hard part is knowing which variable to change when a cup misses. Coffee Brew Coach takes your dose, water, grind, steep time, and a description of the taste, and comes back with one specific adjustment — steep 30 seconds longer, grind two steps finer — instead of a new recipe to start over with.</p>`,
+  related: [
+    { href: "/aeropress-too-weak", label: "AeroPress coffee too weak — fix it" },
+    { href: "/v60", label: "How to brew V60 coffee" },
+    { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
+  ],
+  ctaHeading: "Master your AeroPress.",
+});
+
+/* ─── 16. Espresso ───────────────────────────────────────────────────────── */
+
+const espressoHtml = page({
+  path: "/espresso",
+  title: "How to Make Espresso at Home | Coffee Brew Coach",
+  description:
+    "A beginner's guide to making espresso at home — the equipment that matters, a starting recipe, and how to adjust by taste.",
+  h1: "How to make espresso at home",
+  lead:
+    "Espresso is the most demanding way to make coffee — and the most rewarding to get right. This guide covers what actually matters: the equipment, a reliable starting recipe, and how to read a shot by taste.",
+  contentHtml: `
+<h2>What espresso actually is</h2>
+<p>Espresso is coffee brewed by forcing hot water through a compacted bed of finely ground coffee at roughly 9 bars of pressure. The result is a small, concentrated shot — around 25–40 g of liquid — with a layer of crema on top. Because the extraction happens in under 30 seconds through a very fine grind, every variable is magnified: a grind change that would barely register on a pour over will completely change an espresso shot.</p>
+
+<h2>The equipment that matters</h2>
+<p><strong>The grinder matters more than the machine.</strong> Espresso needs a fine, consistent grind that can be adjusted in tiny steps. A capable burr grinder with a mediocre machine will beat a great machine fed by a blade grinder every single time. If you're budgeting a setup, put half the money into the grinder.</p>
+<p><strong>A scale is not optional.</strong> Espresso recipes are built on weights — dose in, yield out. Eyeballing either one makes dialling in impossible. Any 0.1 g kitchen scale that fits under your cup works.</p>
+<p><strong>The machine</strong> needs stable temperature and pressure. Beyond that, most of what you pay for is convenience and consistency, not better coffee.</p>
+
+<h2>The starting recipe</h2>
+<ul>
+  <li><strong>Dose:</strong> 18 g of coffee in a double basket</li>
+  <li><strong>Yield:</strong> 36 g of liquid espresso (a 1:2 ratio)</li>
+  <li><strong>Time:</strong> 25–30 seconds from pump start</li>
+  <li><strong>Temperature:</strong> 93 °C, if your machine lets you set it</li>
+</ul>
+<p>This is the standard starting point for medium roasts. Light roasts often shine at longer ratios (1:2.2–1:2.5); dark roasts at shorter ones (1:1.8–1:2).</p>
+
+<h2>Pulling the shot, step by step</h2>
+<p><strong>1. Dose and distribute.</strong> Grind 18 g into the portafilter. Break up any clumps and level the surface — a WDT tool (a few fine needles) or a gentle tap does it. Uneven coffee extracts unevenly no matter how good the tamp is.</p>
+<p><strong>2. Tamp level.</strong> Press firmly and evenly. Level matters far more than pressure — a tilted puck gives water a thin edge to channel through.</p>
+<p><strong>3. Pull.</strong> Lock in, put your cup and scale under the spouts, and start. Espresso should appear after 5–8 seconds as a slow drip that builds into a steady, honey-like flow.</p>
+<p><strong>4. Stop at your yield.</strong> Kill the shot at 36 g on the scale. Note the time: 25–30 seconds is the target window.</p>
+<p><strong>5. Taste and adjust.</strong> Sour and fast means grind finer. Bitter and slow means grind coarser. Change only the grind until the timing is right — then use taste to fine-tune.</p>
+
+<h2>Reading the shot by taste</h2>
+<p><strong>Sour, sharp, thin:</strong> under-extracted — the water ran through too fast. Grind finer.</p>
+<p><strong>Bitter, harsh, hollow:</strong> over-extracted — too much contact time or too much heat. Grind coarser, or drop the temperature a degree or two.</p>
+<p><strong>Balanced but weak:</strong> lengthen the ratio slightly or increase the dose by 0.5 g.</p>
+<p>Once you can pull the same balanced shot twice in a row, you're ready for the full <a href="/how-to-dial-in-espresso">dialling-in process</a> — and if your shots are gushing through in 15 seconds, start with <a href="/espresso-pulling-too-fast">espresso pulling too fast</a>.</p>`,
+  cbcHtml: `<p>Espresso generates more frustrated guessing than every other brew method combined, because five variables interact and the feedback loop costs 18 g of coffee per attempt. Coffee Brew Coach shortens that loop: log your dose, yield, and shot time, describe the taste, and get told exactly which variable to change and in which direction. Most coffees dial in within two or three shots instead of half a bag.</p>`,
+  related: [
+    { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
+    { href: "/espresso-pulling-too-fast", label: "Espresso pulling too fast — how to fix it" },
+    { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
+    { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
+  ],
+  ctaHeading: "Pull your best shot yet.",
+});
+
 /* ─── Structured data ────────────────────────────────────────────────────── */
 
 const STRUCTURED_DATA: Record<string, object> = {
+  "/v60": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to brew V60 coffee",
+    "description": "The complete V60 brewing guide — grind size, ratio, pour technique, and how to fix bitter, sour, or stalled brews.",
+    "totalTime": "PT3M30S",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Rinse the filter", "text": "Set the paper filter in the cone and pour hot water through it to remove the papery taste and preheat the brewer. Discard the rinse water." },
+      { "@type": "HowToStep", "position": 2, "name": "Bloom", "text": "Add 15 g of ground coffee, start your timer, and pour 45 g of water. Swirl gently so every ground is wet. Wait 30–45 seconds." },
+      { "@type": "HowToStep", "position": 3, "name": "First main pour", "text": "Pour in slow, steady spirals from the centre outward up to 150 g total, avoiding the filter walls." },
+      { "@type": "HowToStep", "position": 4, "name": "Second pour", "text": "At around 1:15, pour from 150 g up to 250 g. Finish with a gentle swirl to flatten the bed." },
+      { "@type": "HowToStep", "position": 5, "name": "Drawdown", "text": "Let the water drain fully. Target total brew time is 2:30–3:30. A flat bed of grounds means the extraction was even." },
+    ],
+  },
+  "/aeropress": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to brew AeroPress coffee",
+    "description": "How to brew AeroPress coffee — standard and inverted methods, the right grind and ratio, and fixes for weak or bitter cups.",
+    "totalTime": "PT2M",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Set up and rinse", "text": "Put a paper filter in the cap, twist it onto the chamber, rinse with hot water, and place on a sturdy mug." },
+      { "@type": "HowToStep", "position": 2, "name": "Add coffee and water", "text": "Add 16 g of medium-ground coffee, start your timer, and pour 220 g of water at 90–92 °C. Give it one gentle stir." },
+      { "@type": "HowToStep", "position": 3, "name": "Insert the plunger", "text": "Rest the plunger just inside the rim without pressing to create a vacuum seal that stops early drip-through." },
+      { "@type": "HowToStep", "position": 4, "name": "Steep for 1 minute", "text": "Steep for 60 seconds. If your cup tastes thin, extend to 90–120 seconds before changing anything else." },
+      { "@type": "HowToStep", "position": 5, "name": "Press slowly", "text": "Plunge with steady pressure over about 30 seconds, stopping at the hiss." },
+    ],
+  },
+  "/espresso": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to make espresso at home",
+    "description": "A beginner's guide to making espresso at home — the equipment that matters, a starting recipe, and how to adjust by taste.",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Dose and distribute", "text": "Grind 18 g into the portafilter. Break up clumps and level the surface with a WDT tool or a gentle tap." },
+      { "@type": "HowToStep", "position": 2, "name": "Tamp level", "text": "Press firmly and evenly. A level puck matters far more than tamp pressure." },
+      { "@type": "HowToStep", "position": 3, "name": "Pull the shot", "text": "Lock in, place your cup and scale under the spouts, and start. Espresso should appear after 5–8 seconds as a slow drip building to a steady flow." },
+      { "@type": "HowToStep", "position": 4, "name": "Stop at your yield", "text": "Stop the shot at 36 g of liquid espresso. Target 25–30 seconds from pump start." },
+      { "@type": "HowToStep", "position": 5, "name": "Taste and adjust", "text": "Sour and fast: grind finer. Bitter and slow: grind coarser. Change only the grind until timing is right." },
+    ],
+  },
   "/chemex": {
     "@context": "https://schema.org",
     "@type": "HowTo",
@@ -792,6 +991,9 @@ const bestAffiliateProgramsHtml = page({
 /* ─── Register all routes ─────────────────────────────────────────────────── */
 
 const pages: Array<{ path: string; html: string }> = [
+  { path: "/v60", html: v60Html },
+  { path: "/aeropress", html: aeropressHtml },
+  { path: "/espresso", html: espressoHtml },
   { path: "/chemex", html: chemexHtml },
   { path: "/kalita-wave", html: kalitaHtml },
   { path: "/moka-pot", html: mokaPotHtml },
@@ -815,7 +1017,7 @@ for (const { path, html } of pages) {
     const finalHtml = sd
       ? html.replace("</head>", `  <script type="application/ld+json">${JSON.stringify(sd)}</script>\n</head>`)
       : html;
-    res.send(finalHtml);
+    res.send(injectAppRating(finalHtml, getAppRating()));
   });
 }
 

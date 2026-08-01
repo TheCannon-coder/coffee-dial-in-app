@@ -1,11 +1,15 @@
 import { Router } from "express";
-import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, WAITLIST_MODAL, renderFooter, renderNav } from "../lib/page-template.js";
+import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, WAITLIST_MODAL, injectAppRating, renderFooter, renderNav } from "../lib/page-template.js";
+import { getAppRating } from "../lib/app-rating.js";
 
 const router = Router();
 
 const BREW_GUIDES = [
+  { href: "/espresso", label: "How to make espresso at home" },
   { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
   { href: "/espresso-pulling-too-fast", label: "Espresso pulling too fast — how to fix it" },
+  { href: "/v60", label: "How to brew V60 coffee" },
+  { href: "/aeropress", label: "AeroPress brewing guide" },
   { href: "/aeropress-too-weak", label: "AeroPress coffee too weak — fix it" },
   { href: "/chemex", label: "How to brew Chemex coffee" },
   { href: "/kalita-wave", label: "Kalita Wave brewing guide" },
@@ -41,7 +45,7 @@ const html = `<!DOCTYPE html>
   <meta property="og:url" content="https://www.coffeebrew.coach/" />
   <meta property="og:title" content="Coffee Brew Coach — Coffee Coaching App" />
   <meta property="og:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup. Free for iOS and Android." />
-  <meta property="og:image" content="https://www.coffeebrew.coach/screenshots/og" />
+  <meta property="og:image" content="https://www.coffeebrew.coach/screenshots/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Coffee Brew Coach" />
@@ -50,7 +54,7 @@ const html = `<!DOCTYPE html>
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coffee Brew Coach — Coffee Coaching App" />
   <meta name="twitter:description" content="Describe your brew. Get one specific fix. Better coffee on the next cup." />
-  <meta name="twitter:image" content="https://www.coffeebrew.coach/screenshots/og" />
+  <meta name="twitter:image" content="https://www.coffeebrew.coach/screenshots/og.png" />
 
   <script type="application/ld+json">${JSON.stringify(APP_SCHEMA)}</script>
 
@@ -107,6 +111,12 @@ const html = `<!DOCTYPE html>
       font-size: 13px;
       color: #6B5040;
       margin-top: 14px;
+    }
+    .hero-rating {
+      font-size: 14px;
+      color: #D4B99A;
+      margin-top: 20px;
+      letter-spacing: 0.02em;
     }
 
     /* ── How it works ─── */
@@ -343,6 +353,7 @@ ${renderNav()}
   <h1>Coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
   <p class="hero-sub">Describe your brew. Get one specific fix. Better coffee on the next cup.</p>
   ${DOWNLOAD_BTNS}
+  <!--APP_RATING-->
   <p class="hero-fine">Free · iOS · Android coming soon · No credit card required</p>
 </section>
 
@@ -546,13 +557,13 @@ router.get("/", (req, res) => {
       .replace("<body>", `<body>${banner}`);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
-    res.send(refHtml);
+    res.send(injectAppRating(refHtml, getAppRating()));
     return;
   }
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
-  res.send(html);
+  res.send(injectAppRating(html, getAppRating()));
 });
 
 export default router;

@@ -38,6 +38,23 @@ app.use(
 );
 app.use(cors());
 
+// Canonical host: 301 apex → www so search engines see one host. Only browser-y
+// GET/HEAD traffic — /api and /.well-known must answer on any host so the mobile
+// app and universal links can never be caught by a redirect.
+app.use((req, res, next) => {
+  const host = req.headers.host?.toLowerCase();
+  if (
+    host === "coffeebrew.coach" &&
+    (req.method === "GET" || req.method === "HEAD") &&
+    !req.path.startsWith("/api") &&
+    !req.path.startsWith("/.well-known")
+  ) {
+    res.redirect(301, `https://www.coffeebrew.coach${req.originalUrl}`);
+    return;
+  }
+  next();
+});
+
 // Stripe webhook must be mounted BEFORE express.json() — it reads the raw body
 // itself for signature verification. All other routes get the parsed JSON body.
 app.use("/api", webhookRouter);

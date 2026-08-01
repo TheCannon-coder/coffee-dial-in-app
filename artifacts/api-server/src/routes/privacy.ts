@@ -222,9 +222,14 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-router.get("/api/privacy", (_req, res) => {
+router.get("/privacy", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
+});
+
+// Legacy URL — still referenced from the App Store listing and older app builds.
+router.get("/api/privacy", (_req, res) => {
+  res.redirect(301, "/privacy");
 });
 
 export default router;

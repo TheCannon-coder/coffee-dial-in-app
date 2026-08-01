@@ -20,6 +20,37 @@ export const APP_SCHEMA = {
   },
 };
 
+// Serialized APP_SCHEMA exactly as it appears in every page <head> — pages are
+// rendered once at boot, so injectAppRating swaps this for the rating-augmented
+// version at request time using the cached App Store rating.
+const APP_SCHEMA_JSON = JSON.stringify(APP_SCHEMA);
+
+// Marker for the visible rating badge; pages without it just get the schema.
+export const APP_RATING_SLOT = "<!--APP_RATING-->";
+
+export function injectAppRating(
+  html: string,
+  rating: { rating: number; count: number } | null,
+): string {
+  if (!rating || rating.count === 0) {
+    return html.replace(APP_RATING_SLOT, "");
+  }
+  const augmented = JSON.stringify({
+    ...APP_SCHEMA,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: rating.rating.toFixed(1),
+      ratingCount: rating.count,
+      bestRating: "5",
+      worstRating: "1",
+    },
+  });
+  const filled = Math.round(rating.rating);
+  const stars = "★★★★★".slice(0, filled) + "☆☆☆☆☆".slice(0, 5 - filled);
+  const badge = `<p class="hero-rating" aria-label="Rated ${rating.rating.toFixed(1)} out of 5 on the App Store">${stars}&nbsp; ${rating.rating.toFixed(1)} on the App Store · ${rating.count} ratings</p>`;
+  return html.replace(APP_SCHEMA_JSON, augmented).replace(APP_RATING_SLOT, badge);
+}
+
 export const COMMON_CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -364,8 +395,8 @@ export function renderFooter(): string {
       <a href="/affiliate/become">Become an Affiliate</a>
       <a href="/how-coffee-youtubers-make-money">How Coffee YouTubers Make Money</a>
       <a href="/best-affiliate-programs-for-coffee-creators">Best Affiliate Programs for Creators</a>
-      <a href="/api/privacy">Privacy</a>
-      <a href="/api/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
     </div>
     <p class="footer-copy">Built by <a href="https://thecannon.coffee" target="_blank" rel="noopener">The Cannon</a> &mdash; coffee, waffles &amp; brunch in Hamilton, Ontario</p>
     <p class="footer-copy">&copy; ${new Date().getFullYear()} Coffee Brew Coach</p>
@@ -386,7 +417,7 @@ export function buildPage({
   bodyHtml: string;
   ogImage?: string;
 }): string {
-  const ogImage = ogImageOverride ?? "https://www.coffeebrew.coach/screenshots/og";
+  const ogImage = ogImageOverride ?? "https://www.coffeebrew.coach/screenshots/og.png";
   const cleanTitle = title.replace(/\s*\|\s*Coffee Brew Coach\s*$/i, "").trim();
   const fullTitle = `${cleanTitle} | Coffee Brew Coach`;
 
@@ -406,6 +437,8 @@ export function buildPage({
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${ogImage}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Coffee Brew Coach" />
 
   <meta name="twitter:card" content="summary_large_image" />

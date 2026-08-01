@@ -171,9 +171,14 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-router.get("/api/terms", (_req, res) => {
+router.get("/terms", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
+});
+
+// Legacy URL — still referenced from the App Store listing and older app builds.
+router.get("/api/terms", (_req, res) => {
+  res.redirect(301, "/terms");
 });
 
 export default router;

@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedGearProducts } from "./lib/gear-seed";
+import { prefetchAppRating } from "./lib/app-rating";
 
 const rawPort = process.env["PORT"];
 
@@ -28,4 +29,7 @@ app.listen(port, (err) => {
   seedGearProducts().catch((seedErr) => {
     logger.error({ err: seedErr }, "gear seed failed on startup");
   });
+
+  // Warm the App Store rating cache so early page views carry aggregateRating
+  prefetchAppRating();
 });
