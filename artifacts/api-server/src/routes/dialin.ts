@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, ne, lt, desc } from "drizzle-orm";
 import { db, usersTable, brewsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
@@ -376,28 +376,40 @@ router.get("/brews/pending-feedback", async (req, res) => {
     res.json({ pending: null });
     return;
   }
-  // Only the LATEST brew can ever be pending. Walking back through older
-  // unrated brews would resurface the prompt forever for users with a
-  // backlog of history, and a stale answer is useless for calibration.
-  const brew = await db.query.brewsTable.findFirst({
+  // "Was your last brew better?" judges the advice that PRODUCED the last
+  // brew — so the answer must be attributed to the PREDECESSOR brew (the
+  // same rule dial-in uses for prevSessionId), never to the latest brew
+  // itself. The latest brew's own advice gets judged after the NEXT brew.
+  const latest = await db.query.brewsTable.findFirst({
     where: eq(brewsTable.userId, user.id),
-    orderBy: [desc(brewsTable.createdAt)],
+    orderBy: [desc(brewsTable.id)],
   });
-  if (
-    !brew ||
-    brew.wasHelpful !== null ||
-    brew.feedbackIgnored ||
-    brew.adjustment === "none"
-  ) {
+  if (!latest) {
+    res.json({ pending: null });
+    return;
+  }
+  const prev = await db.query.brewsTable.findFirst({
+    where: and(
+      eq(brewsTable.userId, user.id),
+      ne(brewsTable.adjustment, "none"),
+      lt(brewsTable.id, latest.id),
+    ),
+    orderBy: [desc(brewsTable.id)],
+  });
+  // Only prompt when the in-tasting question was skipped: the predecessor's
+  // advice is still unjudged and the user hasn't dismissed the prompt.
+  if (!prev || prev.wasHelpful !== null || prev.feedbackIgnored) {
     res.json({ pending: null });
     return;
   }
   res.json({
     pending: {
-      sessionId: brew.sessionId,
-      adjustment: brew.adjustment,
-      method: brew.method,
-      coffeeName: brew.coffeeName,
+      // Attribution target: the brew whose advice is being judged.
+      sessionId: prev.sessionId,
+      adjustment: prev.adjustment,
+      // Display fields: the cup the user actually remembers ("your last brew").
+      method: latest.method,
+      coffeeName: latest.coffeeName,
     },
   });
 });
