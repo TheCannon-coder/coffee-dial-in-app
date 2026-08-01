@@ -2,11 +2,9 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -14,7 +12,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as WebBrowser from 'expo-web-browser';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -27,11 +24,10 @@ import { useUser, SavedCoffee } from '@/context/UserContext';
 import { visibleBrews } from '@/lib/brew-history';
 import { computeStreak } from '@/lib/streaks';
 import { WeeklyRecap } from '@/components/WeeklyRecap';
-import { useNotifications } from '@/hooks/useNotifications';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
-import { getUser, getCustomerPortal, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, getAffiliateStats, syncSubscription, type PendingFeedback } from '@/lib/api';
+import { getUser, getPendingFeedback, submitFeedback, dismissFeedback, redeemReferralCode, getAffiliateStats, syncSubscription, type PendingFeedback } from '@/lib/api';
 import { getRcAppUserId } from '@/lib/revenuecat';
 import { getItem, removeItem, getBrewCount, KEYS } from '@/lib/storage';
 import { getEarnedBadgeIds, ALL_BADGES, BadgeId, type Badge } from '@/lib/achievements';
@@ -179,7 +175,6 @@ export default function HomeScreen() {
   const { email, isPro: isProFromDB, usesRemaining, savedCoffees, updateUserStats, setReferralCode } = useUser();
   const { isSubscribed } = useSubscription();
   const isPro = isProFromDB || isSubscribed;
-  const { enabled: notificationsEnabled, toggle: toggleNotifications, permission, reminderHour, reminderMinute, setReminderTime } = useNotifications();
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<BadgeId[]>([]);
   // null = unknown (don't flash either layout while loading)
   const [hasBrewed, setHasBrewed] = useState<boolean | null>(null);
@@ -267,46 +262,6 @@ export default function HomeScreen() {
     }, [email])
   );
 
-  async function handleManageSubscription() {
-    if (!email) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    if (isSubscribed) {
-      Alert.alert(
-        'Manage Subscription',
-        'Your subscription is managed through Apple. Go to Settings → Apple ID → Subscriptions to make changes.',
-        [
-          { text: 'Open Settings', onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions') },
-          { text: 'Cancel', style: 'cancel' },
-        ],
-      );
-      return;
-    }
-
-    try {
-      const result = await getCustomerPortal(email);
-      if ('url' in result && result.url) {
-        WebBrowser.openBrowserAsync(result.url);
-      } else if (isProFromDB) {
-        // Pro without a billed subscription on this device: permanent Pro
-        // from referrals, granted free months, or an Apple sub the sandbox
-        // can't see (TestFlight). Nothing to manage — say so, don't error.
-        Alert.alert(
-          'Pro Access Active',
-          'Your Pro access is active on this account. If you subscribed through the App Store, you can manage it in Settings → Apple ID → Subscriptions.',
-          [
-            { text: 'Open Settings', onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions') },
-            { text: 'OK', style: 'cancel' },
-          ],
-        );
-      } else {
-        Alert.alert('No Subscription Found', 'We couldn\'t find an active subscription linked to this account.');
-      }
-    } catch {
-      Alert.alert('Something Went Wrong', 'Unable to open the subscription portal. Please try again.');
-    }
-  }
-
   const showProNudge = !isPro && !!email;
   const { visible: visibleCoffees } = visibleBrews(savedCoffees, isPro);
   const coffeeGroups = groupCoffees(visibleCoffees);
@@ -377,6 +332,17 @@ export default function HomeScreen() {
               </Text>
             )}
           </View>
+          <View style={styles.headerRight}>
+            <Pressable
+              hitSlop={10}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/settings');
+              }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+            >
+              <Feather name="settings" size={20} color={colors.mutedForeground} />
+            </Pressable>
           {email && (
             <View style={styles.statsBadge}>
               {isPro ? (
@@ -390,6 +356,7 @@ export default function HomeScreen() {
               )}
             </View>
           )}
+          </View>
         </View>
 
         {pendingFeedback ? (
@@ -531,71 +498,6 @@ export default function HomeScreen() {
           onClose={() => setSelectedBadge(null)}
         />
 
-        <View style={[styles.settingsRow, { borderTopColor: colors.border }]}>
-          <Feather name="bell" size={15} color={colors.mutedForeground} />
-          <Text style={[styles.settingsLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            Brew reminders
-          </Text>
-          <Switch
-            value={notificationsEnabled === true}
-            onValueChange={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              toggleNotifications();
-            }}
-            thumbColor={notificationsEnabled ? colors.accent : colors.card}
-            trackColor={{ false: colors.border, true: colors.accent + '55' }}
-            ios_backgroundColor={colors.border}
-            disabled={permission === 'denied'}
-          />
-        </View>
-
-        {notificationsEnabled === true && permission === 'granted' && (
-          <View style={[styles.reminderTimeRow, { borderColor: colors.border }]}>
-            <Text style={[styles.reminderTimeLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Remind me at
-            </Text>
-            <View style={styles.reminderTimeStepper}>
-              <Pressable
-                hitSlop={10}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  const h = (reminderHour + 23) % 24;
-                  setReminderTime(h, reminderMinute);
-                }}
-              >
-                <Feather name="chevron-left" size={18} color={colors.mutedForeground} />
-              </Pressable>
-              <Text style={[styles.reminderTimeValue, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                {`${reminderHour % 12 === 0 ? 12 : reminderHour % 12}:${String(reminderMinute).padStart(2, '0')} ${reminderHour < 12 ? 'AM' : 'PM'}`}
-              </Text>
-              <Pressable
-                hitSlop={10}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  const h = (reminderHour + 1) % 24;
-                  setReminderTime(h, reminderMinute);
-                }}
-              >
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {permission === 'denied' && (
-          <Text style={[styles.deniedNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            Enable notifications in Settings to turn on reminders.
-          </Text>
-        )}
-
-        {email && (
-          <Pressable onPress={handleManageSubscription} style={styles.manageLink}>
-            <Text style={[styles.manageLinkText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Manage subscription
-            </Text>
-          </Pressable>
-        )}
-
         <View style={[styles.affiliateRow, { borderTopColor: colors.border }]}>
           <Pressable
             onPress={() => {
@@ -642,6 +544,7 @@ const styles = StyleSheet.create({
   },
   firstBrewBtnText: { fontSize: 19 },
   statsBadge: { alignItems: 'flex-end', paddingTop: 4 },
+  headerRight: { alignItems: 'flex-end', gap: 10 },
   proBadge: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 },
   proBadgeText: { fontSize: 13 },
   usesText: { fontSize: 13 },
@@ -676,31 +579,6 @@ const styles = StyleSheet.create({
   section: { marginBottom: 20 },
   sectionTitle: { fontSize: 18, marginBottom: 12 },
   badgeRow: { gap: 10, paddingBottom: 4 },
-  settingsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    marginTop: 8,
-  },
-  settingsLabel: { flex: 1, fontSize: 14 },
-  reminderTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    marginTop: -1,
-    marginBottom: 4,
-  },
-  reminderTimeLabel: { fontSize: 13 },
-  reminderTimeStepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  reminderTimeValue: { fontSize: 14, minWidth: 72, textAlign: 'center' },
-  deniedNote: { fontSize: 12, lineHeight: 16, marginTop: -6, marginBottom: 4 },
-  manageLink: { alignItems: 'center', paddingVertical: 12 },
-  manageLinkText: { fontSize: 14, textDecorationLine: 'underline' },
   seeAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',

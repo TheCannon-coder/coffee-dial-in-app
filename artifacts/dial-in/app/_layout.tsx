@@ -22,7 +22,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert, Linking } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { UserProvider } from '@/context/UserContext';
-import { AppStripeProvider } from '@/lib/stripe-provider';
 import { initializeRevenueCat, SubscriptionProvider } from '@/lib/revenuecat';
 import { setItem, KEYS } from '@/lib/storage';
 
@@ -106,7 +105,6 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <AppStripeProvider>
           <QueryClientProvider client={queryClient}>
             <SubscriptionProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
@@ -118,7 +116,6 @@ export default function RootLayout() {
               </GestureHandlerRootView>
             </SubscriptionProvider>
           </QueryClientProvider>
-        </AppStripeProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

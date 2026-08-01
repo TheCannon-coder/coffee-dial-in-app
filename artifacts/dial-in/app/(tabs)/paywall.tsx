@@ -260,8 +260,13 @@ export default function PaywallScreen() {
           </Text>
         ) : null}
 
-        <Pressable onPress={() => router.push('/home')} style={styles.notNow}>
-          <Text style={[styles.notNowText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>Not now</Text>
+        <Pressable
+          onPress={() => router.push('/home')}
+          style={({ pressed }) => [styles.notNow, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Text style={[styles.notNowText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+            Maybe later — keep brewing free
+          </Text>
         </Pressable>
 
         <Pressable onPress={openPromoModal} style={styles.promoBtn} disabled={isLoadingAny}>
@@ -516,11 +521,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   notNow: {
-    paddingVertical: 12,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    marginTop: 4,
   },
   notNowText: {
     fontSize: 15,
-    textDecorationLine: 'underline',
   },
   promoBtn: {
     paddingVertical: 8,
