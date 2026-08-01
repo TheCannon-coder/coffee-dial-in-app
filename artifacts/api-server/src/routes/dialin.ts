@@ -183,9 +183,16 @@ UNAMBIGUOUS LOW BODY signals (more coffee / dose up):
 - Weak, Thin, Watery, Tea-like → the brew lacks weight and presence
 
 UNAMBIGUOUS UNDEREXTRACTION signals (grind finer or steep longer):
-- Sour, Sharp, Metallic, Green / grassy
+- Sour, Metallic, Green / grassy
+- Sour is a STRONG underextraction signal. NEVER recommend grinding coarser
+  for a cup showing Sour unless it also shows 2+ clear overextraction signals
+  (field feedback: coarser advice on sour cups usually fails).
 
 AMBIGUOUS — resolve by context:
+- "Sharp" can indicate EITHER underextraction OR harsh overextraction. Do not use it alone.
+  → If "Sharp" appears alongside overextraction signals (Bitter, Harsh, Dry, Astringent, Burnt…) → overextraction (grind coarser)
+  → If "Sharp" appears alongside underextraction signals (Sour, Tart, Metallic) → underextraction (grind finer)
+  → If "Sharp" appears with neither cluster, lean toward underextraction
 - "Tart" can indicate EITHER underextraction OR overextraction. Do not use it alone.
   → If "Tart" appears alongside other underextraction signals (Sour, Sharp, Metallic) → underextraction (grind finer)
   → If "Tart" appears alongside overextraction signals (Bitter, Harsh, Dry, Astringent, Burnt…) → overextraction (grind coarser)
@@ -207,6 +214,10 @@ EXTRACTION VS. BODY — fix extraction first:
 
 MIXED / nuanced:
 - If the cup shows BOTH good notes (Bright, Balanced, Clean, Smooth, Silky) AND body complaints (Weak, Thin, Tea-like, and/or Flat with no bitter cluster), extraction is likely correct — the issue is body only. Recommend more coffee (dose up) rather than changing grind direction.
+
+PROTECT GOOD CUPS — do not fix what isn't broken:
+- If "Sweet" appears — or 2+ positive notes (Sweet, Bright, Juicy, Balanced, Smooth, Clean, Silky, Fruity, Chocolate, Caramel, Nutty) — and there is NO unambiguous defect cluster (no 2+ overextraction signals, no clear Sour/underextraction), the adjustment MUST be "none". Celebrate the cup.
+- Field feedback is unequivocal: grind changes on cups described as Sweet make the next cup worse. Sweetness is the goal state — when it's present, changing the grind sacrifices it. A single mild negative note next to Sweet is not a mandate to intervene.
 
 ## METHOD-SPECIFIC ADJUSTMENT LOGIC
 
