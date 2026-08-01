@@ -16,7 +16,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
 import Purchases from 'react-native-purchases';
 import { useColors } from '@/hooks/useColors';
-import { createCheckout, redeemPromoCode } from '@/lib/api';
+import { redeemPromoCode } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { useSubscription } from '@/lib/revenuecat';
 
@@ -90,23 +90,6 @@ export default function PaywallScreen() {
       if (!code) {
         setErrorMsg('Purchase failed. Please try again.');
       }
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  async function handleStripeCheckout(plan: 'yearly' | 'monthly') {
-    if (!email) {
-      router.push('/onboarding');
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLoading(plan);
-    try {
-      const { url } = await createCheckout(email, plan);
-      if (url) WebBrowser.openBrowserAsync(url);
-    } catch {
-      setErrorMsg('Something went wrong. Please try again.');
     } finally {
       setLoading(null);
     }

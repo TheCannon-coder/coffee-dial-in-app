@@ -51,7 +51,6 @@ export default function TastingScreen() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [freeText, setFreeText] = useState('');
-  const [brewComparison, setBrewComparison] = useState<'better' | 'same' | 'worse' | null>(null);
   const [stage, setStage] = useState<Stage>('selecting');
   const [advice, setAdvice] = useState('');
   const [adjustment, setAdjustment] = useState('');
@@ -108,7 +107,6 @@ export default function TastingScreen() {
         tastingNotes,
         freeNotes: freeText,
         adjustmentHistory,
-        brewComparison: brewComparison ?? undefined,
       });
 
       if ('error' in result && result.error === 'limit_reached') {
@@ -266,9 +264,6 @@ export default function TastingScreen() {
             onToggle={toggle}
             freeText={freeText}
             onFreeTextChange={setFreeText}
-            brewComparison={brewComparison}
-            onBrewComparisonChange={setBrewComparison}
-            showComparison={adjustmentHistory.length > 0}
           />
         )}
 

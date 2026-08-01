@@ -32,9 +32,6 @@ interface TastingChipsProps {
   onToggle: (chip: string) => void;
   freeText: string;
   onFreeTextChange: (text: string) => void;
-  brewComparison: 'better' | 'same' | 'worse' | null;
-  onBrewComparisonChange: (val: 'better' | 'same' | 'worse' | null) => void;
-  showComparison: boolean;
 }
 
 export function TastingChips({
@@ -42,9 +39,6 @@ export function TastingChips({
   onToggle,
   freeText,
   onFreeTextChange,
-  brewComparison,
-  onBrewComparisonChange,
-  showComparison,
 }: TastingChipsProps) {
   const colors = useColors();
 
@@ -84,39 +78,6 @@ export function TastingChips({
         />
       </View>
 
-      {showComparison && (
-        <View style={styles.comparisonGroup}>
-          <Text style={[styles.comparisonLabel, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-            The most important question: was this brew better or worse than the previous?
-          </Text>
-          <View style={styles.comparisonButtons}>
-            {(['worse', 'same', 'better'] as const).map((option) => {
-              const labels = { worse: '👎 Worse', same: '→ Same', better: '👍 Better' };
-              const isSelected = brewComparison === option;
-              return (
-                <Pressable
-                  key={option}
-                  style={[
-                    styles.comparisonBtn,
-                    {
-                      backgroundColor: isSelected ? colors.espresso : colors.card,
-                      borderColor: isSelected ? colors.espresso : colors.border,
-                    },
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onBrewComparisonChange(brewComparison === option ? null : option);
-                  }}
-                >
-                  <Text style={[styles.comparisonBtnText, { color: isSelected ? colors.cream : colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                    {labels[option]}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
     </>
   );
 }
@@ -134,15 +95,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 80,
   },
-  comparisonGroup: { gap: 12, paddingTop: 4 },
-  comparisonLabel: { fontSize: 16, lineHeight: 22 },
-  comparisonButtons: { flexDirection: 'row', gap: 10 },
-  comparisonBtn: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  comparisonBtnText: { fontSize: 14 },
 });

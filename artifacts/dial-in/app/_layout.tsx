@@ -44,7 +44,10 @@ function extractRefCode(url: string): string | null {
 try {
   initializeRevenueCat();
 } catch (err: unknown) {
-  Alert.alert('RevenueCat Unavailable', (err as Error)?.message ?? 'Unknown error');
+  // Fail silently: a purchases-SDK hiccup shouldn't greet users with a
+  // vendor-named error alert on launch. The paywall surfaces its own
+  // friendly error state if offerings can't load.
+  console.warn('RevenueCat init failed', err);
 }
 
 SplashScreen.preventAutoHideAsync();
