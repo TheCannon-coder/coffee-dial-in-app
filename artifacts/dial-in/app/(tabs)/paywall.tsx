@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -282,7 +283,7 @@ export default function PaywallScreen() {
         </Pressable>
 
         <Text style={[styles.legalNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Coffee Brew Coach Pro subscription auto-renews monthly ({monthlyPrice}/mo) or annually ({yearlyPrice}/yr) until cancelled. Cancel anytime in App Store Settings.
+          Coffee Brew Coach Pro subscription auto-renews monthly ({monthlyPrice}/mo) or annually ({yearlyPrice}/yr) until cancelled. Cancel anytime in {Platform.OS === 'android' ? 'Google Play subscription settings' : 'App Store Settings'}.
         </Text>
 
         <View style={styles.legalLinks}>
@@ -310,7 +311,7 @@ export default function PaywallScreen() {
               Restore purchases?
             </Text>
             <Text style={[styles.modalBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              This will restore any previous Pro subscription linked to your Apple ID.
+              This will restore any previous Pro subscription linked to your {Platform.OS === 'android' ? 'Google account' : 'Apple ID'}.
             </Text>
             <View style={styles.modalActions}>
               <Pressable

@@ -41,7 +41,24 @@
         ]
       }
     },
-    "android": {},
+    "android": {
+      "package": "com.dialin.coffeecoach",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#F5F0E8"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "coffeebrew.coach" },
+            { "scheme": "https", "host": "www.coffeebrew.coach" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },

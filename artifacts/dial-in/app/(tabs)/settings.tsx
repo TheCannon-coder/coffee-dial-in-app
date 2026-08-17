@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -23,12 +23,19 @@ export default function SettingsScreen() {
     if (!email) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    const onAndroid = Platform.OS === 'android';
+    const storeSubsUrl = onAndroid
+      ? 'https://play.google.com/store/account/subscriptions'
+      : 'https://apps.apple.com/account/subscriptions';
+
     if (isSubscribed) {
       Alert.alert(
         'Manage Subscription',
-        'Your subscription is managed through Apple. Go to Settings → Apple ID → Subscriptions to make changes.',
+        onAndroid
+          ? 'Your subscription is managed through Google Play. Open your Play Store subscriptions to make changes.'
+          : 'Your subscription is managed through Apple. Go to Settings → Apple ID → Subscriptions to make changes.',
         [
-          { text: 'Open Settings', onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions') },
+          { text: onAndroid ? 'Open Google Play' : 'Open Settings', onPress: () => Linking.openURL(storeSubsUrl) },
           { text: 'Cancel', style: 'cancel' },
         ],
       );
@@ -42,9 +49,11 @@ export default function SettingsScreen() {
       } else if (isProFromDB) {
         Alert.alert(
           'Pro Access Active',
-          'Your Pro access is active on this account. If you subscribed through the App Store, you can manage it in Settings → Apple ID → Subscriptions.',
+          onAndroid
+            ? 'Your Pro access is active on this account. If you subscribed through Google Play, you can manage it in your Play Store subscriptions.'
+            : 'Your Pro access is active on this account. If you subscribed through the App Store, you can manage it in Settings → Apple ID → Subscriptions.',
           [
-            { text: 'Open Settings', onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions') },
+            { text: onAndroid ? 'Open Google Play' : 'Open Settings', onPress: () => Linking.openURL(storeSubsUrl) },
             { text: 'OK', style: 'cancel' },
           ],
         );
@@ -147,7 +156,7 @@ export default function SettingsScreen() {
 
           {permission === 'denied' && (
             <Text style={[styles.deniedNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Enable notifications in iOS Settings to turn on reminders.
+              Enable notifications in your phone's Settings to turn on reminders.
             </Text>
           )}
         </View>
