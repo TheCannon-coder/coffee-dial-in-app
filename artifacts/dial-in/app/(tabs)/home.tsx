@@ -23,6 +23,7 @@ import { useColors } from '@/hooks/useColors';
 import { useUser, SavedCoffee } from '@/context/UserContext';
 import { visibleBrews } from '@/lib/brew-history';
 import { computeStreak } from '@/lib/streaks';
+import { maybeAskForReview } from '@/lib/review';
 import { WeeklyRecap } from '@/components/WeeklyRecap';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
@@ -370,6 +371,10 @@ export default function HomeScreen() {
               await submitFeedback(pendingFeedback.sessionId, wasHelpful).catch(() => {});
               setPendingFeedback(null);
               setFeedbackSubmitting(false);
+              if (wasHelpful) {
+                // Their coffee just got better — the happiest moment to ask.
+                setTimeout(() => { maybeAskForReview(); }, 800);
+              }
             }}
             onDismiss={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

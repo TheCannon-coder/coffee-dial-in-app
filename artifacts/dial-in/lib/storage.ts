@@ -12,6 +12,7 @@ export const KEYS = {
   BREW_COUNT: 'dialin_brew_count',
   BREW_COUNT_MONTH: 'dialin_brew_count_month',
   WEEK1_NUDGES_SCHEDULED: 'dialin_week1_nudges',
+  REVIEW_LAST_ASKED: 'dialin_review_last_asked',
 } as const;
 
 export const FREE_BREW_LIMIT = 10;

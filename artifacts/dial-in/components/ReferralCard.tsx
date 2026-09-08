@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { getReferralCode } from '@/lib/api';
@@ -34,17 +35,16 @@ export function ReferralCard() {
     if (!code) return;
     const link = `https://www.coffeebrew.coach?ref=${code}`;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // The code must live in the TEXT, not just the link — a new install loses
+    // the ?ref= param on its trip through the App Store, so the friend needs
+    // the code visible to type in at signup.
+    const pitch = `I've been using Coffee Brew Coach to dial in my coffee. Sign up with my code ${code} and you get a month of Pro free:`;
     // On iOS, `url` is appended after `message` — passing the URL in both fields
     // produces two link-preview cards in iMessage. Split them so there's one preview.
     Share.share(
       Platform.OS === 'ios'
-        ? {
-            message: "I've been using Coffee Brew Coach to dial in my coffee — give it a try:",
-            url: link,
-          }
-        : {
-            message: `I've been using Coffee Brew Coach to dial in my coffee — give it a try: ${link}`,
-          }
+        ? { message: pitch, url: link }
+        : { message: `${pitch} ${link}` }
     );
   }
 
@@ -52,8 +52,9 @@ export function ReferralCard() {
     const code = await ensureCode();
     if (!code) return;
     const link = `https://www.coffeebrew.coach?ref=${code}`;
+    await Clipboard.setStringAsync(`Sign up with my code ${code} and you get a month of Coffee Brew Coach Pro free: ${link}`).catch(() => {});
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Copied!', link);
+    Alert.alert('Copied!', `Your code ${code} and link are ready to paste.`);
   }
 
   return (
@@ -64,10 +65,10 @@ export function ReferralCard() {
         </View>
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-            Give a friend a free brew
+            Give a friend a month of Pro
           </Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            You both get +2 dial-ins when they brew for the first time
+            They get Pro free for a month when they sign up with your code
           </Text>
         </View>
       </View>

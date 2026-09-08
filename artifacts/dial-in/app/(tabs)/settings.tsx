@@ -191,6 +191,30 @@ export default function SettingsScreen() {
           </>
         )}
 
+        {/* ── About ── */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+          ABOUT
+        </Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Linking.openURL(
+                Platform.OS === 'android'
+                  ? 'https://play.google.com/store/apps/details?id=com.dialin.coffeecoach'
+                  : 'https://apps.apple.com/app/id6777418888?action=write-review',
+              );
+            }}
+            style={styles.row}
+          >
+            <Feather name="star" size={16} color={colors.mutedForeground} />
+            <Text style={[styles.rowLabel, { color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}>
+              Rate Coffee Brew Coach
+            </Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
+
         <Text style={[styles.version, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
           Coffee Brew Coach v{Constants.expoConfig?.version ?? ''}
         </Text>
