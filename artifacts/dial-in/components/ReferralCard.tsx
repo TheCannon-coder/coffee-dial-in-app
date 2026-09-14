@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
-import { getReferralCode } from '@/lib/api';
+import { getReferralCode, getFriendReferralStats, type FriendReferralStats } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
+
+const PERMANENT_PRO_AT = 10;
 
 export function ReferralCard() {
   const colors = useColors();
   const { email, referralCode, setReferralCode } = useUser();
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<FriendReferralStats | null>(null);
+
+  useEffect(() => {
+    if (!email) return;
+    getFriendReferralStats(email).then(setStats).catch(() => {});
+  }, [email]);
 
   const referralLink = referralCode
     ? `https://www.coffeebrew.coach?ref=${referralCode}`
@@ -57,6 +65,14 @@ export function ReferralCard() {
     Alert.alert('Copied!', `Your code ${code} and link are ready to paste.`);
   }
 
+  // The card needs an account to attach the code to.
+  if (!email) return null;
+
+  const qualifying = stats?.qualifyingCount ?? 0;
+  const pending = stats?.pendingCount ?? 0;
+  const isPermanent = stats?.proPermanent === true;
+  const progress = Math.min(qualifying / PERMANENT_PRO_AT, 1);
+
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.header}>
@@ -65,13 +81,44 @@ export function ReferralCard() {
         </View>
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-            Give a friend a month of Pro
+            Give a month, get a month
           </Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            They get Pro free for a month when they sign up with your code
+            Friends get a month of Pro free with your code. When they log 3 brews, you get a month too.
           </Text>
         </View>
       </View>
+
+      {/* The ladder: 10 qualifying friends = Pro for life */}
+      {isPermanent ? (
+        <View style={[styles.ladderBox, { backgroundColor: colors.secondary }]}>
+          <Text style={[styles.ladderHeadline, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+            🎉 You've earned Pro for life
+          </Text>
+          <Text style={[styles.ladderSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            Thanks for spreading the word — keep sharing, your friends still get their free month.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.ladder}>
+          <View style={styles.ladderLabels}>
+            <Text style={[styles.ladderHeadline, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+              {qualifying} of {PERMANENT_PRO_AT} friends
+            </Text>
+            <Text style={[styles.ladderGoal, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+              {PERMANENT_PRO_AT} = Pro for life
+            </Text>
+          </View>
+          <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
+            <View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${Math.max(progress * 100, 2)}%` }]} />
+          </View>
+          {pending > 0 && (
+            <Text style={[styles.ladderSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              {pending} {pending === 1 ? 'friend is' : 'friends are'} brewing toward your next free month
+            </Text>
+          )}
+        </View>
+      )}
 
       {referralLink && (
         <View style={[styles.linkBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
@@ -132,6 +179,38 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  ladder: {
+    gap: 6,
+  },
+  ladderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ladderHeadline: {
+    fontSize: 13,
+  },
+  ladderGoal: {
+    fontSize: 12,
+  },
+  ladderBox: {
+    borderRadius: 10,
+    padding: 12,
+    gap: 4,
+  },
+  ladderSub: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   linkBox: {
     borderRadius: 8,

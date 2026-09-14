@@ -25,6 +25,7 @@ import { visibleBrews } from '@/lib/brew-history';
 import { computeStreak } from '@/lib/streaks';
 import { maybeAskForReview } from '@/lib/review';
 import { WeeklyRecap } from '@/components/WeeklyRecap';
+import { ReferralCard } from '@/components/ReferralCard';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
 import { AchievementBadge } from '@/components/AchievementBadge';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
@@ -472,6 +473,8 @@ export default function HomeScreen() {
         )}
 
         <WeeklyRecap coffees={savedCoffees} />
+
+        <ReferralCard />
 
         {earnedBadges.length > 0 && (
           <View style={styles.section}>

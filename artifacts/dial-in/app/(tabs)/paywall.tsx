@@ -5,6 +5,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -17,15 +18,21 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
 import Purchases from 'react-native-purchases';
 import { useColors } from '@/hooks/useColors';
-import { redeemPromoCode } from '@/lib/api';
+import { redeemPromoCode, getReferralCode } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { useSubscription } from '@/lib/revenuecat';
+
+const VALUE_STACK = [
+  { icon: 'zap', title: 'Unlimited coached brews', sub: 'No monthly cap — brew, tweak, repeat.' },
+  { icon: 'book-open', title: 'Your full brew journal', sub: 'Every brew saved for good. Free keeps your last 3.' },
+  { icon: 'target', title: 'Coaching that knows your taste', sub: 'Advice built on your history — your gear, your beans, your wins.' },
+] as const;
 
 export default function PaywallScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ resetsOn?: string; isAnonymous?: string }>();
-  const { email, ensureAnonId } = useUser();
+  const { email, ensureAnonId, referralCode, setReferralCode } = useUser();
   const { offerings, purchase, restore, isPurchasing, isRestoring, isLoading, offeringsError, refetchOfferings } = useSubscription();
 
   const [loading, setLoading] = useState<'yearly' | 'monthly' | null>(null);
@@ -60,6 +67,17 @@ export default function PaywallScreen() {
 
   const monthlyPrice = monthlyPkg?.product?.priceString ?? '$4.99';
   const yearlyPrice  = yearlyPkg?.product?.priceString  ?? '$44.99';
+
+  // Price framing: yearly as a per-month figure, and honest months-free math.
+  const currencySymbol =
+    (yearlyPkg?.product?.priceString ?? monthlyPkg?.product?.priceString ?? '$').replace(/[\d.,\s]/g, '') || '$';
+  const yearlyPerMonth = yearlyPkg?.product?.price
+    ? `${currencySymbol}${(yearlyPkg.product.price / 12).toFixed(2)}`
+    : null;
+  const monthsFree =
+    yearlyPkg?.product?.price && monthlyPkg?.product?.price
+      ? Math.max(0, Math.round(12 - yearlyPkg.product.price / monthlyPkg.product.price))
+      : null;
 
   const productsReady = !isLoading && (!!monthlyPkg || !!yearlyPkg);
   const productsFailedToLoad = !isLoading && !monthlyPkg && !yearlyPkg;
@@ -146,6 +164,43 @@ export default function PaywallScreen() {
     }
   }
 
+  const [earnLoading, setEarnLoading] = useState(false);
+
+  /** The decline path that still grows the app: share a code instead of paying. */
+  async function handleEarnShare() {
+    if (!email) return;
+    setEarnLoading(true);
+    try {
+      let code = referralCode;
+      if (!code) {
+        const res = await getReferralCode(email);
+        code = res.code;
+        setReferralCode(res.code);
+      }
+      const link = `https://www.coffeebrew.coach?ref=${code}`;
+      const pitch = `I've been using Coffee Brew Coach to dial in my coffee. Sign up with my code ${code} and you get a month of Pro free:`;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await Share.share(
+        Platform.OS === 'ios' ? { message: pitch, url: link } : { message: `${pitch} ${link}` },
+      );
+    } catch {
+      // sharing is best-effort — never surface an error here
+    } finally {
+      setEarnLoading(false);
+    }
+  }
+
+  const headline = isAnon
+    ? "Your coffee's just getting started"
+    : resetLabel
+      ? "You're brewing more than most"
+      : 'Make every cup your best cup';
+  const subline = isAnon
+    ? 'The free trial is done — keep the coaching going and dial in every bag you buy.'
+    : resetLabel
+      ? "That's the whole game — brew, tweak, repeat. Don't let a monthly cap stop the streak."
+      : 'Unlimited coaching that learns your taste, one brew at a time.';
+
   const isLoadingAny = loading !== null || isPurchasing || isRestoring;
 
   return (
@@ -168,16 +223,42 @@ export default function PaywallScreen() {
         </View>
 
         <Text style={[styles.title, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-          {isAnon ? "You've used your free trial" : 'Monthly limit reached'}
+          {headline}
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Upgrade for unlimited coaching sessions and never stop improving your brew.
+          {subline}
         </Text>
 
-        <View style={[styles.proLabel, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.proLabelText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
-            Coffee Brew Coach Pro
-          </Text>
+        <View style={styles.proofRow}>
+          <View style={[styles.proLabel, { backgroundColor: colors.secondary }]}>
+            <Text style={[styles.proLabelText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
+              Coffee Brew Coach Pro
+            </Text>
+          </View>
+          <View style={[styles.proofChip, { backgroundColor: colors.secondary }]}>
+            <Feather name="star" size={12} color={colors.accent} />
+            <Text style={[styles.proofChipText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+              5.0 on the App Store
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.valueStack}>
+          {VALUE_STACK.map((item) => (
+            <View key={item.title} style={styles.valueRow}>
+              <View style={[styles.valueIcon, { backgroundColor: colors.secondary }]}>
+                <Feather name={item.icon} size={15} color={colors.accent} />
+              </View>
+              <View style={styles.valueText}>
+                <Text style={[styles.valueTitle, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.valueSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  {item.sub}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
 
         {isLoading ? (
@@ -218,13 +299,18 @@ export default function PaywallScreen() {
             >
               <View style={[styles.bestValue, { backgroundColor: colors.accentLight }]}>
                 <Text style={[styles.bestValueText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
-                  Best value — save 25%
+                  {monthsFree && monthsFree > 0 ? `Best value — ${monthsFree} months free` : 'Best value — save 25%'}
                 </Text>
               </View>
               <Text style={[styles.planPrice, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
                 {yearlyPrice}
               </Text>
               <Text style={[styles.planPeriod, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>per year</Text>
+              {yearlyPerMonth && (
+                <Text style={[styles.planMath, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
+                  {yearlyPerMonth}/month — less than one café coffee
+                </Text>
+              )}
               {loading === 'yearly' && (
                 <ActivityIndicator color={colors.cream} size="small" style={{ marginTop: 8 }} />
               )}
@@ -249,6 +335,13 @@ export default function PaywallScreen() {
           </View>
         )}
 
+        <View style={styles.riskRow}>
+          <Feather name="shield" size={13} color={colors.mutedForeground} />
+          <Text style={[styles.riskText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            Cancel anytime in two taps. Everything you've logged stays saved.
+          </Text>
+        </View>
+
         {errorMsg ? (
           <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'DMSans_400Regular' }]}>
             {errorMsg}
@@ -259,6 +352,36 @@ export default function PaywallScreen() {
           <Text style={[styles.resetText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
             Or wait until {resetLabel} — your free coaching sessions reset then.
           </Text>
+        ) : null}
+
+        {email ? (
+          <View style={[styles.earnCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.earnHeader}>
+              <Feather name="gift" size={16} color={colors.accent} />
+              <Text style={[styles.earnTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+                Or earn Pro without paying
+              </Text>
+            </View>
+            <Text style={[styles.earnBody, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              Give friends a month of Pro free. Each friend who logs 3 brews earns you a month — and at 10 friends, Pro is yours for life.
+            </Text>
+            <Pressable
+              onPress={handleEarnShare}
+              disabled={earnLoading}
+              style={({ pressed }) => [styles.earnBtn, { backgroundColor: colors.secondary, opacity: pressed || earnLoading ? 0.7 : 1 }]}
+            >
+              {earnLoading ? (
+                <ActivityIndicator size="small" color={colors.espresso} />
+              ) : (
+                <>
+                  <Feather name="share-2" size={14} color={colors.espresso} />
+                  <Text style={[styles.earnBtnText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                    Share your code
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         ) : null}
 
         <Pressable
@@ -490,6 +613,77 @@ const styles = StyleSheet.create({
   bestValueText: { fontSize: 12 },
   planPrice: { fontSize: 32 },
   planPeriod: { fontSize: 15 },
+  planMath: { fontSize: 12, marginTop: 2 },
+  proofRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  proofChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  proofChipText: { fontSize: 12 },
+  valueStack: {
+    width: '100%',
+    gap: 12,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  valueIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  valueText: { flex: 1, gap: 1 },
+  valueTitle: { fontSize: 14.5 },
+  valueSub: { fontSize: 13, lineHeight: 18 },
+  riskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: 320,
+  },
+  riskText: { fontSize: 12.5, lineHeight: 17, flexShrink: 1 },
+  earnCard: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+    marginTop: 2,
+  },
+  earnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  earnTitle: { fontSize: 16 },
+  earnBody: { fontSize: 13, lineHeight: 19 },
+  earnBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 100,
+    paddingVertical: 11,
+    minHeight: 42,
+  },
+  earnBtnText: { fontSize: 14 },
   retryContainer: {
     width: '100%',
     alignItems: 'center',
