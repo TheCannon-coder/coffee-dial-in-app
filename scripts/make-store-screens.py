@@ -40,9 +40,9 @@ FRAMES = [
      "No jargon. One tweak for tomorrow's brew.", None),
     ("03-widget.png", ["Your plan waits on", "your home screen"],
      "Tomorrow's tweak, ready before you brew.", None),
-    ("04-better.png", ["It learns your taste,", "brew by brew"],
-     "Say if the cup got better — it remembers.", None),
-    ("05-streak.png", ["Build a better-", "coffee habit"],
+    ("04-home.png", ["It learns your taste,", "brew by brew"],
+     "Every coffee remembered — and what worked.", None),
+    ("05-brewalong.png", ["Brew along,", "step by step"],
      "Free to start — 10 coached brews a month.", None),
 ]
 
@@ -91,6 +91,79 @@ def draw_badge(d: ImageDraw.ImageDraw, W: int, y: int, badge: str,
     return line_h + 2 * pad_y
 
 
+def widget_composite(size: tuple[int, int] = (1179, 2556)) -> Image.Image:
+    """Synthetic home-screen scene for the widget frame — no real user data.
+
+    A muted wallpaper gradient, two generic neighbor widgets, and the Brew
+    Plan widget rendered with sample data, drawn to match its real layout.
+    """
+    W, H = size
+    img = Image.new("RGB", size)
+    top, bottom = (58, 50, 44), (24, 20, 17)
+    for yy in range(H):
+        t = yy / H
+        img.paste(tuple(int(a + (b - a) * t) for a, b in zip(top, bottom)),
+                  [0, yy, W, yy + 1])
+    d = ImageDraw.Draw(img)
+
+    margin = int(W * 0.055)
+    gap = int(W * 0.04)
+    small = (W - 2 * margin - gap) // 2
+    y0 = int(H * 0.16)
+
+    cal_f_day = font(SANS, int(W * 0.10))
+    cal_f_label = font(SANS, int(W * 0.030))
+    body_f = font(SANS, int(W * 0.034))
+
+    # Generic calendar-ish widget
+    cal = Image.new("RGB", (small, small), (250, 250, 250))
+    cd = ImageDraw.Draw(cal)
+    cd.text((int(small * 0.12), int(small * 0.10)), "MONDAY", font=cal_f_label, fill=(220, 80, 60))
+    cd.text((int(small * 0.12), int(small * 0.17)), "14", font=cal_f_day, fill=(30, 30, 30))
+    cd.text((int(small * 0.12), int(small * 0.62)), "No events today", font=body_f, fill=(140, 140, 140))
+    cal = rounded(cal, int(small * 0.18))
+    img.paste(cal, (margin, y0), cal)
+
+    # Generic weather-ish widget
+    wx = Image.new("RGB", (small, small), (72, 199, 142))
+    wd = ImageDraw.Draw(wx)
+    wd.text((int(small * 0.12), int(small * 0.10)), "Hamilton", font=body_f, fill=(255, 255, 255))
+    wd.text((int(small * 0.12), int(small * 0.20)), "18°", font=cal_f_day, fill=(255, 255, 255))
+    wd.text((int(small * 0.12), int(small * 0.66)), "Sunny", font=body_f, fill=(235, 250, 242))
+    wd.text((int(small * 0.12), int(small * 0.76)), "H:22°  L:11°", font=body_f, fill=(235, 250, 242))
+    wx = rounded(wx, int(small * 0.18))
+    img.paste(wx, (margin + small + gap, y0), wx)
+
+    # Brew Plan widget (medium), matching the real layout
+    bp_w = W - 2 * margin
+    bp_h = small
+    bp = Image.new("RGB", (bp_w, bp_h), CREAM)
+    bd = ImageDraw.Draw(bp)
+    pad = int(bp_w * 0.055)
+    label_f = font(SANS, int(bp_w * 0.032))
+    coffee_f = font(SERIF, int(bp_w * 0.056))
+    tweak_f = font(SANS, int(bp_w * 0.040))
+    bd.text((pad, pad), "Today's plan", font=label_f, fill=SOFT)
+    streak_txt = "6-day streak"
+    stw = bd.textlength(streak_txt, font=label_f)
+    star_r = int(bp_w * 0.014)
+    bd.polygon(star_points(bp_w - pad - stw - star_r * 2 - 8 + star_r, pad + int(bp_w * 0.016), star_r),
+               fill=(200, 154, 90))
+    bd.text((bp_w - pad - stw, pad), streak_txt, font=label_f, fill=ESPRESSO)
+    bd.text((pad, int(bp_h * 0.40)), "The Cannon Kenyan AB", font=coffee_f, fill=ESPRESSO)
+    bd.text((pad, int(bp_h * 0.62)), "Grind a touch finer", font=tweak_f, fill=SOFT)
+    bp = rounded(bp, int(small * 0.18))
+    img.paste(bp, (margin, y0 + small + gap), bp)
+
+    # A hint of another row fading out below
+    hint = Image.new("RGB", (bp_w, small), (255, 255, 255))
+    hint = rounded(hint, int(small * 0.18))
+    hint.putalpha(26)
+    img.paste(hint, (margin, y0 + 2 * (small + gap)), hint)
+
+    return img
+
+
 def placeholder(size: tuple[int, int], label: str) -> Image.Image:
     img = Image.new("RGB", size, (225, 217, 205))
     d = ImageDraw.Draw(img)
@@ -131,6 +204,10 @@ def render(frame_idx: int, raw_name: str, headline: list[str], subline: str,
     inner_w = shot_w - 2 * bezel
     if raw_path.exists():
         shot = Image.open(raw_path).convert("RGB")
+    elif raw_name == "03-widget.png":
+        # Privacy by design: the widget frame is always a synthetic scene
+        # unless a deliberately staged capture is provided.
+        shot = widget_composite()
     else:
         shot = placeholder((1179, 2556), raw_name.split("-")[1].split(".")[0].title())
     ratio = inner_w / shot.width
