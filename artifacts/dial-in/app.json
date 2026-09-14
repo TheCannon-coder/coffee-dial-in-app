@@ -23,7 +23,11 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.dialin.coffeecoach",
+      "appleTeamId": "NJFUPABBTA",
       "buildNumber": "51",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.dialin.coffeecoach"]
+      },
       "associatedDomains": [
         "applinks:coffeebrew.coach",
         "applinks:www.coffeebrew.coach"
@@ -72,6 +76,7 @@
       "expo-font",
       "expo-apple-authentication",
       "expo-web-browser",
+      "@bacons/apple-targets",
       [
         "expo-notifications",
         {

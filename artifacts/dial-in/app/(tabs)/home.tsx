@@ -26,6 +26,7 @@ import { computeStreak } from '@/lib/streaks';
 import { maybeAskForReview } from '@/lib/review';
 import { tweakPhrase } from '@/lib/adjustments';
 import { refreshMorningReminder } from '@/lib/notifications';
+import { setWidgetPlan } from '@/lib/widget';
 import { WeeklyRecap } from '@/components/WeeklyRecap';
 import { ReferralCard } from '@/components/ReferralCard';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
@@ -288,6 +289,12 @@ export default function HomeScreen() {
     refreshMorningReminder(
       todaysPlan ? { ...todaysPlan, streak: streak.current } : undefined,
     ).catch(() => {});
+    setWidgetPlan({
+      coffeeName: todaysPlan?.coffeeName ?? '',
+      tweak: todaysPlan?.tweak ?? '',
+      streak: streak.current,
+      brewedToday: streak.brewedToday,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedCoffees]);
 
