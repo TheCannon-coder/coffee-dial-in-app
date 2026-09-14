@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as StoreReview from 'expo-store-review';
+import { maybeAskForReview } from '@/lib/review';
 import { useColors } from '@/hooks/useColors';
 import { dialIn, submitFeedback } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
@@ -200,10 +200,9 @@ export default function TastingScreen() {
       submitFeedback(prevSessionId, helpful).catch(() => {});
     }
     if (helpful) {
-      const available = await StoreReview.isAvailableAsync();
-      if (available) {
-        setTimeout(() => StoreReview.requestReview(), 800);
-      }
+      // Their coffee just got better — the happiest moment to ask, but only
+      // through the shared gate so both ask-points respect one cooldown.
+      setTimeout(() => { maybeAskForReview(); }, 800);
     }
   }
 
