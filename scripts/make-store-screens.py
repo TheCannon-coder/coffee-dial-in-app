@@ -36,8 +36,8 @@ SANS = "/System/Library/Fonts/Helvetica.ttc"
 FRAMES = [
     ("01-tasting.png", ["Tell it how your", "coffee tasted"],
      "Tap what you taste — that's the whole job.", "★ 5.0 on the App Store"),
-    ("02-advice.png", ["Get one clear fix"],
-     "No jargon. One tweak for tomorrow's brew.", None),
+    ("02-advice.png", ["One clear call,", "every brew"],
+     "A fix when you need one — or leave a great cup alone.", None),
     ("03-widget.png", ["Your plan waits on", "your home screen"],
      "Tomorrow's tweak, ready before you brew.", None),
     ("04-home.png", ["It learns your taste,", "brew by brew"],
