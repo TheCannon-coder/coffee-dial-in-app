@@ -56,7 +56,10 @@ export default function BrewSetupScreen() {
 
   function handleNext() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (brewAlong && !params.isRepeat) {
+    // The toggle is authoritative — repeat brews get the guided flow too
+    // (brew-along-recipe already prefers the user's own numbers over the
+    // base recipe when they exist).
+    if (brewAlong) {
       router.push({
         pathname: '/brew-along-recipe',
         params: { method, coffeeName, dose, water, brewTime, waterTemp, grinderNotes, adjustmentHistory: JSON.stringify(adjustmentHistory) },
