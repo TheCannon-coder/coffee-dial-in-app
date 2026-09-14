@@ -24,6 +24,8 @@ import { useUser, SavedCoffee } from '@/context/UserContext';
 import { visibleBrews } from '@/lib/brew-history';
 import { computeStreak } from '@/lib/streaks';
 import { maybeAskForReview } from '@/lib/review';
+import { tweakPhrase } from '@/lib/adjustments';
+import { refreshMorningReminder } from '@/lib/notifications';
 import { WeeklyRecap } from '@/components/WeeklyRecap';
 import { ReferralCard } from '@/components/ReferralCard';
 import { CoffeeFolder } from '@/components/CoffeeFolder';
@@ -272,6 +274,23 @@ export default function HomeScreen() {
   const streak = computeStreak(savedCoffees);
   const earnedBadges = ALL_BADGES.filter(b => earnedBadgeIds.includes(b.id));
 
+  // The latest brew's pending tweak is both the home hero and tomorrow
+  // morning's notification payload. ISO timestamps compare lexicographically.
+  const latestBrew = savedCoffees.length > 0
+    ? savedCoffees.reduce((a, b) => (a.savedAt > b.savedAt ? a : b))
+    : null;
+  const planTweak = latestBrew ? tweakPhrase(latestBrew.adjustment) : '';
+  const todaysPlan = latestBrew && planTweak
+    ? { coffeeName: latestBrew.coffeeName, tweak: planTweak }
+    : null;
+
+  useEffect(() => {
+    refreshMorningReminder(
+      todaysPlan ? { ...todaysPlan, streak: streak.current } : undefined,
+    ).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedCoffees]);
+
   // ── First-brew railroad: brand-new users see one focused path and nothing
   // else. Everything unlocks after brew #1. (null = still loading; render
   // nothing rather than flashing the wrong layout.)
@@ -330,7 +349,7 @@ export default function HomeScreen() {
             </Text>
             {streak.current >= 2 && (
               <Text style={[styles.streakText, { color: colors.accent, fontFamily: 'DMSans_500Medium' }]}>
-                🔥 {streak.current}-day streak{streak.brewedToday ? '' : ' — brew today to keep it'}
+                🔥 {streak.current}-day streak{streak.brewedToday ? '' : streak.onGrace ? ' — sleep-in used, brew today to keep it' : ' — brew today to keep it'}
               </Text>
             )}
           </View>
@@ -395,12 +414,12 @@ export default function HomeScreen() {
             }}
           >
             <View style={styles.brewCardContent}>
-              <View>
+              <View style={{ flex: 1, paddingRight: 10 }}>
                 <Text style={[styles.brewCardTitle, { color: colors.cream, fontFamily: 'Fraunces_500Medium' }]}>
-                  Brew a new coffee
+                  {todaysPlan ? (streak.brewedToday ? "Tomorrow's plan ☕" : "Today's plan ☕") : 'Brew a new coffee'}
                 </Text>
                 <Text style={[styles.brewCardSub, { color: '#A89080', fontFamily: 'DMSans_400Regular' }]}>
-                  Perfect your next cup
+                  {todaysPlan ? `${todaysPlan.coffeeName} — ${todaysPlan.tweak}` : 'Perfect your next cup'}
                 </Text>
               </View>
               <View style={[styles.brewArrow, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>

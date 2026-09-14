@@ -18,7 +18,8 @@ import { useColors } from '@/hooks/useColors';
 import { dialIn, submitFeedback } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import { generateId, getItem, setItem, getBrewCount, KEYS, FREE_BREW_LIMIT } from '@/lib/storage';
-import { scheduleWeekOneNudges } from '@/lib/notifications';
+import { scheduleWeekOneNudges, refreshMorningReminder } from '@/lib/notifications';
+import { tweakPhrase } from '@/lib/adjustments';
 import { checkAndAwardBadges, type Badge } from '@/lib/achievements';
 import { ShareModal } from '@/components/ShareModal';
 import { BadgeEarnedModal } from '@/components/BadgeEarnedModal';
@@ -59,6 +60,7 @@ export default function TastingScreen() {
   const [saveEmail, setSaveEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [tomorrowReady, setTomorrowReady] = useState(false);
   const [pendingBadges, setPendingBadges] = useState<Badge[]>([]);
   const [badgeIndex, setBadgeIndex] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -156,6 +158,15 @@ export default function TastingScreen() {
             adjustmentHistory: newHistory,
           });
           setSaved(true);
+        }
+
+        // Tomorrow morning's notification now carries this brew's tweak, so
+        // the reminder itself is the value: open the plan, then brew.
+        const tweak = tweakPhrase(result.adjustment);
+        if (tweak) {
+          refreshMorningReminder({ coffeeName: params.coffeeName ?? params.method, tweak })
+            .then(setTomorrowReady)
+            .catch(() => {});
         }
 
         // First-week habit nudges: schedule once, right after the first brew,
@@ -282,6 +293,12 @@ export default function TastingScreen() {
             onShare={() => setShowShareModal(true)}
           />
         )}
+
+        {stage === 'result' && tomorrowReady && (
+          <Text style={[styles.tomorrowNote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            ☕ This tweak will be waiting in tomorrow morning's reminder.
+          </Text>
+        )}
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
@@ -335,6 +352,13 @@ export default function TastingScreen() {
 }
 
 const styles = StyleSheet.create({
+  tomorrowNote: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 14,
+    paddingHorizontal: 24,
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

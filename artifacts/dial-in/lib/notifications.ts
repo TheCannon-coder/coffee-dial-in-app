@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { getItem, KEYS } from './storage';
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
@@ -56,18 +57,44 @@ export const DEFAULT_REMINDER_MINUTE = 30;
 
 const DAILY_REMINDER_ID = 'dialin_daily_morning';
 
-export async function scheduleDailyReminder(hour: number, minute: number): Promise<void> {
+/** Tomorrow morning's payload: the one tweak waiting in the app. */
+export interface MorningPlan {
+  coffeeName: string;
+  /** Human phrasing, e.g. "grind a touch finer" (see lib/adjustments.ts). */
+  tweak: string;
+  streak?: number;
+}
+
+/**
+ * The single repeating morning notification. When a plan is passed, the
+ * notification carries the day's specific adjustment (the Duolingo move:
+ * the payload IS the value) instead of a generic nudge. Callers refresh it
+ * whenever the plan changes; the repeat means a lapsed user still hears
+ * from us with their last known tweak.
+ */
+export async function scheduleDailyReminder(hour: number, minute: number, plan?: MorningPlan): Promise<void> {
   if (!isNative) return;
   const status = await getPermissionStatus();
   if (status !== 'granted') return;
+
+  const content = plan?.tweak
+    ? {
+        title:
+          plan.streak && plan.streak >= 2
+            ? `🔥 ${plan.streak}-day streak — today's tweak is ready`
+            : "Today's tweak is ready ☕",
+        body: `${plan.coffeeName}: ${plan.tweak}. Open your plan before you start brewing.`,
+      }
+    : {
+        title: 'Morning coffee time ☕',
+        body: "How did yesterday's brew go? Let's dial in today's cup.",
+      };
+
   try {
     await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(() => {});
     await Notifications.scheduleNotificationAsync({
       identifier: DAILY_REMINDER_ID,
-      content: {
-        title: 'Morning coffee time ☕',
-        body: 'How did yesterday\'s brew go? Let\'s dial in today\'s cup.',
-      },
+      content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour,
@@ -75,6 +102,29 @@ export async function scheduleDailyReminder(hour: number, minute: number): Promi
       },
     });
   } catch {}
+}
+
+/**
+ * Re-issue the morning reminder with fresh plan content using the user's
+ * stored settings. No-op unless reminders are enabled and permitted.
+ * Returns true when a reminder is actually in place (callers use this to
+ * show "your tweak will be waiting tomorrow" only when it's real).
+ */
+export async function refreshMorningReminder(plan?: MorningPlan): Promise<boolean> {
+  if (!isNative) return false;
+  try {
+    const [enabled, hour, minute] = await Promise.all([
+      getItem<boolean>(KEYS.NOTIFICATIONS_ENABLED),
+      getItem<number>(KEYS.REMINDER_HOUR),
+      getItem<number>(KEYS.REMINDER_MINUTE),
+    ]);
+    if (!enabled) return false;
+    if ((await getPermissionStatus()) !== 'granted') return false;
+    await scheduleDailyReminder(hour ?? DEFAULT_REMINDER_HOUR, minute ?? DEFAULT_REMINDER_MINUTE, plan);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function cancelDailyReminder(): Promise<void> {
@@ -123,7 +173,7 @@ export async function scheduleReminders(hour = DEFAULT_REMINDER_HOUR, minute = D
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Know a fellow coffee nerd? 🎁',
-        body: 'Share your Coffee Brew Coach link — you both get 2 extra free brews this month.',
+        body: 'Share your code — they get a month of Pro free, and their brews earn you free months.',
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
