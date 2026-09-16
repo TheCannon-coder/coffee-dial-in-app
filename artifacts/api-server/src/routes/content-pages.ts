@@ -18,6 +18,7 @@ function page(opts: {
   ctaHeading: string;
   skipAffiliateCallout?: boolean;
   affiliateCalloutHref?: string;
+  heroCtaHtml?: string;
 }): string {
   const relatedItems = [
     ...opts.related,
@@ -40,6 +41,7 @@ function page(opts: {
   <div class="content-hero-inner">
     <h1>${opts.h1}</h1>
     <p class="lead">${opts.lead}</p>
+    ${opts.heroCtaHtml ?? ""}
   </div>
 </header>
 
@@ -76,6 +78,28 @@ ${affiliateCallout}
     canonical: `${BASE}${opts.path}`,
     bodyHtml: body,
   });
+}
+
+// One FAQ list drives both the visible "Common questions" section and the
+// FAQPage schema — Google requires the marked-up Q&As to be visible on the page.
+type Faq = { q: string; a: string };
+
+function faqSection(items: Faq[]): string {
+  return `
+<h2>Common questions</h2>
+${items.map(i => `<h3>${i.q}</h3>\n<p>${i.a}</p>`).join("\n")}`;
+}
+
+function faqSchema(items: Faq[]): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": items.map(i => ({
+      "@type": "Question",
+      "name": i.q,
+      "acceptedAnswer": { "@type": "Answer", "text": i.a },
+    })),
+  };
 }
 
 /* ─── 1. Chemex ──────────────────────────────────────────────────────────── */
@@ -176,11 +200,34 @@ const kalitaHtml = page({
 
 /* ─── 3. Moka Pot ────────────────────────────────────────────────────────── */
 
+const MOKA_POT_FAQ: Faq[] = [
+  {
+    q: "Why is my moka pot coffee bitter?",
+    a: "Almost always over-extraction from one of three causes: too much heat, a grind that's too fine, or leaving the pot on the stove after the flow turns to a sputter. Start with pre-heated water on medium-low heat, grind a notch coarser than espresso, and pull the pot off the heat as soon as it starts to gurgle.",
+  },
+  {
+    q: "How do I make moka pot coffee less bitter?",
+    a: "Pre-heat the water, use medium-low heat, grind medium-fine rather than espresso-fine, fill the basket level without tamping, and take the pot off the heat the moment the flow starts to sputter. Running the base under cold water stops the extraction immediately.",
+  },
+  {
+    q: "I already pre-heat the water — why is it still bitter?",
+    a: "Then heat wasn't your main cause. Check the grind (still too fine), the basket (overfilled or tamped down), and the beans (very dark or stale). Each produces a slightly different bitterness — sharp and acrid, heavy and flat, or ashy — which is how you tell them apart.",
+  },
+  {
+    q: "Why does my moka pot coffee taste burnt?",
+    a: "Burnt or ashy flavour means the coffee scorched — the grounds sat at high temperature for too long. Starting with cold water, using high heat, and leaving the pot on the stove until it stops gurgling all cause it. Pre-heat the water and remove the pot at the first sputter.",
+  },
+  {
+    q: "What grind should I use for a moka pot?",
+    a: "Medium-fine, like table salt — a notch coarser than espresso. An espresso grind packs too tightly under pressure, drives the temperature up, and scorches the coffee.",
+  },
+];
+
 const mokaPotHtml = page({
   path: "/moka-pot",
   title: "Moka Pot Coffee Too Bitter? Here's Why | Coffee Brew Coach",
   description:
-    "Fix bitter, burnt, or weak Moka pot coffee with these simple adjustments. Free coaching from Coffee Brew Coach.",
+    "Bitter moka pot coffee comes from three things: too much heat, a grind that's too fine, or leaving it on the stove too long. Here's how to tell which one it is — and what to check if pre-heating the water didn't fix it.",
   h1: "Moka pot coffee too bitter — how to fix it",
   lead:
     "Bitter moka pot coffee is almost always caused by too much heat, the wrong grind, or letting the coffee sit on the stove too long. All three are easy to fix once you know what to look for.",
@@ -205,8 +252,19 @@ const mokaPotHtml = page({
 <h3>Don't overfill the basket</h3>
 <p>The filter basket should be level-full — not rounded, not compressed. Too much coffee creates excessive back-pressure and forces bitterness into the cup.</p>
 <h3>Use fresh beans</h3>
-<p>Dark, oily beans roasted more than 6 weeks ago are much more prone to bitter moka pot results. Medium-roast beans with a roast date within the last 4 weeks will give you more sweetness and less harshness.</p>`,
-  cbcHtml: `<p>Coffee Brew Coach asks you to describe what your moka pot tasted like — the specific type of bitterness (sharp and acrid vs. heavy and flat), how fast the coffee flowed, and what heat level you used. Based on your description, it tells you exactly which variable caused the problem: the grind, the heat level, or the timing — and gives you one specific thing to change next brew.</p>`,
+<p>Dark, oily beans roasted more than 6 weeks ago are much more prone to bitter moka pot results. Medium-roast beans with a roast date within the last 4 weeks will give you more sweetness and less harshness.</p>
+
+<h2>Pre-heated the water and it's still bitter?</h2>
+<p>The most common advice for a bitter moka pot — start with boiling water so the grounds spend less time on the heat — is good advice. But it only fixes one of the three causes. If you've already tried it and the cup is still bitter, heat was never your main problem. The bitterness is coming from the grind, the basket, or the beans, and each one leaves a different fingerprint:</p>
+<ul>
+  <li><strong>Grind still too fine.</strong> Sharp, acrid bitterness, often with a slow, hissing flow that struggles to get going. Fix: grind one notch coarser.</li>
+  <li><strong>Basket overfilled or tamped.</strong> Heavy, flat bitterness and coffee that sputters and spits from the start. Fix: level fill, no tamp, no rounding.</li>
+  <li><strong>Beans too dark or stale.</strong> Ashy, burnt bitterness no matter what you change. Fix: a fresher, lighter roast.</li>
+</ul>
+<p>The fix for one can make another worse — grinding coarser to stop scorching turns an under-filled basket thin and sour. That's why "just boil the water first" solves it for some people and does nothing for others: it's a single fix for a problem with several causes. Working out which one is yours is the actual job.</p>
+${faqSection(MOKA_POT_FAQ)}`,
+  cbcHtml: `<p>Coffee Brew Coach asks you to describe what your moka pot tasted like — the specific type of bitterness (sharp and acrid vs. heavy and flat), how fast the coffee flowed, and what heat level you used. Based on your description, it tells you exactly which variable caused the problem: the grind, the heat level, or the timing — and gives you one specific thing to change next brew.</p>
+<p>If you've already pre-heated the water and it's still bitter, that's exactly the situation the app is built for: it works out which of the remaining causes is yours, instead of having you change everything at once and hope.</p>`,
   related: [
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
     { href: "/espresso-pulling-too-fast", label: "Espresso pulling too fast — how to fix it" },
@@ -344,6 +402,37 @@ const bitterHtml = page({
 
 /* ─── 7. Espresso pulling too fast ───────────────────────────────────────── */
 
+const ESPRESSO_FAST_FAQ: Faq[] = [
+  {
+    q: "Why is my espresso pulling too fast?",
+    a: "The most common cause is a grind that's too coarse. Other causes include: dose too low, tamp too light, channelling in the puck, or uneven coffee distribution before tamping.",
+  },
+  {
+    q: "If my espresso is pulling too fast, what do I do?",
+    a: "Grind finer first — one or two notches — and pull again. If it's still under 20 seconds, add 0.5 g to the dose. Then check that your tamp is level and your grounds are evenly distributed. Change one thing per shot.",
+  },
+  {
+    q: "Should I grind finer or coarser if espresso pulls too fast?",
+    a: "Finer. A finer grind creates more resistance, so water takes longer to get through the puck. Grinding coarser would make the shot even faster.",
+  },
+  {
+    q: "Why is my espresso coming out too fast?",
+    a: "Water is finding too little resistance in the puck. The usual causes, in order: grind too coarse, dose too low, a light or uneven tamp, or channelling through a crack in the puck.",
+  },
+  {
+    q: "How long should an espresso shot take?",
+    a: "A properly extracted espresso should take 25–35 seconds from when the pump starts. If your shot finishes before 20 seconds, it's under-extracted and will taste sour and thin.",
+  },
+  {
+    q: "Does a slower shot mean better espresso?",
+    a: "Not by itself. Shot time is a symptom, not the goal. A 30-second shot can still taste sour if it channelled, or bitter and hollow if you got there by grinding far too fine and choking the flow. Use the timing to get into the 25–35 second window, then let taste decide the next change.",
+  },
+  {
+    q: "What does under-extracted espresso taste like?",
+    a: "Under-extracted espresso tastes sour, thin, and weak. The colour will be pale yellow rather than warm amber-brown. Shots that pull in under 20 seconds are almost always under-extracted.",
+  },
+];
+
 const espressoFastHtml = page({
   path: "/espresso-pulling-too-fast",
   title: "Espresso Pulling Too Fast? Here's the Fix | Coffee Brew Coach",
@@ -373,8 +462,15 @@ const espressoFastHtml = page({
 <p><strong>Step 4: Distribute before tamping.</strong> Use a WDT tool (Weiss Distribution Technique) or simply tap the portafilter on the counter a few times to settle the grounds evenly before tamping. This eliminates channels and clumps before they become a problem.</p>
 
 <h2>What a dialled-in shot looks like</h2>
-<p>A properly extracted espresso starts as a slow drip 5–8 seconds after the pump starts, then builds to a steady, honey-like flow. The colour should be a warm amber-brown — not pale yellow (under-extracted, too fast) and not dark brown that fades to black (over-extracted, too slow). Aim for 25–35 seconds total and a yield of roughly 1.5–2× your dose weight.</p>`,
-  cbcHtml: `<p>Coffee Brew Coach is built for exactly this kind of systematic espresso troubleshooting. You log your shot time, yield, and dose, then describe the taste — sour, thin, sharp, weak. The app tells you whether the primary cause is grind, dose, tamp, or distribution, and gives you one specific number to change on the next shot rather than suggesting you experiment with everything at once.</p>`,
+<p>A properly extracted espresso starts as a slow drip 5–8 seconds after the pump starts, then builds to a steady, honey-like flow. The colour should be a warm amber-brown — not pale yellow (under-extracted, too fast) and not dark brown that fades to black (over-extracted, too slow). Aim for 25–35 seconds total and a yield of roughly 1.5–2× your dose weight.</p>
+
+<h2>Slower isn't automatically better</h2>
+<p>Once you've slowed a gushing shot down into the 25–35 second window, it's tempting to keep chasing a longer time. Don't. Shot time is a symptom, not the goal. A 30-second shot can still taste sour if the puck channelled, or hollow and bitter if you got there by grinding far too fine and choking the flow. Two shots with identical timings can taste completely different.</p>
+<p>The only thing that tells you whether a change worked is the cup. Sour and thin means you're still under-extracting. Bitter and dry means you've overshot. If the timing is right and it still tastes wrong, the problem has moved — to distribution, dose, or temperature — and changing the grind again won't find it.</p>
+<p>That in-between stage is where most home baristas get stuck: the shot looks right, tastes wrong, and every guide hands you a different variable to try next. The jump from "fast shot" to "good cup" is rarely one change. Working out which change actually matters for <em>your</em> shot is the hard part.</p>
+${faqSection(ESPRESSO_FAST_FAQ)}`,
+  cbcHtml: `<p>Coffee Brew Coach is built for exactly this kind of systematic espresso troubleshooting. You log your shot time, yield, and dose, then describe the taste — sour, thin, sharp, weak. The app tells you whether the primary cause is grind, dose, tamp, or distribution, and gives you one specific number to change on the next shot rather than suggesting you experiment with everything at once.</p>
+<p>It's most useful in the frustrating middle stretch — when the timing is right but the taste isn't. Instead of cycling through every variable, it points at the biggest issue in play so you get to a good cup in a few shots instead of a few bags.</p>`,
   related: [
     { href: "/espresso", label: "How to make espresso at home" },
     { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
@@ -472,7 +568,7 @@ const dialInEspressoHtml = page({
 <h2>Which variable to change first: always grind</h2>
 <p>Grind size is your primary dial. Keep dose and yield constant and adjust grind until the shot takes 25–30 seconds. Don't touch dose or yield until grind is dialled in.</p>
 <ul>
-  <li><strong>Shot pulls in under 20 seconds:</strong> Grind finer</li>
+  <li><strong>Shot pulls in under 20 seconds:</strong> Grind finer — see <a href="/espresso-pulling-too-fast">espresso pulling too fast</a> for the full fix order</li>
   <li><strong>Shot pulls in over 35 seconds:</strong> Grind coarser</li>
   <li><strong>Shot pulls in 25–30 seconds but tastes sour:</strong> Grind finer (extract more)</li>
   <li><strong>Shot pulls in 25–30 seconds but tastes bitter:</strong> Grind coarser (extract less)</li>
@@ -607,6 +703,21 @@ const frenchPressHtml = page({
 
 /* ─── 14. V60 ────────────────────────────────────────────────────────────── */
 
+const V60_FAQ: Faq[] = [
+  {
+    q: "What grind setting should I use for V60?",
+    a: "A medium grind — between table salt and rough sand. As a starting point, roughly 15–18 on a Baratza Encore or 22–26 clicks on a Comandante, then adjust by brew time: finer if a 250 g brew finishes under 2:15, coarser if it runs past 3:45.",
+  },
+  {
+    q: "How fine should I grind for V60?",
+    a: "Finer than French press or Chemex, coarser than espresso or moka pot. If the cup tastes sour and thin, go a step finer; if it tastes bitter and dry, go a step coarser. Change one step at a time — the V60 reacts to grind faster than most brewers.",
+  },
+  {
+    q: "Is V60 grind finer or coarser than French press?",
+    a: "Finer. French press is a four-minute immersion and needs a coarse grind; the V60 drains in about three minutes and needs a medium grind to extract properly. Using a French press grind in a V60 produces a fast, sour brew.",
+  },
+];
+
 const v60Html = page({
   path: "/v60",
   title: "How to Brew V60 Coffee | Coffee Brew Coach",
@@ -629,6 +740,17 @@ const v60Html = page({
 </ul>
 <p>If the brew finishes under 2:15, grind finer. Over 3:45, grind coarser. The V60 responds to grind changes faster than almost any other brewer, so adjust one step at a time.</p>
 
+<h2>V60 grind size</h2>
+<p><strong>Use a medium grind for V60 — between table salt and rough sand, clearly coarser than espresso and finer than French press.</strong> As a first setting, that's roughly 15–18 on a Baratza Encore or 22–26 clicks on a Comandante. Every grinder, burr set, and coffee lands differently, so treat those as a starting point, not a target.</p>
+<p>Then let brew time and taste tell you where to go. With 15 g of coffee and 250 g of water:</p>
+<ul>
+  <li><strong>Finished under 2:15?</strong> Too coarse — grind one step finer.</li>
+  <li><strong>Over 3:45, or stalled?</strong> Too fine, or too many fines — grind one step coarser.</li>
+  <li><strong>Time is right but the cup is sour or thin?</strong> Grind slightly finer.</li>
+  <li><strong>Time is right but the cup is bitter or dry?</strong> Grind slightly coarser.</li>
+</ul>
+<p>V60 needs a finer grind than Chemex (thicker filter, slower drain) and French press (a four-minute immersion), and a coarser grind than moka pot or espresso-style AeroPress. If you switch brewers, expect to move the grinder — the setting that works in your French press will run through a V60 in well under two minutes and taste sour.</p>
+
 <h2>Step-by-step brew guide</h2>
 <p><strong>1. Rinse the filter.</strong> Set the paper filter in the cone and pour hot water through it to remove the papery taste and preheat the brewer and vessel. Discard the rinse water.</p>
 <p><strong>2. Bloom.</strong> Add your ground coffee, make a small well in the centre, and start your timer as you pour 45 g of water (three times your dose). Give the cone a gentle swirl so every ground is wet. Wait 30–45 seconds while the CO₂ escapes.</p>
@@ -642,7 +764,8 @@ const v60Html = page({
 <h3>Sour, thin, or weak</h3>
 <p>Under-extraction. Grind finer, use hotter water, or slow your pours down. A brew that finishes under 2:15 hasn't had enough contact time to extract the sweetness.</p>
 <h3>Brew stalling or draining slowly</h3>
-<p>Usually excess fines clogging the filter — common with blade grinders and worn burrs. Grind slightly coarser and pour more gently; aggressive pouring drives fine particles into the paper.</p>`,
+<p>Usually excess fines clogging the filter — common with blade grinders and worn burrs. Grind slightly coarser and pour more gently; aggressive pouring drives fine particles into the paper.</p>
+${faqSection(V60_FAQ)}`,
   cbcHtml: `<p>The V60's sensitivity is exactly why Coffee Brew Coach works so well with it. After each brew, describe what you tasted — bitter, sour, thin, hollow — along with your brew time, and the app pinpoints whether grind, temperature, or pour technique is the problem. You change one thing, not three, and the next cup tells you if it worked.</p>
 <p>The app also keeps every V60 recipe by bean, so when a new bag behaves differently you can see exactly what you changed last time a coffee ran fast or brewed bitter.</p>`,
   related: [
@@ -655,6 +778,21 @@ const v60Html = page({
 });
 
 /* ─── 15. AeroPress ──────────────────────────────────────────────────────── */
+
+const AEROPRESS_FAQ: Faq[] = [
+  {
+    q: "How long should AeroPress steep?",
+    a: "60–90 seconds with a medium grind for the standard method, then press for about 30 seconds. Extend to 2 minutes if the cup tastes thin. For the espresso-style concentrate with a medium-fine grind, steep 45 seconds.",
+  },
+  {
+    q: "What is the total AeroPress brew time?",
+    a: "Around two minutes from pouring the water to the end of the press: roughly 15 seconds to pour, 60–90 seconds to steep, and 30 seconds to plunge. Inverted recipes with longer steeps run closer to two and a half minutes.",
+  },
+  {
+    q: "Can you steep AeroPress too long?",
+    a: "Yes, but it's forgiving. Going from one to two minutes adds body and sweetness. Past four or five minutes with a medium grind, the cup turns heavy and bitter. If a longer steep isn't fixing a weak cup, the problem is usually ratio or grind rather than time.",
+  },
+];
 
 const aeropressHtml = page({
   path: "/aeropress",
@@ -691,13 +829,24 @@ const aeropressHtml = page({
 <h2>Espresso-style concentrate</h2>
 <p>For a short, intense cup (or the base of a latte): 20 g of coffee ground medium-fine, 100 g of water at 85–88 °C, stir, steep 45 seconds, press firmly. It isn't true espresso — there's no 9 bars of pressure — but it's a rich, concentrated shot that takes milk well.</p>
 
+<h2>How long to steep AeroPress</h2>
+<p><strong>Steep for 60–90 seconds with a medium grind, then press for about 30 seconds — a total brew time of around two minutes.</strong> That's the standard method. Go to two minutes if the cup is thin; drop to 45 seconds for the espresso-style concentrate with a medium-fine grind.</p>
+<ul>
+  <li><strong>Standard, medium grind:</strong> steep 1:00–1:30, press 0:30</li>
+  <li><strong>Inverted, medium grind:</strong> steep 1:30–2:00, press 0:30</li>
+  <li><strong>Espresso-style, medium-fine grind:</strong> steep 0:45, press 0:20–0:30</li>
+  <li><strong>Coarse grind (your French press setting):</strong> steep 2:30–3:00 — or just grind finer</li>
+</ul>
+<p>Steep time and grind size trade off against each other: the finer the grind, the shorter the steep. Can you steep too long? Yes, but the AeroPress is forgiving — going from one to two minutes adds body and sweetness, while four or five minutes with a medium grind starts to taste heavy and bitter. If a longer steep isn't fixing a weak cup, the problem is usually ratio or grind, not time — see <a href="/aeropress-too-weak">AeroPress coffee too weak</a>.</p>
+
 <h2>Common problems</h2>
 <h3>Weak or watery</h3>
 <p>The most common AeroPress complaint, and almost always ratio, grind, or steep time. We cover the full diagnosis in <a href="/aeropress-too-weak">AeroPress coffee too weak — how to fix it</a>.</p>
 <h3>Bitter</h3>
 <p>Grind coarser, drop your water temperature to 85–88 °C, or shorten the steep. Pressing too hard at the end also drives bitterness into the cup — stop at the hiss.</p>
 <h3>Sour</h3>
-<p>Under-extracted: grind finer, use hotter water (92 °C), or steep longer. Sourness with a very short total brew time is the classic sign.</p>`,
+<p>Under-extracted: grind finer, use hotter water (92 °C), or steep longer. Sourness with a very short total brew time is the classic sign.</p>
+${faqSection(AEROPRESS_FAQ)}`,
   cbcHtml: `<p>Because the AeroPress has so many workable recipes, the hard part is knowing which variable to change when a cup misses. Coffee Brew Coach takes your dose, water, grind, steep time, and a description of the taste, and comes back with one specific adjustment — steep 30 seconds longer, grind two steps finer — instead of a new recipe to start over with.</p>`,
   related: [
     { href: "/aeropress-too-weak", label: "AeroPress coffee too weak — fix it" },
@@ -757,10 +906,89 @@ const espressoHtml = page({
   ctaHeading: "Pull your best shot yet.",
 });
 
+/* ─── 17. Coffee subscription affiliate programs ─────────────────────────── */
+
+const SUBSCRIPTION_FAQ: Faq[] = [
+  {
+    q: "Do coffee subscription affiliate programs pay recurring commissions?",
+    a: "Usually not for long. Most pay a one-time bounty or a percentage of the first order. Some pay on the first two or three renewals, then stop. Very few keep paying for the life of the subscription, so check the terms for a cap before you sign up.",
+  },
+  {
+    q: "How much do coffee subscription affiliate programs pay?",
+    a: "Typically a flat $10–20 per new subscriber, or 10–20% of the first order — roughly the same money either way on a $30–40 box. Recurring programs pay less per month but keep paying for as long as the subscriber stays.",
+  },
+  {
+    q: "Which pays more: a subscription bounty or a recurring commission?",
+    a: "The bounty wins in month one. A recurring commission wins if the subscriber stays long enough to cross over — at $0.75 a month that's about 20 months against a $15 bounty; at $1.50 it's 10. Most creators run both: subscription and gear links for the one-time money, a recurring program for the part that compounds.",
+  },
+];
+
+const subscriptionAffiliateHtml = page({
+  path: "/coffee-subscription-affiliate-programs",
+  title: "Coffee Subscription Affiliate Programs — How They Actually Pay | Coffee Brew Coach",
+  description:
+    "How coffee subscription affiliate programs pay — first-order bounties, short recurring windows, cookie limits — and how they compare with a recurring commission program for coffee creators.",
+  h1: "Coffee subscription affiliate programs — how they actually pay",
+  lead:
+    "Subscription boxes are the most-promoted affiliate offer in coffee content. Here's how their commissions are usually structured, where the income stops, and what to check before you put a link in a description.",
+  heroCtaHtml: `<a class="hero-cta" href="/affiliate/become">See Coffee Brew Coach's recurring program →</a>`,
+  contentHtml: `
+<h2>How coffee subscription affiliate programs are structured</h2>
+<p>Most roaster and subscription-box programs pay one of two ways: a <strong>flat bounty</strong> (commonly $10–20) when a referred customer places their first order, or a <strong>percentage of the first order</strong> (commonly 10–20%). On a $30–40 box those come out to roughly the same money. A smaller number pay on renewals too — but almost always with a cap, such as the first three months, after which the customer is theirs and the commission stops.</p>
+<p>Attribution runs through a tracking cookie, usually 30 days, sometimes 7 or 14. If your viewer watches your video, thinks about it for a month, and then subscribes, you're often paid nothing.</p>
+
+<h2>Where the income stops</h2>
+<p>Three things cut a subscription program's earnings shorter than they look on the sign-up page:</p>
+<ul>
+  <li><strong>The cap.</strong> Even the "recurring" programs mostly stop after a fixed number of renewals. The subscriber can stay for years; you're paid for a quarter.</li>
+  <li><strong>Churn.</strong> Box subscriptions are easy to pause and easy to forget to unpause. A meaningful share of new subscribers never reach their third shipment — which is exactly where the capped recurring money would have been.</li>
+  <li><strong>Existing customers.</strong> If a viewer already buys from that roaster, your link pays nothing. The more established the brand, the more of your audience already does.</li>
+</ul>
+<p>None of that makes subscription links a bad idea. They're a fine way to earn from a roaster or box review. It just means the income resets every month: to keep the same number, you keep sending new people.</p>
+
+<h2>What to check before you sign up</h2>
+<ul>
+  <li>Is it first-order only, or does it pay on renewals? If it pays on renewals, for how many?</li>
+  <li>How long is the cookie window?</li>
+  <li>What's the minimum payout, and how often do they pay?</li>
+  <li>Are existing customers excluded?</li>
+  <li>Does the program pay out in your country?</li>
+</ul>
+
+<h2>Subscription bounties vs. recurring commissions</h2>
+<table class="grind-table">
+  <thead>
+    <tr><th>Model</th><th>Pays</th><th>Stops when</th><th>Best for</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>First-order bounty</strong></td><td>$10–20 once, or 10–20% of order one</td><td>Right after the first order</td><td>Roaster and box reviews</td></tr>
+    <tr><td><strong>Capped recurring</strong></td><td>A cut of the first 2–3 renewals</td><td>At the cap, or when they pause</td><td>Same, slightly better</td></tr>
+    <tr><td><strong>Uncapped recurring</strong></td><td>A monthly commission for as long as the subscriber stays</td><td>Only if they cancel</td><td>Brewing and troubleshooting content</td></tr>
+  </tbody>
+</table>
+<p>Be honest about the math. A $15 bounty beats a $0.75-a-month commission unless the subscriber stays about 20 months. At $1.50 a month the crossover is 10 months; at $2.00 it's under 8. So recurring isn't magic — it wins on retention and on back catalog. A subscriber you referred from a two-year-old video is still paying you, and a hundred of them add up to real monthly income you didn't have to re-earn.</p>
+<p>The two models aren't in competition. Most creators should run both: subscription and gear links for the one-time money, and a recurring program for the part that compounds.</p>
+
+<h2>Where Coffee Brew Coach fits</h2>
+<p><a href="/affiliate/become">Coffee Brew Coach's affiliate program</a> is the uncapped kind: a monthly commission for every Pro subscriber you refer, for as long as they stay, with your rate stepping up from $0.75 to $2.00 a month as your active referrals grow — and never stepping back down. It sits naturally next to a subscription link: the box sells them the beans, the app helps them brew those beans well. Payouts are currently open to affiliates in the US and Canada.</p>
+<p>For the wider comparison — gear links, roaster bounties, and recurring programs side by side — see <a href="/best-affiliate-programs-for-coffee-creators">best affiliate programs for coffee content creators</a>.</p>
+${faqSection(SUBSCRIPTION_FAQ)}`,
+  cbcHtml: `<p>If your content already answers "why does my coffee taste like this," a recurring program pays you for the recommendation you'd make anyway. The <a href="/affiliate/become">Coffee Brew Coach affiliate page</a> has the tier breakdown, payout details, and the waitlist.</p>`,
+  related: [
+    { href: "/affiliate/become", label: "Coffee Brew Coach affiliate program details" },
+    { href: "/best-affiliate-programs-for-coffee-creators", label: "Best affiliate programs for coffee content creators" },
+    { href: "/how-coffee-youtubers-make-money", label: "How coffee YouTubers make money" },
+  ],
+  ctaHeading: "Add a commission that doesn't reset every month.",
+  skipAffiliateCallout: true,
+});
+
 /* ─── Structured data ────────────────────────────────────────────────────── */
 
-const STRUCTURED_DATA: Record<string, object> = {
-  "/v60": {
+// A page can carry several blocks (e.g. HowTo + FAQPage); each is emitted as
+// its own <script type="application/ld+json">.
+const STRUCTURED_DATA: Record<string, object | object[]> = {
+  "/v60": [{
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How to brew V60 coffee",
@@ -773,8 +1001,8 @@ const STRUCTURED_DATA: Record<string, object> = {
       { "@type": "HowToStep", "position": 4, "name": "Second pour", "text": "At around 1:15, pour from 150 g up to 250 g. Finish with a gentle swirl to flatten the bed." },
       { "@type": "HowToStep", "position": 5, "name": "Drawdown", "text": "Let the water drain fully. Target total brew time is 2:30–3:30. A flat bed of grounds means the extraction was even." },
     ],
-  },
-  "/aeropress": {
+  }, faqSchema(V60_FAQ)],
+  "/aeropress": [{
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How to brew AeroPress coffee",
@@ -787,7 +1015,21 @@ const STRUCTURED_DATA: Record<string, object> = {
       { "@type": "HowToStep", "position": 4, "name": "Steep for 1 minute", "text": "Steep for 60 seconds. If your cup tastes thin, extend to 90–120 seconds before changing anything else." },
       { "@type": "HowToStep", "position": 5, "name": "Press slowly", "text": "Plunge with steady pressure over about 30 seconds, stopping at the hiss." },
     ],
-  },
+  }, faqSchema(AEROPRESS_FAQ)],
+  "/moka-pot": [{
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to fix bitter moka pot coffee",
+    "description": "Bitter moka pot coffee comes from too much heat, a grind that's too fine, or leaving it on the stove too long. Five steps to fix it.",
+    "totalTime": "PT5M",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Pre-heat the water", "text": "Fill the bottom chamber to just below the pressure valve with hot (not boiling) water so the grounds spend less time at temperature before extraction begins." },
+      { "@type": "HowToStep", "position": 2, "name": "Grind medium-fine", "text": "Use a grind like table salt — a notch coarser than espresso. Espresso-fine grounds pack too tightly, drive the pressure up, and scorch the coffee." },
+      { "@type": "HowToStep", "position": 3, "name": "Fill the basket level, don't tamp", "text": "Fill the filter basket level — not rounded, not compressed. Tamping or overfilling raises the back-pressure and forces bitterness into the cup." },
+      { "@type": "HowToStep", "position": 4, "name": "Brew on medium-low heat", "text": "Use medium-low heat and aim for a slow, steady flow into the top chamber over about 1–2 minutes. A fast, sputtering flow means the heat is too high." },
+      { "@type": "HowToStep", "position": 5, "name": "Remove at the first sputter", "text": "As soon as the gurgle changes pitch and starts to sputter, take the pot off the heat and run the base under cold water to stop extraction." },
+    ],
+  }, faqSchema(MOKA_POT_FAQ)],
   "/espresso": {
     "@context": "https://schema.org",
     "@type": "HowTo",
@@ -866,16 +1108,7 @@ const STRUCTURED_DATA: Record<string, object> = {
       { "@type": "Question", "name": "What is the quickest fix for bitter coffee?", "acceptedAnswer": { "@type": "Answer", "text": "Grind coarser — this is the most likely fix for almost every method. Then try reducing water temperature by 2–3 °C and shortening extraction time." } },
     ],
   },
-  "/espresso-pulling-too-fast": {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      { "@type": "Question", "name": "Why is my espresso pulling too fast?", "acceptedAnswer": { "@type": "Answer", "text": "The most common cause is a grind that's too coarse. Other causes include: dose too low, tamp too light, channelling in the puck, or uneven coffee distribution before tamping." } },
-      { "@type": "Question", "name": "How long should an espresso shot take?", "acceptedAnswer": { "@type": "Answer", "text": "A properly extracted espresso should take 25–35 seconds from when the pump starts. If your shot finishes before 20 seconds, it's under-extracted and will taste sour and thin." } },
-      { "@type": "Question", "name": "How do I fix a fast espresso shot?", "acceptedAnswer": { "@type": "Answer", "text": "Step 1: grind finer. Step 2: if still too fast, increase dose by 0.5 g. Step 3: ensure your tamp is firm and level (about 15 kg pressure). Step 4: distribute grounds evenly before tamping using a WDT tool or by tapping the portafilter." } },
-      { "@type": "Question", "name": "What does under-extracted espresso taste like?", "acceptedAnswer": { "@type": "Answer", "text": "Under-extracted espresso tastes sour, thin, and weak. The colour will be pale yellow rather than warm amber-brown. Shots that pull in under 20 seconds are almost always under-extracted." } },
-    ],
-  },
+  "/espresso-pulling-too-fast": faqSchema(ESPRESSO_FAST_FAQ),
   "/aeropress-too-weak": {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -916,6 +1149,21 @@ const STRUCTURED_DATA: Record<string, object> = {
       "@id": "https://www.coffeebrew.coach/best-affiliate-programs-for-coffee-creators",
     },
   },
+  "/coffee-subscription-affiliate-programs": [{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Coffee Subscription Affiliate Programs — How They Actually Pay",
+    "description":
+      "How coffee subscription affiliate programs pay — first-order bounties, short recurring windows, cookie limits — and how they compare with a recurring commission program for coffee creators.",
+    "datePublished": "2026-09-16",
+    "dateModified": "2026-09-16",
+    "author": { "@type": "Organization", "name": "Coffee Brew Coach" },
+    "publisher": { "@type": "Organization", "name": "Coffee Brew Coach" },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.coffeebrew.coach/coffee-subscription-affiliate-programs",
+    },
+  }, faqSchema(SUBSCRIPTION_FAQ)],
 };
 
 /* ─── 12. How coffee YouTubers make money ───────────────────────────────── */
@@ -948,6 +1196,7 @@ const youtuberMoneyHtml = page({
   related: [
     { href: "/affiliate/become", label: "Become a Coffee Brew Coach affiliate" },
     { href: "/best-affiliate-programs-for-coffee-creators", label: "Best affiliate programs for coffee content creators" },
+    { href: "/coffee-subscription-affiliate-programs", label: "Coffee subscription affiliate programs — how they pay" },
     { href: "/how-to-dial-in-espresso", label: "How to dial in espresso at home" },
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
@@ -965,12 +1214,13 @@ const bestAffiliateProgramsHtml = page({
   h1: "Best affiliate programs for coffee content creators",
   lead:
     "Not all coffee affiliate programs pay the same way. Here's how the main options compare if you make coffee content and want to monetize your audience without selling anything you don't already recommend.",
+  heroCtaHtml: `<a class="hero-cta" href="/affiliate/become">See Coffee Brew Coach's affiliate program →</a>`,
   contentHtml: `
 <h2>Gear affiliate programs (Amazon Associates and similar)</h2>
 <p>The most common entry point for coffee creators. You link to a grinder, scale, or brewer, and earn a small one-time percentage — typically 1–4% — when someone buys through your link within a short cookie window (often just 24 hours). Good for driving some income from gear reviews, but it doesn't reward you for building a loyal, returning audience.</p>
 
 <h2>Roaster and subscription-box affiliate programs</h2>
-<p>Coffee bean subscription services sometimes offer a flat bounty (e.g. $10–20) for the first order a referred customer places. Some pay a small recurring cut for the customer's first few months, but almost none pay indefinitely for the life of the subscription.</p>
+<p>Coffee bean subscription services sometimes offer a flat bounty (e.g. $10–20) for the first order a referred customer places. Some pay a small recurring cut for the customer's first few months, but almost none pay indefinitely for the life of the subscription. We break down the caps, cookie windows, and crossover math in <a href="/coffee-subscription-affiliate-programs">coffee subscription affiliate programs — how they actually pay</a>.</p>
 
 <h2>Recurring commission affiliate programs for coffee creators</h2>
 <p>A smaller category, but the best fit if your content is about improving how people brew rather than what gear they buy. These programs pay a commission every month a referred subscriber remains active — meaning your existing content keeps earning long after you've published it.</p>
@@ -981,6 +1231,7 @@ const bestAffiliateProgramsHtml = page({
   cbcHtml: `<p>Coffee Brew Coach's <a href="/affiliate/become">become a coffee affiliate</a> page has the full tier breakdown, payout details, and a waitlist to join the program if you create coffee content and want recurring income instead of one-time gear commissions.</p>`,
   related: [
     { href: "/affiliate/become", label: "Coffee Brew Coach affiliate program details" },
+    { href: "/coffee-subscription-affiliate-programs", label: "Coffee subscription affiliate programs — how they pay" },
     { href: "/how-coffee-youtubers-make-money", label: "How coffee YouTubers make money" },
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
@@ -1007,16 +1258,20 @@ const pages: Array<{ path: string; html: string }> = [
   { path: "/french-press", html: frenchPressHtml },
   { path: "/how-coffee-youtubers-make-money", html: youtuberMoneyHtml },
   { path: "/best-affiliate-programs-for-coffee-creators", html: bestAffiliateProgramsHtml },
+  { path: "/coffee-subscription-affiliate-programs", html: subscriptionAffiliateHtml },
 ];
 
 for (const { path, html } of pages) {
+  const sd = STRUCTURED_DATA[path];
+  const blocks = sd ? (Array.isArray(sd) ? sd : [sd]) : [];
+  const tags = blocks
+    .map(b => `  <script type="application/ld+json">${JSON.stringify(b)}</script>\n`)
+    .join("");
+  const finalHtml = tags ? html.replace("</head>", `${tags}</head>`) : html;
+
   router.get(path, (_req, res) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
-    const sd = STRUCTURED_DATA[path];
-    const finalHtml = sd
-      ? html.replace("</head>", `  <script type="application/ld+json">${JSON.stringify(sd)}</script>\n</head>`)
-      : html;
     res.send(injectAppRating(finalHtml, getAppRating()));
   });
 }

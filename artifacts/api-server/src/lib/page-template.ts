@@ -13,12 +13,39 @@ export const APP_SCHEMA = {
     "Coffee coaching that diagnoses why your coffee tastes wrong and gives you one specific fix per brew.",
   "url": "https://www.coffeebrew.coach",
   "downloadUrl": "https://apps.apple.com/app/id6777418888",
+  "image": "https://www.coffeebrew.coach/icon.png",
+  "sameAs": ["https://apps.apple.com/app/id6777418888"],
   "creator": {
     "@type": "Organization",
     "name": "The Cannon",
     "url": "https://thecannon.coffee",
   },
 };
+
+// Brand entity for the homepage. Add social profile URLs to sameAs as they exist —
+// Google uses them to tie brand-name searches to this site.
+export const ORG_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Coffee Brew Coach",
+  "url": "https://www.coffeebrew.coach",
+  "logo": "https://www.coffeebrew.coach/icon.png",
+  "sameAs": ["https://apps.apple.com/app/id6777418888"],
+  "parentOrganization": {
+    "@type": "Organization",
+    "name": "The Cannon",
+    "url": "https://thecannon.coffee",
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "email": "support@coffeebrew.coach",
+  },
+};
+
+export const FAVICON_LINKS = `
+  <link rel="icon" type="image/png" href="/icon.png" />
+  <link rel="apple-touch-icon" href="/icon.png" />`;
 
 // Serialized APP_SCHEMA exactly as it appears in every page <head> — pages are
 // rendered once at boot, so injectAppRating swaps this for the rating-augmented
@@ -99,6 +126,19 @@ export const COMMON_CSS = `
     max-width: 560px;
     margin: 0 auto;
   }
+  .content-hero .hero-cta {
+    display: inline-block;
+    margin-top: 26px;
+    background: #FAF7F2;
+    color: #2C1A0E;
+    padding: 13px 24px;
+    border-radius: 100px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .content-hero .hero-cta:hover { background: #F0EBE3; transform: translateY(-1px); }
 
   /* ── Article body ─── */
   .content-body { max-width: 720px; margin: 0 auto; padding: 52px 24px 28px; }
@@ -395,6 +435,7 @@ export function renderFooter(): string {
       <a href="/affiliate/become">Become an Affiliate</a>
       <a href="/how-coffee-youtubers-make-money">How Coffee YouTubers Make Money</a>
       <a href="/best-affiliate-programs-for-coffee-creators">Best Affiliate Programs for Creators</a>
+      <a href="/coffee-subscription-affiliate-programs">Coffee Subscription Affiliate Programs</a>
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
     </div>
@@ -431,6 +472,7 @@ export function buildPage({
   <link rel="canonical" href="${canonical}" />
   <meta name="robots" content="index, follow" />
   <meta name="apple-itunes-app" content="app-id=6777418888" />
+${FAVICON_LINKS}
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${canonical}" />

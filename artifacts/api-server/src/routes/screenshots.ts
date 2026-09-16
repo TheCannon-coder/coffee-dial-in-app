@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { OG_IMAGE_PNG } from "../lib/og-image.js";
+import { APP_ICON_PNG } from "../lib/app-icon.js";
 
 const router = Router();
 
@@ -234,5 +235,17 @@ const serveOgImage = (_req: Request, res: Response): void => {
 };
 router.get("/screenshots/og.png", serveOgImage);
 router.get("/screenshots/og", serveOgImage);
+
+// App icon — favicon, apple-touch-icon, and the Organization/MobileApplication
+// schema logo. Square 1024×1024 PNG.
+const serveIcon = (_req: Request, res: Response): void => {
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=604800");
+  res.send(APP_ICON_PNG);
+};
+router.get("/icon.png", serveIcon);
+// Browsers and crawlers request this path unprompted; a 404 here shows up as a
+// generic globe icon in Google's mobile results.
+router.get("/favicon.ico", serveIcon);
 
 export default router;

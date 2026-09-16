@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, WAITLIST_MODAL, injectAppRating, renderFooter, renderNav } from "../lib/page-template.js";
+import { APP_SCHEMA, COMMON_CSS, DOWNLOAD_BTNS, FAVICON_LINKS, ORG_SCHEMA, WAITLIST_MODAL, injectAppRating, renderFooter, renderNav } from "../lib/page-template.js";
 import { getAppRating } from "../lib/app-rating.js";
 
 const router = Router();
@@ -40,6 +40,7 @@ const html = `<!DOCTYPE html>
   <link rel="canonical" href="https://www.coffeebrew.coach/" />
   <meta name="robots" content="index, follow" />
   <meta name="apple-itunes-app" content="app-id=6777418888" />
+${FAVICON_LINKS}
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.coffeebrew.coach/" />
@@ -57,6 +58,7 @@ const html = `<!DOCTYPE html>
   <meta name="twitter:image" content="https://www.coffeebrew.coach/screenshots/og.png" />
 
   <script type="application/ld+json">${JSON.stringify(APP_SCHEMA)}</script>
+  <script type="application/ld+json">${JSON.stringify(ORG_SCHEMA)}</script>
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TJQQ53PBTE"></script>
   <script>
