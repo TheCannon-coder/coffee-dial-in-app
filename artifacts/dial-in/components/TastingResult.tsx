@@ -82,13 +82,13 @@ export function TastingResult({
           <Text style={[styles.anonTitle, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
             {usesRemaining === 0
               ? 'That was your last free brew'
-              : 'Save this brew and track your history'}
+              : "Don't lose this brew"}
           </Text>
-          {usesRemaining === 0 && (
-            <Text style={[styles.anonSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-              Enter your email for 10 free dial-ins a month
-            </Text>
-          )}
+          <Text style={[styles.anonSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+            {usesRemaining === 0
+              ? 'Save your progress and get 10 free dial-ins every month.'
+              : "This tip and your tasting notes vanish when you leave. Add your email and the coaching keeps every brew — and gets smarter about your taste. Free, no password."}
+          </Text>
           <TextInput
             style={[styles.anonInput, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
             placeholder="Your email address"
@@ -104,13 +104,13 @@ export function TastingResult({
             disabled={saving}
           >
             <Text style={[styles.saveBtnText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-              {usesRemaining === 0 ? 'Get free access →' : 'Save →'}
+              {usesRemaining === 0 ? 'Get free access →' : 'Save my progress →'}
             </Text>
           </Pressable>
           {usesRemaining !== 0 && (
             <Pressable onPress={() => router.push('/home')} style={styles.skipBtn}>
               <Text style={[styles.skipBtnText, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                Skip
+                No thanks — lose this brew
               </Text>
             </Pressable>
           )}
