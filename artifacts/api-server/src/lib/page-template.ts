@@ -174,6 +174,16 @@ export const COMMON_CSS = `
     margin-bottom: 16px;
   }
   .cbc-section p { font-size: 16px; line-height: 1.85; color: #3D2010; margin-bottom: 1em; }
+  .cbc-inner.has-shot { display: grid; grid-template-columns: 1fr; gap: 36px; align-items: center; }
+  .cbc-shot { width: 190px; margin: 0 auto; }
+  .cbc-shot img {
+    display: block; width: 100%; height: auto;
+    border-radius: 28px; border: 1.5px solid #E0D5C8;
+    box-shadow: 0 18px 44px rgba(44,26,14,0.18);
+  }
+  @media (min-width: 720px) {
+    .cbc-inner.has-shot { grid-template-columns: 1fr 200px; gap: 48px; }
+  }
 
   /* ── Related links ─── */
   .related-section { background: #1A100A; padding: 44px 24px; }

@@ -6,6 +6,17 @@ const router = Router();
 
 const BASE = "https://www.coffeebrew.coach";
 
+const CBC_SHOTS = {
+  taste: {
+    src: "/img/taste.webp",
+    alt: "Coffee Brew Coach tasting screen — tap what you noticed: bright, thick, tart, bitter, weak, and more",
+  },
+  brewalong: {
+    src: "/img/brewalong.webp",
+    alt: "Coffee Brew Coach brew-along timer counting down a 90-second bloom, step 3 of 7",
+  },
+} as const;
+
 function page(opts: {
   path: string;
   title: string;
@@ -19,7 +30,14 @@ function page(opts: {
   skipAffiliateCallout?: boolean;
   affiliateCalloutHref?: string;
   heroCtaHtml?: string;
+  // Screenshot beside "How Coffee Brew Coach helps". Defaults to the tasting
+  // screen; method guides use the brew-along timer; null hides it.
+  cbcShot?: "taste" | "brewalong" | null;
 }): string {
+  const shot = opts.cbcShot === undefined ? "taste" : opts.cbcShot;
+  const cbcShotHtml = shot
+    ? `<figure class="cbc-shot"><img src="${CBC_SHOTS[shot].src}" width="600" height="1298" loading="lazy" alt="${CBC_SHOTS[shot].alt}" /></figure>`
+    : "";
   const relatedItems = [
     ...opts.related,
     { href: "/", label: "← Coffee Brew Coach home" },
@@ -50,9 +68,12 @@ function page(opts: {
 </div>
 
 <section class="cbc-section">
-  <div class="cbc-inner">
-    <h2>How Coffee Brew Coach helps</h2>
-    ${opts.cbcHtml}
+  <div class="cbc-inner${shot ? " has-shot" : ""}">
+    <div class="cbc-text">
+      <h2>How Coffee Brew Coach helps</h2>
+      ${opts.cbcHtml}
+    </div>
+    ${cbcShotHtml}
   </div>
 </section>
 ${affiliateCallout}
@@ -149,6 +170,7 @@ const chemexHtml = page({
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
   ctaHeading: "Fix your next Chemex brew.",
+  cbcShot: "brewalong",
 });
 
 /* ─── 2. Kalita Wave ─────────────────────────────────────────────────────── */
@@ -196,6 +218,7 @@ const kalitaHtml = page({
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
   ctaHeading: "Perfect your Kalita Wave.",
+  cbcShot: "brewalong",
 });
 
 /* ─── 3. Moka Pot ────────────────────────────────────────────────────────── */
@@ -699,6 +722,7 @@ const frenchPressHtml = page({
     { href: "/cold-brew", label: "Cold brew coffee ratio guide" },
   ],
   ctaHeading: "Fix your French press coffee.",
+  cbcShot: "brewalong",
 });
 
 /* ─── 14. V60 ────────────────────────────────────────────────────────────── */
@@ -775,6 +799,7 @@ ${faqSection(V60_FAQ)}`,
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
   ctaHeading: "Dial in your V60.",
+  cbcShot: "brewalong",
 });
 
 /* ─── 15. AeroPress ──────────────────────────────────────────────────────── */
@@ -854,6 +879,7 @@ ${faqSection(AEROPRESS_FAQ)}`,
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
   ctaHeading: "Master your AeroPress.",
+  cbcShot: "brewalong",
 });
 
 /* ─── 16. Espresso ───────────────────────────────────────────────────────── */
@@ -904,6 +930,7 @@ const espressoHtml = page({
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
   ctaHeading: "Pull your best shot yet.",
+  cbcShot: "brewalong",
 });
 
 /* ─── 17. Coffee subscription affiliate programs ─────────────────────────── */
@@ -980,6 +1007,7 @@ ${faqSection(SUBSCRIPTION_FAQ)}`,
     { href: "/how-coffee-youtubers-make-money", label: "How coffee YouTubers make money" },
   ],
   ctaHeading: "Add a commission that doesn't reset every month.",
+  cbcShot: null,
   skipAffiliateCallout: true,
 });
 
@@ -1201,6 +1229,7 @@ const youtuberMoneyHtml = page({
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
   ],
   ctaHeading: "Turn your coffee content into recurring income.",
+  cbcShot: null,
   skipAffiliateCallout: true,
 });
 
@@ -1236,6 +1265,7 @@ const bestAffiliateProgramsHtml = page({
     { href: "/why-does-my-coffee-taste-bitter", label: "Why does my coffee taste bitter?" },
   ],
   ctaHeading: "Join a recurring commission affiliate program built for coffee creators.",
+  cbcShot: null,
   skipAffiliateCallout: true,
 });
 

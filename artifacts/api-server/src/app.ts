@@ -1,4 +1,6 @@
 import express, { type Express } from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -71,6 +73,14 @@ app.use(supportRouter);
 app.use(termsRouter);
 app.use(screenshotsRouter);
 app.use("/api", screenshotsRouter);
+// Site images live in artifacts/api-server/public; ../public resolves there from
+// both the esbuild bundle (dist/) and the source tree (src/).
+app.use(
+  express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../public"), {
+    maxAge: "7d",
+    index: false,
+  }),
+);
 
 // Feature flag — set REFERRAL_PROGRAM=true to enable the referral + affiliate routes.
 if (process.env.REFERRAL_PROGRAM === "true") {

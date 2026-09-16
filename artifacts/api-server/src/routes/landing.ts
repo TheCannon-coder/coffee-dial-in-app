@@ -120,6 +120,37 @@ ${FAVICON_LINKS}
       margin-top: 20px;
       letter-spacing: 0.02em;
     }
+    .hero-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 44px;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .hero-copy { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .hero-phone {
+      flex: 0 0 auto;
+      width: 210px;
+      max-height: 330px;
+      overflow: hidden;
+      border-radius: 32px 32px 0 0;
+      border: 1.5px solid #3D2410;
+      border-bottom: none;
+      background: #0E0806;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+      margin-bottom: -56px;
+    }
+    .hero-phone img { display: block; width: 100%; height: auto; }
+    @media (min-width: 880px) {
+      .hero { padding: 64px 24px 72px; }
+      .hero-inner { flex-direction: row; justify-content: center; gap: 72px; }
+      .hero-copy { align-items: flex-start; text-align: left; }
+      .hero-copy .download-btns { justify-content: flex-start; }
+      .hero h1 { max-width: 560px; }
+      .hero-phone { width: 270px; max-height: none; border-radius: 40px; border-bottom: 1.5px solid #3D2410; margin-bottom: 0; }
+    }
 
     /* ── How it works ─── */
     .hiw {
@@ -177,58 +208,25 @@ ${FAVICON_LINKS}
       scrollbar-width: none;
     }
     .shots-row::-webkit-scrollbar { display: none; }
+    .shots-row { justify-content: flex-start; padding-left: 8px; padding-right: 8px; }
+    @media (min-width: 960px) { .shots-row { justify-content: center; } }
     .phone-frame {
       flex: 0 0 200px;
       scroll-snap-align: center;
-      background: #0E0806;
-      border-radius: 36px;
+      margin: 0;
+      text-align: center;
+    }
+    .phone-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 30px;
       border: 1.5px solid #3D2410;
-      height: 420px;
-      position: relative;
-      overflow: hidden;
       box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+      background: #0E0806;
     }
-    .phone-notch {
-      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-      width: 70px; height: 22px;
-      background: #0E0806; border-radius: 100px; z-index: 2;
-    }
-    .phone-screen {
-      width: 100%; height: 100%; background: #2A1A0E;
-      padding: 48px 14px 20px; box-sizing: border-box;
-      display: flex; flex-direction: column;
-    }
-    .pscr-eyebrow {
-      font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; color: #C07A30; margin-bottom: 6px;
-    }
-    .pscr-heading {
-      font-family: 'Fraunces', Georgia, serif;
-      font-weight: 500; font-size: 18px; color: #FAF7F2;
-      line-height: 1.2; margin-bottom: 14px;
-    }
-    .pscr-body { font-size: 10px; color: #A89080; line-height: 1.6; margin-bottom: 14px; }
-    .pscr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-    .pscr-chip {
-      background: #3D2410; border: 1px solid #5A3820;
-      border-radius: 100px; padding: 4px 10px;
-      font-size: 10px; color: #D4B99A; font-weight: 500;
-    }
-    .pscr-chip--on { background: #C07A30; border-color: #C07A30; color: #FAF7F2; }
-    .pscr-btn {
-      margin-top: auto; background: #C07A30; border-radius: 10px;
-      padding: 10px; font-size: 12px; color: #FAF7F2; font-weight: 600; text-align: center;
-    }
-    .pscr-fix-card { background: #3D2410; border-radius: 10px; padding: 12px; margin-top: auto; }
-    .pscr-fix-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #C07A30; margin-bottom: 4px; }
-    .pscr-fix-txt { font-size: 11px; color: #FAF7F2; line-height: 1.55; }
-    .pscr-log { display: flex; flex-direction: column; gap: 10px; }
-    .pscr-log-row { display: flex; gap: 10px; align-items: flex-start; }
-    .pscr-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
-    .pscr-dot--g { background: #5CB85C; }
-    .pscr-dot--a { background: #C07A30; }
-    .pscr-log-ttl { font-size: 11px; color: #FAF7F2; font-weight: 500; margin-bottom: 2px; }
-    .pscr-log-sub { font-size: 10px; color: #A89080; }
+    .phone-frame figcaption { margin-top: 16px; font-size: 13px; color: #A89080; font-weight: 500; line-height: 1.4; }
+    .phone-frame figcaption strong { color: #D4B99A; font-weight: 600; }
 
     /* ── Brew methods ─── */
     .methods {
@@ -351,12 +349,19 @@ ${renderNav()}
 
 <!-- Hero -->
 <section class="hero">
-  <p class="hero-eyebrow">Coffee Brew Coach</p>
-  <h1>Coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
-  <p class="hero-sub">Describe your brew. Get one specific fix. Better coffee on the next cup.</p>
-  ${DOWNLOAD_BTNS}
-  <!--APP_RATING-->
-  <p class="hero-fine">Free · iOS · Android coming soon · No credit card required</p>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="hero-eyebrow">Coffee Brew Coach</p>
+      <h1>Coaching that tells you exactly why your coffee tastes wrong — and how to fix it.</h1>
+      <p class="hero-sub">Describe your brew. Get one specific fix. Better coffee on the next cup.</p>
+      ${DOWNLOAD_BTNS}
+      <!--APP_RATING-->
+      <p class="hero-fine">Free · iOS · Android coming soon · No credit card required</p>
+    </div>
+    <div class="hero-phone">
+      <img src="/img/home.webp" width="600" height="1298" fetchpriority="high" alt="Coffee Brew Coach home screen: today's plan says grind a touch coarser, with your recent coffees and their next tweak listed below" />
+    </div>
+  </div>
 </section>
 
 <!-- How it works -->
@@ -388,62 +393,22 @@ ${renderNav()}
   <div class="shots-inner">
     <p class="section-label" id="shots-label">See it in action</p>
     <div class="shots-row">
-
-      <!-- Screen 1: Taste selector -->
-      <div class="phone-frame" aria-hidden="true">
-        <div class="phone-notch"></div>
-        <div class="phone-screen">
-          <p class="pscr-eyebrow">New session</p>
-          <p class="pscr-heading">How does it taste?</p>
-          <div class="pscr-chips">
-            <span class="pscr-chip pscr-chip--on">Too bitter</span>
-            <span class="pscr-chip">Sour / sharp</span>
-            <span class="pscr-chip">Weak</span>
-            <span class="pscr-chip">Flat</span>
-            <span class="pscr-chip">Harsh</span>
-            <span class="pscr-chip">Astringent</span>
-          </div>
-          <div class="pscr-btn">Get my fix &rarr;</div>
-        </div>
-      </div>
-
-      <!-- Screen 2: Diagnosis -->
-      <div class="phone-frame" aria-hidden="true">
-        <div class="phone-notch"></div>
-        <div class="phone-screen">
-          <p class="pscr-eyebrow">Your diagnosis</p>
-          <p class="pscr-heading">Grind coarser.</p>
-          <p class="pscr-body">Your espresso is over-extracted. The bitter, dry finish confirms it. One change will fix it.</p>
-          <div class="pscr-fix-card">
-            <p class="pscr-fix-lbl">Try this next brew</p>
-            <p class="pscr-fix-txt">Move your grind 2 clicks coarser. Keep everything else exactly the same.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Screen 3: Brew log -->
-      <div class="phone-frame" aria-hidden="true">
-        <div class="phone-notch"></div>
-        <div class="phone-screen">
-          <p class="pscr-eyebrow">Brew history</p>
-          <p class="pscr-heading">Your progress.</p>
-          <div class="pscr-log">
-            <div class="pscr-log-row">
-              <span class="pscr-dot pscr-dot--g"></span>
-              <div><p class="pscr-log-ttl">Espresso &middot; Today</p><p class="pscr-log-sub">Fix applied — tasting much better</p></div>
-            </div>
-            <div class="pscr-log-row">
-              <span class="pscr-dot pscr-dot--a"></span>
-              <div><p class="pscr-log-ttl">V60 &middot; Yesterday</p><p class="pscr-log-sub">Slightly under-extracted</p></div>
-            </div>
-            <div class="pscr-log-row">
-              <span class="pscr-dot pscr-dot--g"></span>
-              <div><p class="pscr-log-ttl">AeroPress &middot; Jun 25</p><p class="pscr-log-sub">Great extraction</p></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <figure class="phone-frame">
+        <img src="/img/taste.webp" width="600" height="1298" loading="lazy" alt="Coffee Brew Coach tasting screen — tap what you noticed: bright, thick, tart, bitter, weak, and more" />
+        <figcaption><strong>1 · Describe the taste.</strong><br/>Plain words, no jargon.</figcaption>
+      </figure>
+      <figure class="phone-frame">
+        <img src="/img/result.webp" width="600" height="1298" loading="lazy" alt="Coffee Brew Coach result screen with one brew tip: try a little less coffee next time" />
+        <figcaption><strong>2 · Get one fix.</strong><br/>Saved to that coffee.</figcaption>
+      </figure>
+      <figure class="phone-frame">
+        <img src="/img/coffees.webp" width="600" height="1298" loading="lazy" alt="Coffee Brew Coach home screen listing your coffees, each with its next tweak: grind coarser, leave as-is, grind finer" />
+        <figcaption><strong>3 · Every coffee remembered.</strong><br/>Your next tweak, ready to go.</figcaption>
+      </figure>
+      <figure class="phone-frame">
+        <img src="/img/brewalong.webp" width="600" height="1298" loading="lazy" alt="Coffee Brew Coach brew-along timer counting down a 90-second bloom, step 3 of 7" />
+        <figcaption><strong>Bonus · Brew along.</strong><br/>Timed steps for every method.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
