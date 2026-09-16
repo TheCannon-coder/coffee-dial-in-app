@@ -32,10 +32,10 @@ export function NotificationSheet({ visible, onEnable, onSkip, onDismiss }: Noti
           </View>
 
           <Text style={[styles.title, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
-            Never miss a reset
+            Tomorrow's tweak, ready when you wake up
           </Text>
           <Text style={[styles.body, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-            Get a nudge on the 1st of each month when your free dial-ins reset, and a gentle reminder to brew on Saturdays.
+            One morning note with your coffee and the exact adjustment to try — sent before you start brewing. No spam, just better cups.
           </Text>
 
           <View style={styles.actions}>
@@ -45,7 +45,7 @@ export function NotificationSheet({ visible, onEnable, onSkip, onDismiss }: Noti
             >
               <Feather name="bell" size={16} color={colors.cream} style={{ marginRight: 8 }} />
               <Text style={[styles.ctaText, { color: colors.cream, fontFamily: 'DMSans_500Medium' }]}>
-                Turn on reminders
+                Set up my morning plan
               </Text>
             </Pressable>
 

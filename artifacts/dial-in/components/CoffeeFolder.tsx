@@ -57,9 +57,11 @@ export function CoffeeFolder({ coffeeName, sessions, onPress }: CoffeeFolderProp
       </View>
 
       <View style={styles.bottom}>
-        <Text style={[styles.method, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]}>
-          {method}
-        </Text>
+        {method !== coffeeName && (
+          <Text style={[styles.method, { color: colors.textSoft, fontFamily: 'DMSans_400Regular' }]}>
+            {method}
+          </Text>
+        )}
         <View style={{ flex: 1 }} />
         <View style={[styles.pill, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.pillText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>

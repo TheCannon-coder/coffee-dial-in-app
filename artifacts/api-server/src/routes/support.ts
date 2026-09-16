@@ -193,4 +193,65 @@ router.get("/api/support", (_req, res) => {
   res.send(html);
 });
 
+// ── POST /api/support/contact ────────────────────────────────────────────────
+// In-app contact form → relays to Chris's inbox via Resend so his address
+// never ships inside the app. Reply-to is the user, so replying just works.
+
+const CONTACT_INBOX = "chris@cannoncoffeeco.com";
+const recentSenders = new Map<string, number[]>();
+
+router.post("/api/support/contact", async (req, res) => {
+  const { email, message } = req.body as { email?: string; message?: string };
+  const msg = (message ?? "").trim();
+  const from = (email ?? "").trim().toLowerCase();
+
+  if (msg.length < 5) {
+    res.status(400).json({ error: "Please include a message." });
+    return;
+  }
+  if (msg.length > 4000) {
+    res.status(400).json({ error: "That message is a little long — mind trimming it?" });
+    return;
+  }
+
+  // Light throttle: 3 messages per sender per hour.
+  const key = from || req.ip || "anon";
+  const now = Date.now();
+  const stamps = (recentSenders.get(key) ?? []).filter((t) => now - t < 60 * 60 * 1000);
+  if (stamps.length >= 3) {
+    res.status(429).json({ error: "You've sent a few already — give us a bit to reply!" });
+    return;
+  }
+  stamps.push(now);
+  recentSenders.set(key, stamps);
+
+  const apiKey = process.env["RESEND_API_KEY"];
+  if (!apiKey) {
+    res.status(500).json({ error: "Contact is temporarily unavailable." });
+    return;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Coffee Brew Coach <hello@coffeebrew.coach>",
+        to: CONTACT_INBOX,
+        ...(from ? { reply_to: from } : {}),
+        subject: `App feedback${from ? ` from ${from}` : ""}`,
+        text: msg,
+      }),
+    });
+    if (!response.ok) throw new Error(`resend responded ${response.status}`);
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "support/contact: relay failed");
+    res.status(500).json({ error: "Couldn't send right now — please try again." });
+  }
+});
+
 export default router;

@@ -113,7 +113,13 @@ function substituteParams(instruction: string, method: string, userParams: BrewP
   let result = instruction;
 
   if (userParams.waterTemp && userParams.waterTemp !== defaults.temp) {
-    const tempStr = userParams.waterTemp.includes('°') ? userParams.waterTemp : `${userParams.waterTemp}°C`;
+    // Users type unitless temps in whichever scale they think in. Anything
+    // above 105 can only be Fahrenheit — never label someone's 205 as °C.
+    let tempStr = userParams.waterTemp.trim();
+    if (!tempStr.includes('°')) {
+      const n = parseFloat(tempStr);
+      tempStr = Number.isFinite(n) && n > 105 ? `${tempStr}°F` : `${tempStr}°C`;
+    }
     result = result.replace(/\d+°C/g, tempStr);
   }
 

@@ -199,13 +199,26 @@ export default function SettingsScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/contact');
+            }}
+            style={styles.row}
+          >
+            <Feather name="mail" size={16} color={colors.mutedForeground} />
+            <Text style={[styles.rowLabel, { color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}>
+              Contact us
+            </Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Linking.openURL(
                 Platform.OS === 'android'
                   ? 'https://play.google.com/store/apps/details?id=com.dialin.coffeecoach'
                   : 'https://apps.apple.com/app/id6777418888?action=write-review',
               );
             }}
-            style={styles.row}
+            style={[styles.row, styles.rowDivider, { borderTopColor: colors.border }]}
           >
             <Feather name="star" size={16} color={colors.mutedForeground} />
             <Text style={[styles.rowLabel, { color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}>

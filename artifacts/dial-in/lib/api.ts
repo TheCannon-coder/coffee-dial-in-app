@@ -212,6 +212,16 @@ export function joinAffiliate(params: {
   return post<AffiliateJoinResult>('/affiliate/join', params);
 }
 
+/** Record self-reported acquisition source; fire-and-forget. */
+export function saveAcquisitionSource(source: string, who: { email?: string; anonId?: string }): Promise<{ success?: boolean }> {
+  return post('/user/source', { source, ...who });
+}
+
+/** Relay an in-app support message to the team inbox. */
+export function sendSupportMessage(message: string, email?: string): Promise<{ success?: boolean; error?: string }> {
+  return post('/support/contact', { message, email });
+}
+
 export interface FriendReferralStats {
   qualifyingCount: number;
   pendingCount: number;

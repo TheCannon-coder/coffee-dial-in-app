@@ -18,6 +18,7 @@ import ViewShot, { captureRef } from 'react-native-view-shot';
 import { useColors } from '@/hooks/useColors';
 import { ShareCard } from './ShareCard';
 import { awardSocialBadge, type Badge } from '@/lib/achievements';
+import { referralShareSuffix } from '@/lib/share';
 
 const ADJUSTMENT_LABELS: Record<string, string> = {
   grind_finer: 'Grind finer',
@@ -36,6 +37,8 @@ type Props = {
   adjustment: string;
   method: string;
   coffeeName?: string;
+  /** When present, share text carries the code so the share is attributable. */
+  referralCode?: string | null;
   /** Called with the badge if the coffee_evangelist badge is earned on first share */
   onBadgeEarned?: (badge: Badge) => void;
 };
@@ -59,7 +62,7 @@ const PLATFORMS: PlatformConfig[] = [
   { id: 'more',     label: 'More',      color: '#8A7A6A', iconLib: 'Feather',      iconName: 'more-horizontal' },
 ];
 
-export function ShareModal({ visible, onClose, advice, adjustment, method, coffeeName, onBadgeEarned }: Props) {
+export function ShareModal({ visible, onClose, advice, adjustment, method, coffeeName, referralCode, onBadgeEarned }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,7 +90,7 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
     const adj = ADJUSTMENT_LABELS[adjustment];
     const parts = [`"${advice}"`];
     if (adj) parts.push(`→ ${adj}`);
-    parts.push('— Dial In coffee coach · coffeebrew.coach');
+    parts.push(`— Coffee Brew Coach.${referralShareSuffix(referralCode)}`);
     return parts.join(' ');
   }
 
@@ -146,9 +149,11 @@ export function ShareModal({ visible, onClose, advice, adjustment, method, coffe
         case 'reddit': {
           const title = encodeURIComponent(`My coffee AI coach said: "${advice}"`);
           const body = encodeURIComponent(
-            `Just got this tip from Dial In (coffeebrew.coach):\n\n"${advice}"\n\n${
+            `Just got this tip from Coffee Brew Coach (coffeebrew.coach):\n\n"${advice}"\n\n${
               ADJUSTMENT_LABELS[adjustment] ? `Adjustment: ${ADJUSTMENT_LABELS[adjustment]}` : ''
-            }\n\nBrewing method: ${method}`
+            }\n\nBrewing method: ${method}${
+              referralCode ? `\n\nIf you want to try it, code ${referralCode} gets you a month of Pro free.` : ''
+            }`
           );
           const redditUrl = `reddit://submit?title=${title}&text=${body}`;
           const webUrl = `https://www.reddit.com/submit?title=${title}&text=${body}`;

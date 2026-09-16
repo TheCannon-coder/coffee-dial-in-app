@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -55,6 +56,23 @@ export default function BrewSetupScreen() {
     : [];
 
   function handleNext() {
+    // Nudge toward naming once — a named coffee keeps the journal legible
+    // and the coaching tracks each bag separately. Never a hard block.
+    if (!coffeeName.trim()) {
+      Alert.alert(
+        'Name this coffee?',
+        "What's on the bag? A name keeps your brew journal tidy and lets the coaching track each coffee on its own.",
+        [
+          { text: 'Add a name', style: 'cancel' },
+          { text: 'Continue without', onPress: proceed },
+        ],
+      );
+      return;
+    }
+    proceed();
+  }
+
+  function proceed() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // The toggle is authoritative — repeat brews get the guided flow too
     // (brew-along-recipe already prefers the user's own numbers over the

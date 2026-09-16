@@ -17,8 +17,9 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { useColors } from '@/hooks/useColors';
 import { useUser } from '@/context/UserContext';
 import { useNotifications } from '@/hooks/useNotifications';
-import { signInWithApple, redeemReferralCode } from '@/lib/api';
+import { signInWithApple, redeemReferralCode, saveAcquisitionSource } from '@/lib/api';
 import { NotificationSheet } from '@/components/NotificationSheet';
+import { SourceSheet } from '@/components/SourceSheet';
 import { getItem, removeItem, KEYS } from '@/lib/storage';
 
 const FEATURES = [
@@ -49,6 +50,8 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [showSourcePrompt, setShowSourcePrompt] = useState(false);
+  const [signedUpEmail, setSignedUpEmail] = useState<string | null>(null);
   const [navigateOnDismiss, setNavigateOnDismiss] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
 
@@ -99,7 +102,8 @@ export default function OnboardingScreen() {
       const normalised = email.trim().toLowerCase();
       await setEmail(normalised);
       await applyPendingCode(normalised);
-      setShowNotifPrompt(true);
+      setSignedUpEmail(normalised);
+      setShowSourcePrompt(true);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -121,7 +125,8 @@ export default function OnboardingScreen() {
       const result = await signInWithApple(credential.user, credential.email ?? undefined);
       await setEmail(result.email);
       await applyPendingCode(result.email);
-      setShowNotifPrompt(true);
+      setSignedUpEmail(result.email);
+      setShowSourcePrompt(true);
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code;
       if (code !== 'ERR_REQUEST_CANCELED') {
@@ -292,6 +297,21 @@ export default function OnboardingScreen() {
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <SourceSheet
+        visible={showSourcePrompt}
+        onPick={(source) => {
+          if (signedUpEmail) {
+            saveAcquisitionSource(source, { email: signedUpEmail }).catch(() => {});
+          }
+          setShowSourcePrompt(false);
+          setShowNotifPrompt(true);
+        }}
+        onSkip={() => {
+          setShowSourcePrompt(false);
+          setShowNotifPrompt(true);
+        }}
+      />
 
       <NotificationSheet
         visible={showNotifPrompt}

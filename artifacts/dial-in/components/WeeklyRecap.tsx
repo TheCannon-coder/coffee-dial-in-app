@@ -3,7 +3,8 @@ import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
-import type { SavedCoffee } from '@/context/UserContext';
+import { useUser, type SavedCoffee } from '@/context/UserContext';
+import { referralShareSuffix } from '@/lib/share';
 
 interface Recap {
   brews: number;
@@ -33,6 +34,7 @@ export function computeRecap(coffees: SavedCoffee[], now: Date = new Date()): Re
  *  last 7 days, with a share button for word-of-mouth. */
 export function WeeklyRecap({ coffees }: { coffees: SavedCoffee[] }) {
   const colors = useColors();
+  const { referralCode } = useUser();
   const recap = computeRecap(coffees);
   if (recap.brews < 2) return null;
 
@@ -46,7 +48,7 @@ export function WeeklyRecap({ coffees }: { coffees: SavedCoffee[] }) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await Share.share({
-        message: `My week in coffee ☕ ${line} — brewing better cups with Coffee Brew Coach. coffeebrew.coach`,
+        message: `My week in coffee ☕ ${line} — brewing better cups with Coffee Brew Coach.${referralShareSuffix(referralCode)}`,
       });
     } catch {}
   }

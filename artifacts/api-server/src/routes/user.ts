@@ -87,6 +87,27 @@ router.post("/user", async (req, res) => {
 // We verify the entitlement directly with RevenueCat before flipping isPro —
 // the client's claim alone is never trusted. Upgrade-only: expiry/downgrade is
 // left to the entitlement's own lifecycle, never inferred here.
+/**
+ * Record where a new user heard about the app (self-reported, one word of
+ * onboarding). Best-effort: a missing row is not an error.
+ */
+router.post("/user/source", async (req, res) => {
+  const { email, anonId, source } = req.body as { email?: string; anonId?: string; source?: string };
+  if (!source || typeof source !== "string" || source.length > 100) {
+    res.status(400).json({ error: "source is required" });
+    return;
+  }
+  if (!email && !anonId) {
+    res.status(400).json({ error: "email or anonId is required" });
+    return;
+  }
+  const where = email
+    ? eq(usersTable.email, email.trim().toLowerCase())
+    : eq(usersTable.anonId, anonId as string);
+  await db.update(usersTable).set({ acquisitionSource: source }).where(where);
+  res.json({ success: true });
+});
+
 router.post("/user/sync-subscription", async (req, res) => {
   const { email, rcAppUserId } = req.body as { email?: string; rcAppUserId?: string };
   if (!email || !rcAppUserId) {

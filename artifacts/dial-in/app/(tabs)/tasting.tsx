@@ -48,7 +48,7 @@ export default function TastingScreen() {
     () => params.sessionId ?? Math.random().toString(36).slice(2) + Date.now().toString(36)
   );
 
-  const { email, isPro, updateUserStats, addOrUpdateCoffee, ensureAnonId, setEmail: saveUserEmail } = useUser();
+  const { email, isPro, updateUserStats, addOrUpdateCoffee, ensureAnonId, setEmail: saveUserEmail, referralCode } = useUser();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [freeText, setFreeText] = useState('');
@@ -228,6 +228,7 @@ export default function TastingScreen() {
       <ShareModal
         visible={showShareModal}
         onClose={() => setShowShareModal(false)}
+        referralCode={referralCode}
         advice={advice}
         adjustment={adjustment}
         method={params.method}
