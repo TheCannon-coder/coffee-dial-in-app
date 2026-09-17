@@ -270,8 +270,20 @@ export default function AffiliateScreen() {
           Refer {'&'} Earn
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-          Share Coffee Brew Coach and earn cash commissions for every Pro subscriber you refer.
+          Earn real cash for every Pro subscriber your link brings — paid out monthly, for as long as they stay subscribed.
         </Text>
+
+        {/* ── Earnings hero: the number first, Stanley-style ── */}
+        {!loadingStats && stats?.isAffiliate && (
+          <View style={styles.earningsHero}>
+            <Text style={[styles.earningsAmount, { color: colors.espresso, fontFamily: 'Fraunces_500Medium' }]}>
+              {fmtMoney((stats.totalPaidCents ?? 0) + (stats.pendingCents ?? 0))}
+            </Text>
+            <Text style={[styles.earningsSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+              earned so far{(stats.pendingCents ?? 0) > 0 ? ` · ${fmtMoney(stats.pendingCents!)} heading to your next payout` : " — your link's ready below"}
+            </Text>
+          </View>
+        )}
 
         {/* ── Status banner: answers "am I an affiliate?" at a glance ── */}
         {!loadingStats && (
@@ -295,7 +307,7 @@ export default function AffiliateScreen() {
                   You're not an affiliate yet
                 </Text>
                 <Text style={[styles.statusSub, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
-                  Apply in two minutes to earn cash for every Pro subscriber you refer
+                  Two-minute application. You earn on every subscriber, every month they stay — rates climb as you grow.
                 </Text>
               </View>
               <Pressable
@@ -805,6 +817,17 @@ const styles = StyleSheet.create({
   },
   topRow: {
     marginBottom: 20,
+  },
+  earningsHero: {
+    marginBottom: 4,
+  },
+  earningsAmount: {
+    fontSize: 46,
+    lineHeight: 52,
+  },
+  earningsSub: {
+    fontSize: 13,
+    marginTop: 2,
   },
   statusBanner: {
     flexDirection: 'row',
