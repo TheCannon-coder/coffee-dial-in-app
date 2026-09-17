@@ -17,8 +17,8 @@ const PAGES: Array<{
 }> = [
   { path: "/", lastmod: "2026-07-31", changefreq: "weekly", priority: "1.0",
     summary: "Coffee Brew Coach — an iOS app that diagnoses why your coffee tastes wrong and gives one specific fix per brew." },
-  { path: "/affiliate/become", lastmod: "2026-07-09", changefreq: "monthly", priority: "0.7",
-    summary: "Recurring-commission affiliate program for coffee content creators." },
+  { path: "/affiliate/become", lastmod: "2026-09-17", changefreq: "monthly", priority: "0.9",
+    summary: "Affiliate program: $0.75–$2 every month per referred monthly Pro subscriber, $5–$15 per annual subscriber (paid over the year); referred users get a month free; self-serve join in the app (US/CA)." },
   { path: "/espresso", lastmod: "2026-07-31", changefreq: "monthly", priority: "0.8",
     summary: "Beginner's guide to making espresso at home — equipment, an 18 g in / 36 g out starting recipe, and adjusting by taste." },
   { path: "/how-to-dial-in-espresso", lastmod: "2026-09-16", changefreq: "monthly", priority: "0.8",

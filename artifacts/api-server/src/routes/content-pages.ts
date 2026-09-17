@@ -50,7 +50,7 @@ function page(opts: {
     : `
 <section class="cbc-section" style="border-top: 1px solid #E0D5C8;">
   <div class="cbc-inner" style="text-align:center;">
-    <p style="font-size:15px; color:#6B4226;">Make coffee content? <a href="${opts.affiliateCalloutHref ?? "/affiliate/become"}">Learn how creators earn recurring commissions with our affiliate program →</a></p>
+    <p style="font-size:15px; color:#6B4226;">Know someone whose coffee is bad? Send them your code from the app — they get a month of Pro free, and so do you. Make coffee content? <a href="${opts.affiliateCalloutHref ?? "/affiliate/become"}">Earn a commission every month your referrals stay subscribed →</a></p>
   </div>
 </section>`;
 

@@ -288,6 +288,36 @@ ${FAVICON_LINKS}
       font-weight: 500;
     }
 
+    /* ── Share / earn ─── */
+    .share { background: #2C1A0E; padding: 72px 24px; border-bottom: 1px solid #3D2410; }
+    .share-inner { max-width: 860px; margin: 0 auto; }
+    .share .section-label { color: #6B5040; }
+    .share-heading {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(26px, 4vw, 36px);
+      color: #FAF7F2;
+      text-align: center;
+      line-height: 1.2;
+      margin: -24px auto 36px;
+      max-width: 560px;
+    }
+    .share-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .share-card {
+      background: #1A100A;
+      border: 1px solid #3D2410;
+      border-radius: 18px;
+      padding: 28px 26px 24px;
+      display: flex;
+      flex-direction: column;
+    }
+    .share-card .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #C07A30; margin-bottom: 10px; }
+    .share-card h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 24px; color: #FAF7F2; line-height: 1.2; margin-bottom: 10px; }
+    .share-card p { font-size: 15px; line-height: 1.65; color: #A89080; margin-bottom: 18px; flex: 1; }
+    .share-card p strong { color: #D4B99A; font-weight: 600; }
+    .share-card a { align-self: flex-start; font-size: 14px; font-weight: 600; color: #FAF7F2; text-decoration: none; border-bottom: 1px solid #5A3820; padding-bottom: 2px; }
+    .share-card a:hover { border-color: #FAF7F2; }
+
     /* ── Brew guides grid ─── */
     .guides {
       background: #2C1A0E;
@@ -442,6 +472,28 @@ ${renderNav()}
       <span class="perk-chip">All brew methods included</span>
       <span class="perk-chip">No credit card required</span>
       <span class="perk-chip">iOS &middot; Android coming soon</span>
+    </div>
+  </div>
+</section>
+
+<!-- Share / earn -->
+<section class="share" aria-labelledby="share-heading">
+  <div class="share-inner">
+    <p class="section-label">Share it</p>
+    <h2 class="share-heading" id="share-heading">Know someone whose coffee is bad? Get paid — or get Pro — for fixing it.</h2>
+    <div class="share-grid">
+      <div class="share-card">
+        <p class="eyebrow">Friends</p>
+        <h3>Give a month, get a month.</h3>
+        <p>Every account has a referral code. Your friend gets <strong>a month of Pro free</strong>; once they've logged three brews, so do you. Ten friends who stick with it and you're <strong>Pro for life</strong>. Your code is on the Home screen in the app.</p>
+        <a href="https://apps.apple.com/app/id6777418888" target="_blank" rel="noopener">Get the app and find your code →</a>
+      </div>
+      <div class="share-card">
+        <p class="eyebrow">Creators</p>
+        <h3>Cash, every month they stay.</h3>
+        <p>Make coffee content? Earn <strong>$0.75–$2 a month per subscriber</strong> you refer, for as long as they stay — or <strong>$5–$15 per annual subscriber</strong>. Your audience gets a free month. Join in the app in a minute — no waitlist.</p>
+        <a href="/affiliate/become">See the rates and how to join →</a>
+      </div>
     </div>
   </div>
 </section>

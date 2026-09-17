@@ -1,12 +1,9 @@
 /**
  * Affiliate web portal — public explainer page + login-gated dashboard.
  *
- * Independent of REFERRAL_PROGRAM: that flag gates self-serve join and the
- * public earnings calculator, which are intentionally still dark. This
- * portal only serves existing, confirmed (isActive) affiliates — created
- * today via POST /api/admin/affiliates — plus a public marketing page that
- * captures interest through the existing waitlist table instead of a live
- * signup form.
+ * Independent of REFERRAL_PROGRAM (which gates the in-app self-serve join).
+ * The public page (lib/affiliate-become-page.ts) sends prospects to join in
+ * the app; the dashboard serves existing, active affiliates.
  *
  * Routes:
  *   GET  /affiliate/become         — public SEO explainer page for prospects
@@ -17,7 +14,7 @@
  *   POST /api/affiliate/logout     — clears the session cookie
  */
 
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { eq, and, desc, sql as dsql } from "drizzle-orm";
 import {
   db,
@@ -25,7 +22,10 @@ import {
   commissionLedgerTable,
   payoutBatchesTable,
 } from "@workspace/db";
-import { buildPage } from "../lib/page-template.js";
+import { buildPage, injectAppRating } from "../lib/page-template.js";
+import { getAppRating } from "../lib/app-rating.js";
+import { renderAffiliateBecomePage } from "../lib/affiliate-become-page.js";
+import { AFFILIATE_OG_PNG } from "../lib/affiliate-og-image.js";
 import {
   createLoginToken,
   redeemLoginToken,
@@ -68,193 +68,23 @@ router.get("/affiliate", (_req, res) => {
 });
 
 // ── GET /affiliate/become — public explainer page ────────────────────────────
+// Rendered per request so the App Store rating badge/schema stay live.
 
 router.get("/affiliate/become", (_req, res) => {
-  const body = `
-<header class="content-hero">
-  <div class="content-hero-inner">
-    <h1>Turn your coffee content into passive income</h1>
-    <p class="lead">Join the Coffee Brew Coach affiliate program and earn recurring commissions every month a subscriber you referred stays on Pro — no shipping, no inventory, no extra work after the share.</p>
-  </div>
-</header>
-
-<div class="content-body">
-  <h2>A recurring commission affiliate program for coffee creators</h2>
-  <p>Most affiliate programs pay you once. Ours doesn't. Every Pro subscriber you refer to Coffee Brew Coach generates a recurring monthly commission for as long as they stay subscribed — so the referral links you share today keep paying out long after you've posted them. That's the definition of passive income: you do the work once, and it keeps earning.</p>
-
-  <h2>How commissions grow with you</h2>
-  <p>Your rate isn't fixed. As more of the people you refer become active, paying subscribers, you're automatically promoted to a higher commission tier — and once you're promoted, you never get moved back down.</p>
-  <table class="grind-table">
-    <thead><tr><th>Tier</th><th>Active referred subscribers</th><th>Monthly rate</th></tr></thead>
-    <tbody>
-      ${TIER_LADDER.map(
-        t => `<tr><td>${t.label}</td><td>${t.min === 0 ? "0–9" : t.min === 10 ? "10–99" : t.min === 100 ? "100–999" : "1,000+"}</td><td>${t.rate}</td></tr>`,
-      ).join("\n      ")}
-    </tbody>
-  </table>
-  <p>Reach Platinum and our founders personally reach out — you're driving a meaningful share of our growth at that point, and we treat that relationship accordingly.</p>
-
-  <h2>Built for creators who talk about coffee</h2>
-  <p>If you already make espresso content — YouTube, TikTok, a newsletter, a coffee shop's social presence — your audience is already primed to want a coaching tool that fixes their shots. You're not selling anything; you're recommending something you'd recommend anyway, and getting paid every month for it. See <a href="/how-coffee-youtubers-make-money">how coffee YouTubers make money</a> for a full breakdown of how this compares to sponsorships and one-time gear links.</p>
-
-  <h2>Payouts, made simple</h2>
-  <p>Payouts run automatically through Stripe Connect once you're onboarded — no manual invoicing, no chasing payments. Stripe handles your tax forms (W-9 or W-8BEN) and identity verification directly; we handle the commission math, tier promotions, and your dashboard.</p>
-  <p><strong>Currently open to affiliates based in the United States and Canada.</strong> Referred users can join from anywhere in the world — only affiliate payouts are limited to US/CA for now, with more countries planned as we grow.</p>
-
-  <h2>What passive income actually looks like here</h2>
-  <p>A Standard affiliate with 10 active referred subscribers earns steady monthly income without lifting a finger after the initial share. Climb to Gold or Platinum and it becomes a serious secondary income stream — all from content you were likely already creating.</p>
-</div>
-
-<section class="cbc-section" id="waitlist">
-  <div class="cbc-inner">
-    <h2>Get on the affiliate waitlist</h2>
-    <p>We're onboarding affiliates in small batches while we finish rolling out the program. Drop your email below to join the waitlist.</p>
-    <p style="margin-top:10px;"><strong>Joining the waitlist doesn't create your affiliate account or dashboard access on its own.</strong> Once we review your application and confirm you, we'll email you directly to let you know your account is active — that's your signal to log in below for the first time.</p>
-    <form class="wl-form" id="affiliate-wl-form" novalidate style="max-width:420px; margin-top:16px;">
-      <input class="wl-input" type="email" name="email" placeholder="your@email.com" required autocomplete="email" />
-      <button class="wl-submit" type="submit">Join the waitlist</button>
-    </form>
-    <p class="wl-success" id="affiliate-wl-success" hidden style="margin-top:14px;">You're on the list — we'll email you directly once your affiliate account is confirmed.</p>
-    <p class="wl-error" id="affiliate-wl-error" hidden></p>
-  </div>
-</section>
-
-<section class="cta-section">
-  <h2>Already confirmed as an affiliate?</h2>
-  <p>If you've received a confirmation email from us that your affiliate account is active, sign in below to see your live earnings, tier progress, and payout history.</p>
-  <p style="margin-top:8px; font-size:14px; opacity:0.85;">Not sure if you're confirmed yet? If you haven't heard from us, your account isn't active yet — the login link only works for confirmed affiliates, so there's nothing to troubleshoot on your end. Join the waitlist above and we'll reach out.</p>
-  <a class="store-btn store-btn-ios" href="/affiliate/login" style="display:inline-flex; margin-top:14px;">
-    <span class="store-btn-text"><span class="store-btn-main">Log in to your dashboard</span></span>
-  </a>
-</section>
-
-<script>
-(function () {
-  var form = document.getElementById("affiliate-wl-form");
-  var successEl = document.getElementById("affiliate-wl-success");
-  var errorEl = document.getElementById("affiliate-wl-error");
-  var submitBtn = form.querySelector(".wl-submit");
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var email = form.querySelector("input").value.trim();
-    if (!email) return;
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Joining\u2026";
-    errorEl.hidden = true;
-    fetch("/api/waitlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email, platform: "affiliate" }),
-    })
-      .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
-      .then(function (r) {
-        if (r.ok) {
-          form.hidden = true;
-          successEl.hidden = false;
-          if (r.data.alreadyJoined) {
-            successEl.textContent = "You're already on the list \u2014 we'll be in touch!";
-          }
-        } else {
-          throw new Error(r.data.error || "error");
-        }
-      })
-      .catch(function () {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Join the waitlist";
-        errorEl.textContent = "Something went wrong. Please try again.";
-        errorEl.hidden = false;
-      });
-  });
-})();
-</script>`;
-
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "How do commissions work in the Coffee Brew Coach affiliate program?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "You earn a recurring monthly commission for every Pro subscriber you refer, for as long as they stay subscribed. Your rate starts at $0.75/mo (Standard) and automatically increases as your active referred subscribers grow — Silver at 10+, Gold at 100+, and Platinum at 1,000+ — and it never moves back down once you're promoted.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Who can join the coffee affiliate program?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "It's built for creators who talk about coffee — YouTube, TikTok, newsletters, or a coffee shop's social presence. Affiliate payouts are currently open to affiliates based in the United States and Canada, though referred users can join from anywhere in the world.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "How do affiliate payouts work?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Payouts run automatically through Stripe Connect once you're onboarded — no manual invoicing. Stripe collects your tax forms (W-9 or W-8BEN) and verifies your identity directly; Coffee Brew Coach handles the commission math, tier promotions, and your live dashboard.",
-        },
-      },
-    ],
-  };
-
-  const html = buildPage({
-    title: "Coffee Affiliate Program — Recurring Commissions for Coffee Creators",
-    description:
-      "Join the Coffee Brew Coach affiliate program: a recurring commission affiliate program for coffee YouTubers, TikTokers, and newsletter writers. Earn monthly for every Pro subscriber you refer.",
-    canonical: `${BASE}/affiliate/become`,
-    bodyHtml: body,
-    ogImage: `${BASE}/affiliate/og`,
-  }).replace(
-    "</head>",
-    `  <script type="application/ld+json">${JSON.stringify(faqSchema)}</script>\n</head>`,
-  );
-
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.send(html);
+  res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  res.send(injectAppRating(renderAffiliateBecomePage(), getAppRating()));
 });
 
-// ── GET /affiliate/og — dedicated share image (1200×630 SVG) with tier table ──
+// ── GET /affiliate/og(.png) — share image. Must be PNG: social crawlers skip SVG.
 
-router.get("/affiliate/og", (_req, res) => {
-  const rows = TIER_LADDER.map((t, i) => {
-    const y = 300 + i * 62;
-    const range = t.min === 0 ? "0–9" : t.min === 10 ? "10–99" : t.min === 100 ? "100–999" : "1,000+";
-    return `
-  <text x="80" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#FAF7F2">${t.label}</text>
-  <text x="420" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#A89080">${range} referred subs</text>
-  <text x="760" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="#FAF7F2">${t.rate}</text>`;
-  }).join("\n");
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#2C1A0E"/>
-  <rect x="0" y="0" width="1200" height="630" fill="url(#grain)" opacity="0.04"/>
-  <defs>
-    <pattern id="grain" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
-      <rect width="1" height="1" fill="#FAF7F2"/>
-    </pattern>
-  </defs>
-
-  <circle cx="1100" cy="-80" r="380" fill="none" stroke="#3D2410" stroke-width="80"/>
-  <circle cx="1100" cy="-80" r="280" fill="none" stroke="#3D2410" stroke-width="40"/>
-
-  <text x="80" y="90" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-style="italic" fill="#A89080" letter-spacing="1">Coffee Brew Coach — Affiliate Program</text>
-
-  <text x="80" y="170" font-family="Georgia, 'Times New Roman', serif" font-size="56" font-weight="bold" fill="#FAF7F2" letter-spacing="-1">Recurring commissions,</text>
-  <text x="80" y="230" font-family="Georgia, 'Times New Roman', serif" font-size="56" font-weight="bold" fill="#FAF7F2" letter-spacing="-1">every month.</text>
-
-  <line x1="80" y1="262" x2="1120" y2="262" stroke="#3D2410" stroke-width="2"/>
-${rows}
-
-  <rect x="80" y="540" width="300" height="62" rx="31" fill="#FAF7F2"/>
-  <text x="230" y="579" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="bold" fill="#2C1A0E" text-anchor="middle">Become an affiliate</text>
-</svg>`;
-
-  res.setHeader("Content-Type", "image/svg+xml");
+const serveAffiliateOg = (_req: Request, res: Response): void => {
+  res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "public, max-age=86400");
-  res.send(svg);
-});
+  res.send(AFFILIATE_OG_PNG);
+};
+router.get("/affiliate/og.png", serveAffiliateOg);
+router.get("/affiliate/og", serveAffiliateOg);
 
 // ── GET /affiliate/login — magic-link login page ─────────────────────────────
 
