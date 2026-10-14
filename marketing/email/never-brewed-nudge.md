@@ -64,7 +64,9 @@ Same as A, with the first paragraph replaced by:
 > Coffee Brew Coach · [mailing address — Chris to supply] · hello@coffeebrew.coach
 
 The mailing address is a legal requirement (CASL in Canada, CAN-SPAM in the US).
-It can be a PO box. It should **not** be The Cannon's address (§4 of the brief).
+Decision 2026-10-14: use the café's street address, written **without** the café's
+name — the brief's rule (§4) is about the name, not the street. The footer must
+never say "The Cannon".
 
 ---
 
