@@ -11,9 +11,12 @@ brief wins.
 
 ## What to do
 
-1. **Pull the funnel.** Run `node marketing/scripts/funnel.mjs` (needs
-   `MARKETING_DATABASE_URL`). Save the output to `marketing/data/funnel/YYYY-MM-DD.json`
-   (today's date). If the script fails, say so in the memo under "Data problems" and
+1. **Get the funnel snapshot.** A GitHub Action (`.github/workflows/marketing-funnel.yml`)
+   runs `marketing/scripts/funnel.mjs` every Monday at 10:00 UTC and commits the
+   result to `marketing/data/funnel/YYYY-MM-DD.json`. Use the newest file there.
+   If it's older than 2 days, note that under "Data problems" and use it anyway.
+   Only if `MARKETING_DATABASE_URL` happens to be set in your environment may you
+   run the script yourself to refresh it. If there's no snapshot at all, say so and
    continue with whatever you have — a memo with gaps beats no memo.
 2. **Read last week's snapshot** (the previous file in `marketing/data/funnel/`) and
    compute week-over-week changes. If there is no previous file, this is the baseline
