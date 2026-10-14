@@ -17,13 +17,13 @@ one brew in a 7-day window.
 - Today: 2–6 per week, flat since August (3 in the last 7 days).
 - 90-day target (to 2027-01-15): **20 per week**. Confirmed by Chris 2026-10-14.
 
-Why this and not revenue: 140 signups, 51 have ever brewed, 1 Pro subscriber
-(the founder, comped). Nobody converts to Pro who isn't brewing. Fix brewing first.
+Why this and not revenue: 136 signups (founder excluded), 48 have ever brewed,
+0 paying Pro subscribers. Nobody converts to Pro who isn't brewing. Fix brewing first.
 
 The three numbers the team moves, in order:
-1. **Activation** — 89 of 140 signups (64%) have never logged a brew.
-2. **Retention** — of the 51 who brewed, 28 brewed exactly once. 12 have brewed 3+.
-3. **New signups** — 3–7 per week. Only matters once 1 and 2 are working.
+1. **Activation** — 88 of 136 signups (65%) have never logged a brew.
+2. **Retention** — of the 48 who brewed, 27 brewed exactly once. 11 have brewed 3+.
+3. **New signups** — 2–7 per week. Only matters once 1 and 2 are working.
 
 ---
 

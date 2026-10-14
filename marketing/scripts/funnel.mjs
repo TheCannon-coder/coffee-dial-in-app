@@ -69,8 +69,9 @@ const weekly = await sql(`
   from wk order by w
 `);
 
+// initcap: the app has stored both "Drip machine" and "Drip Machine".
 const byMethod = await sql(`
-  select b.method, count(distinct b.user_id)::int as users, count(*)::int as brews,
+  select initcap(b.method) as method, count(distinct b.user_id)::int as users, count(*)::int as brews,
     count(distinct b.user_id) filter (where b.created_at >= now() - interval '28 days')::int as active_28d
   from brews b where b.user_id in ${NON_FOUNDER_USERS}
   group by 1 order by 2 desc
