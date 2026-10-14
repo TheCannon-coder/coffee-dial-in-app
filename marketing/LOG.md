@@ -23,3 +23,5 @@ Chris to check ASC → Agreements, Tax, and Banking. ASC metrics join the scorec
 (variants recent/older), lifecycle_sends table, email_opt_out + /email/unsubscribe, /open hand-off page,
 admin preview/send-test/run. Draft copy: marketing/email/never-brewed-nudge.md. Awaiting: copy approval,
 EMAIL_POSTAL_ADDRESS, then LIFECYCLE_EMAILS=true on Railway.
+2026-10-14 · lifecycle · decision: never-brewed nudge copy APPROVED by Chris (subject "Still got a cup you
+don't love?"). [TEST] send to Chris's inbox. Still waiting on EMAIL_POSTAL_ADDRESS before go-live.
