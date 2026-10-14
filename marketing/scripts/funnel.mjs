@@ -29,7 +29,9 @@ async function sql(query) {
 }
 
 // Founder = any account on the owner's domain, or a comped permanent-Pro account.
-const FOUNDER = `(u.email ~ 'cannoncoffeeco' or coalesce(u.pro_permanent, false))`;
+// coalesce matters: anonymous accounts have a NULL email, and `NULL ~ 'x'` is NULL,
+// which would silently drop them from "not founder".
+const FOUNDER = `(coalesce(u.email, '') ~ 'cannoncoffeeco' or coalesce(u.pro_permanent, false))`;
 const NON_FOUNDER_USERS = `(select id from users u where not ${FOUNDER})`;
 
 const one = async q => (await sql(q))[0];

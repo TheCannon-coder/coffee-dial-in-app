@@ -68,13 +68,14 @@ acute pain.
 
 **A tension to hold honestly:** the espresso owner is the *acquisition* persona —
 it's who searches for help and who the café-owner credential speaks to most
-directly. But the people who actually use the app today are pour-over brewers.
-Excluding the founder's accounts: 18 users have logged V60 brews (6 active in the
-last 28 days, 38% reach a third brew) against 10 for espresso (2 active, 30% reach
-a third brew). AeroPress: 6 users. So: write *acquisition* for the espresso owner;
-write *activation and retention* for whoever shows up, and the scorecard tracks
-both by method. If the espresso bet doesn't produce active brewers within 90 days,
-revisit the primary persona.
+directly. But the people who actually use the app today are mostly pour-over
+brewers. Excluding the founder's accounts: 29 users have logged V60 brews (5 active
+in the last 28 days) against 11 for espresso (2 active) and 8 for AeroPress. Of
+people whose *first* brew was V60, 6 of 26 reached a third brew; for espresso, 3 of
+11 — about the same rate, and too few to call. So: write *acquisition* for the
+espresso owner; write *activation and retention* for whoever shows up, and the
+scorecard tracks both by method. If the espresso bet doesn't produce active brewers
+within 90 days, revisit the primary persona.
 
 **Not for:** people who want a recipe database, a bean marketplace, or a
 scale-connected brewing instrument. We don't compete with Beanconqueror or Acaia;
@@ -107,25 +108,32 @@ Chris's call, 2026-10-14. Don't extend it: no new copy in that register.
 
 ## 5. The numbers today (2026-10-14, from the production database)
 
+All user-level numbers exclude the founder's accounts (4 accounts, 22 brews). This
+is the same definition `marketing/scripts/funnel.mjs` uses, so the brief and the
+weekly scorecard always agree. Anonymous (no-email) accounts are included — 18 of
+them, and 17 have brewed.
+
 | Metric | Value |
 |---|---|
-| Signups (all time) | 140 |
-| Signups, last 30 days | 15 |
-| Ever brewed | 51 (36%) |
-| Never brewed | 89 (64%) |
-| Brewed exactly once | 28 |
-| Brewed 3+ times | 12 |
+| Signups (all time) | 136 |
+| Signups, last 30 days | 14 |
+| Ever brewed | 48 (35%) |
+| Never brewed | 88 (65%) |
+| Brewed exactly once | 27 |
+| Brewed 3+ times | 11 |
 | Weekly active brewers (7d) | 3 |
-| Monthly active brewers (28d) | 10 |
-| Brews, all time | 155 |
-| Pro subscribers | 1 (founder, comped) — 0 paying |
+| Monthly active brewers (28d) | 8 |
+| Brews, all time | 133 |
+| Pro subscribers | 0 paying (founder is comped) |
 | Referral conversions | 0 |
-| Affiliates | 1 (founder) |
+| Affiliates | 0 besides the founder |
 | Android waitlist | 3 |
-| "Was this helpful?" | 33 yes / 10 no / 112 unrated (77% yes when rated) |
+| "Was this helpful?" | 28 yes / 5 no / 100 unrated (85% yes when rated) |
+| Lifecycle audiences | 88 never brewed (82 of them signed up 30+ days ago) · 27 brewed once · 42 lapsed 14+ days |
 
-Weekly active brewers, last 8 weeks: 2, 3, 6, 2, 6, 3, 3, 4.
-Signups per week, last 8: 3, 1, 4, 0, 7, 3, 3, 3.
+Weekly active brewers, last 12 complete weeks (Jul 27 → Oct 5): 2, 2, 5, 3, 2, 6, 2, 4, 3, 2, 4 — flat, no trend.
+Signup cohorts, last 8 weeks: 1, 4, 0, 7, 3, 2, 3 signups; of the 20 who signed up
+since Aug 24, 14 brewed at least once and 1 reached a third brew.
 
 App Store (Jun 10 – Sep 7): 5.02K impressions → 3.39K page views → 197 downloads.
 **Page conversion 1.00% vs. 1.38% Food & Drink median — the leak for cold traffic.**
