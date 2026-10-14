@@ -25,3 +25,8 @@ admin preview/send-test/run. Draft copy: marketing/email/never-brewed-nudge.md. 
 EMAIL_POSTAL_ADDRESS, then LIFECYCLE_EMAILS=true on Railway.
 2026-10-14 · lifecycle · decision: never-brewed nudge copy APPROVED by Chris (subject "Still got a cup you
 don't love?"). [TEST] send to Chris's inbox. Still waiting on EMAIL_POSTAL_ADDRESS before go-live.
+2026-10-14 · lifecycle · decision: footer address = café street address without the café name (Chris).
+2026-10-14 · lifecycle · LIVE. EMAIL_POSTAL_ADDRESS + LIFECYCLE_EMAILS=true set on Railway 15:33 UTC.
+First tick 15:38 UTC: never_brewed/recent sent to 6 (all accepted by Resend, 0 failed). 0 recent
+recipients remain. Variant older (82 people) stays OFF until the 2026-10-19 scorecard is read.
+Measure: brews within 7 days of send vs. the recent never-brewed baseline; unsubscribes.
