@@ -17,3 +17,4 @@ local .env and the Claude cloud environment as MARKETING_DATABASE_URL — never 
 Chris to check ASC → Agreements, Tax, and Banking. ASC metrics join the scorecard once cleared.
 2026-10-14 · setup · Scorecard agent instructions + funnel script added
 (marketing/agents/scorecard.md, marketing/scripts/funnel.mjs).
+2026-10-14 · scorecard · memo written · marketing/memos/2026-10-14.md
