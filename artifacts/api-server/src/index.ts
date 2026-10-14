@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { seedGearProducts } from "./lib/gear-seed";
 import { prefetchAppRating } from "./lib/app-rating";
+import { startLifecycleScheduler } from "./lib/lifecycle";
 
 const rawPort = process.env["PORT"];
 
@@ -32,4 +33,7 @@ app.listen(port, (err) => {
 
   // Warm the App Store rating cache so early page views carry aggregateRating
   prefetchAppRating();
+
+  // Lifecycle email tick (hourly; inert unless LIFECYCLE_EMAILS=true)
+  startLifecycleScheduler();
 });

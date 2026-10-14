@@ -15,6 +15,7 @@ import contentPagesRouter from "./routes/content-pages";
 import waitlistRouter from "./routes/waitlist";
 import promoRouter from "./routes/promo";
 import affiliatePortalRouter from "./routes/affiliate-portal";
+import emailRouter from "./routes/email";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -92,6 +93,7 @@ if (process.env.REFERRAL_PROGRAM === "true") {
 }
 
 app.use(affiliatePortalRouter);
+app.use(emailRouter);
 
 // Apple App Site Association — required for Universal Links (referral deep-links).
 // Replace APPLE_TEAM_ID env var with your 10-character Apple Team ID from
@@ -108,6 +110,7 @@ app.get("/.well-known/apple-app-site-association", (_req, res) => {
           appIDs: [`${teamId}.com.dialin.coffeecoach`],
           components: [
             { "/": "/", "?": { ref: "?*" }, comment: "Referral links — pass ?ref=CODE into the app" },
+            { "/": "/open", "?": { to: "?*" }, comment: "Email hand-off links — /open?to=brew opens the app" },
           ],
         },
       ],

@@ -118,7 +118,7 @@ async function sendPayoutSkipAlert({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Dial In <hello@coffeebrew.coach>",
+      from: "Coffee Brew Coach <hello@coffeebrew.coach>",
       to: adminEmail,
       subject: `⚠️ Payout batch ${periodMonth} skipped ${skippedEntries.length} affiliate(s) — action required`,
       html,

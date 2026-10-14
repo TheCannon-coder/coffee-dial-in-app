@@ -17,6 +17,9 @@ export const usersTable = pgTable("users", {
   acquisitionSource: text("acquisition_source"),
   /** True once a user has earned 10 qualifying referrals — paywall never shows again */
   proPermanent: boolean("pro_permanent").default(false).notNull(),
+  /** Unsubscribed from lifecycle/marketing email. Transactional mail is unaffected. */
+  emailOptOut: boolean("email_opt_out").default(false).notNull(),
+  emailOptOutAt: timestamp("email_opt_out_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

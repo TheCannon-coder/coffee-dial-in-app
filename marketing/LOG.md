@@ -18,3 +18,8 @@ Chris to check ASC → Agreements, Tax, and Banking. ASC metrics join the scorec
 2026-10-14 · setup · Scorecard agent instructions + funnel script added
 (marketing/agents/scorecard.md, marketing/scripts/funnel.mjs).
 2026-10-14 · scorecard · memo written · marketing/memos/2026-10-14.md
+2026-10-14 · setup · decision: build the never-brewed nudge server-side; Chris approves copy before the first send.
+2026-10-14 · lifecycle · Sender built and shipped DARK (LIFECYCLE_EMAILS unset): never_brewed template
+(variants recent/older), lifecycle_sends table, email_opt_out + /email/unsubscribe, /open hand-off page,
+admin preview/send-test/run. Draft copy: marketing/email/never-brewed-nudge.md. Awaiting: copy approval,
+EMAIL_POSTAL_ADDRESS, then LIFECYCLE_EMAILS=true on Railway.

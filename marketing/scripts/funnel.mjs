@@ -69,12 +69,13 @@ const weekly = await sql(`
   from wk order by w
 `);
 
-// initcap: the app has stored both "Drip machine" and "Drip Machine".
+// Group case-insensitively: the app has stored both "Drip machine" and "Drip
+// Machine". min() keeps a real spelling ("AeroPress", not "Aeropress").
 const byMethod = await sql(`
-  select initcap(b.method) as method, count(distinct b.user_id)::int as users, count(*)::int as brews,
+  select min(b.method) as method, count(distinct b.user_id)::int as users, count(*)::int as brews,
     count(distinct b.user_id) filter (where b.created_at >= now() - interval '28 days')::int as active_28d
   from brews b where b.user_id in ${NON_FOUNDER_USERS}
-  group by 1 order by 2 desc
+  group by lower(b.method) order by 2 desc
 `);
 
 // Activation by signup cohort: of the people who signed up in each of the last 8
@@ -99,6 +100,20 @@ const lifecycle = await one(`
     (select count(*)::int from (select user_id from brews where user_id in (select id from nf) group by 1 having count(*) = 1) x) as one_brew_only
 `);
 
+// What the lifecycle sender has done, and whether it worked: for each template,
+// how many were sent, how many of those recipients brewed within 7 days of the
+// send, and how many unsubscribed afterwards.
+const lifecycleSends = await sql(`
+  select s.template, coalesce(s.variant, '') as variant, s.status,
+    count(*)::int as sends,
+    count(*) filter (where s.sent_at < now() - interval '7 days')::int as sends_older_than_7d,
+    count(*) filter (where exists (select 1 from brews b where b.user_id = s.user_id and b.created_at >= s.sent_at and b.created_at < s.sent_at + interval '7 days'))::int as brewed_within_7d,
+    count(*) filter (where exists (select 1 from users u where u.id = s.user_id and u.email_opt_out and u.email_opt_out_at >= s.sent_at))::int as unsubscribed_after
+  from lifecycle_sends s
+  group by 1, 2, 3 order by 1, 2, 3
+`);
+const optOuts = await one(`select count(*)::int as total_opt_outs from users u where u.email_opt_out and not ${FOUNDER}`);
+
 console.log(JSON.stringify({
   generated_at: new Date().toISOString(),
   note: "Founder accounts excluded. Aggregates only.",
@@ -107,4 +122,6 @@ console.log(JSON.stringify({
   by_method: byMethod,
   activation_by_signup_week: cohorts,
   lifecycle_audiences: lifecycle,
+  lifecycle_sends: lifecycleSends,
+  email_opt_outs: optOuts.total_opt_outs,
 }, null, 2));
