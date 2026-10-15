@@ -31,7 +31,10 @@ brief wins.
 6. **Append one line** to `marketing/LOG.md`:
    `YYYY-MM-DD · scorecard · memo written · marketing/memos/YYYY-MM-DD.md`
 7. **Commit and push** the snapshot, the memo, and the log line to `main` with the
-   message `Scorecard YYYY-MM-DD`. Nothing else goes in the commit.
+   message `Scorecard YYYY-MM-DD`. Nothing else goes in the commit. Your checkout
+   can be behind the remote: sync with `git fetch origin main && git checkout -B
+   main origin/main` before you start, and if the push is rejected as
+   non-fast-forward, `git pull --rebase origin main` once and push again.
 
 ## The memo
 
