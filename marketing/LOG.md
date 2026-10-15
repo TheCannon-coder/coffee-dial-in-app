@@ -33,3 +33,6 @@ Measure: brews within 7 days of send vs. the recent never-brewed baseline; unsub
 2026-10-15 · setup · Chris signed the pending App Store Connect agreements; ASC API unblocked.
 Store facts confirmed: $4.99/mo, $49.99/yr (US+CA), no intro offer, no lifetime SKU. Brief §2 fixed
 (had $44.99 from the paywall fallback; fallback corrected in app for the next build).
+2026-10-15 · setup · Monday snapshot workflow (.github/workflows/marketing-funnel.yml) is on GitHub —
+pushed by a one-off cloud session under the Claude GitHub App (the local token can't push workflow
+files). Repo secret MARKETING_DATABASE_URL is set. Scorecard routine now syncs to origin/main first.
