@@ -30,3 +30,6 @@ don't love?"). [TEST] send to Chris's inbox. Still waiting on EMAIL_POSTAL_ADDRE
 First tick 15:38 UTC: never_brewed/recent sent to 6 (all accepted by Resend, 0 failed). 0 recent
 recipients remain. Variant older (82 people) stays OFF until the 2026-10-19 scorecard is read.
 Measure: brews within 7 days of send vs. the recent never-brewed baseline; unsubscribes.
+2026-10-15 · setup · Chris signed the pending App Store Connect agreements; ASC API unblocked.
+Store facts confirmed: $4.99/mo, $49.99/yr (US+CA), no intro offer, no lifetime SKU. Brief §2 fixed
+(had $44.99 from the paywall fallback; fallback corrected in app for the next build).

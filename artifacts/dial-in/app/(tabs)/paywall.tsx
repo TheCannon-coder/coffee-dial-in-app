@@ -66,7 +66,7 @@ export default function PaywallScreen() {
   );
 
   const monthlyPrice = monthlyPkg?.product?.priceString ?? '$4.99';
-  const yearlyPrice  = yearlyPkg?.product?.priceString  ?? '$44.99';
+  const yearlyPrice  = yearlyPkg?.product?.priceString  ?? '$49.99';
 
   // Price framing: yearly as a per-month figure, and honest months-free math.
   const currencySymbol =

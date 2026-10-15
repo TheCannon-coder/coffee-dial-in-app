@@ -35,11 +35,12 @@ your next brew**. Grind finer. Steep 15 seconds less. Drop the dose half a gram.
 Not a recipe, not a list of possibilities.
 
 - Free: 10 coached brews a month, all methods, history of your last 3 brews.
-- Pro: unlimited brews and history. **$4.99/month or $44.99/year** (the paywall's
-  fallback strings; live prices come from RevenueCat). The paywall offers monthly
-  and yearly only — "lifetime" exists in the affiliate commission table but isn't
-  sold in the app today. No intro trial is live as far as the code shows; App Store
-  Connect couldn't be queried (agreement pending — see LOG).
+- Pro: unlimited brews and history. **$4.99/month or $49.99/year** (USD and CAD
+  carry the same figures; confirmed from App Store Connect 2026-10-15, proceeds
+  85%). Monthly and yearly only — "lifetime" exists in the affiliate commission
+  table but isn't sold in the app. **No intro offer or free trial is live** on
+  either plan. (Internal reference names in App Store Connect still say "Dial In
+  Pro" — cosmetic, not user-facing.)
 - Also in the app: timed brew-along guides per method, per-coffee history with the
   next tweak remembered, a home-screen widget with today's plan, a morning reminder
   carrying the pending tweak, "give a month, get a month" referrals, and a cash
@@ -192,8 +193,9 @@ Social posting moves to a scheduler (Buffer/Later) once the drafts-then-Chris-po
 loop is working. Direct Instagram/TikTok API posting is not set up.
 
 Data the team reads: production Postgres (read-only), Search Console (CSV export
-today; API pending), GA4 (G-TJQQ53PBTE), App Store Connect (API key exists), Resend
-analytics, RevenueCat.
+today; API pending), GA4 (G-TJQQ53PBTE), App Store Connect (API working as of
+2026-10-15; analytics reports not yet wired into the snapshot), Resend analytics,
+RevenueCat.
 
 ---
 
