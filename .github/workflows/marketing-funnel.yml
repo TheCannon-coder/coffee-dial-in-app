@@ -1,0 +1,47 @@
+name: Marketing funnel snapshot
+
+# Runs the read-only funnel query and commits the JSON so the Scorecard routine
+# (Monday 11:00 UTC) can read numbers from the repo without holding any secret.
+on:
+  schedule:
+    - cron: "0 10 * * 1"   # Monday 10:00 UTC — an hour before the Scorecard
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: marketing-funnel
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Query the funnel (aggregates only)
+        env:
+          MARKETING_DATABASE_URL: ${{ secrets.MARKETING_DATABASE_URL }}
+        run: |
+          mkdir -p marketing/data/funnel
+          node marketing/scripts/funnel.mjs > "marketing/data/funnel/$(date -u +%F).json"
+          node -e 'const d=require("./marketing/data/funnel/'"$(date -u +%F)"'.json"); console.log("weekly active brewers:", d.totals.weekly_active_brewers, "| signups:", d.totals.signups_total)'
+
+      - name: Commit the snapshot
+        run: |
+          git config user.name "marketing-bot"
+          git config user.email "marketing-bot@users.noreply.github.com"
+          git add marketing/data/funnel
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Funnel snapshot $(date -u +%F) [skip ci]"
+            git push
+          fi
