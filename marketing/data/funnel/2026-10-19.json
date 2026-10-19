@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-10-19T16:43:29.521Z",
+  "note": "Founder accounts excluded. Aggregates only.",
+  "totals": {
+    "signups_total": 138,
+    "signups_7d": 2,
+    "signups_30d": 10,
+    "ever_brewed": 50,
+    "never_brewed": 88,
+    "brewed_once": 27,
+    "brewed_3plus": 13,
+    "weekly_active_brewers": 4,
+    "monthly_active_brewers": 12,
+    "brews_7d": 6,
+    "brews_total": 139,
+    "pro_paying": 0,
+    "referral_conversions": 0,
+    "affiliates_non_founder": 0,
+    "android_waitlist": 3,
+    "helpful_yes": 29,
+    "helpful_no": 5,
+    "helpful_unrated": 105
+  },
+  "weekly_last_12": [
+    {
+      "week_start": "2026-08-03",
+      "active_brewers": 2,
+      "brews": 4,
+      "signups": 1
+    },
+    {
+      "week_start": "2026-08-10",
+      "active_brewers": 5,
+      "brews": 5,
+      "signups": 7
+    },
+    {
+      "week_start": "2026-08-17",
+      "active_brewers": 3,
+      "brews": 5,
+      "signups": 6
+    },
+    {
+      "week_start": "2026-08-24",
+      "active_brewers": 2,
+      "brews": 3,
+      "signups": 1
+    },
+    {
+      "week_start": "2026-08-31",
+      "active_brewers": 6,
+      "brews": 6,
+      "signups": 4
+    },
+    {
+      "week_start": "2026-09-07",
+      "active_brewers": 2,
+      "brews": 2,
+      "signups": 0
+    },
+    {
+      "week_start": "2026-09-14",
+      "active_brewers": 4,
+      "brews": 7,
+      "signups": 7
+    },
+    {
+      "week_start": "2026-09-21",
+      "active_brewers": 3,
+      "brews": 5,
+      "signups": 3
+    },
+    {
+      "week_start": "2026-09-28",
+      "active_brewers": 2,
+      "brews": 4,
+      "signups": 2
+    },
+    {
+      "week_start": "2026-10-05",
+      "active_brewers": 4,
+      "brews": 4,
+      "signups": 3
+    },
+    {
+      "week_start": "2026-10-12",
+      "active_brewers": 4,
+      "brews": 6,
+      "signups": 2
+    },
+    {
+      "week_start": "2026-10-19",
+      "active_brewers": 0,
+      "brews": 0,
+      "signups": 0
+    }
+  ],
+  "by_method": [
+    {
+      "method": "V60",
+      "users": 30,
+      "brews": 82,
+      "active_28d": 7
+    },
+    {
+      "method": "Espresso",
+      "users": 13,
+      "brews": 34,
+      "active_28d": 4
+    },
+    {
+      "method": "AeroPress",
+      "users": 8,
+      "brews": 13,
+      "active_28d": 1
+    },
+    {
+      "method": "Drip Machine",
+      "users": 2,
+      "brews": 6,
+      "active_28d": 0
+    },
+    {
+      "method": "Chemex",
+      "users": 2,
+      "brews": 2,
+      "active_28d": 0
+    },
+    {
+      "method": "French Press",
+      "users": 1,
+      "brews": 1,
+      "active_28d": 0
+    },
+    {
+      "method": "Pour over",
+      "users": 1,
+      "brews": 1,
+      "active_28d": 0
+    }
+  ],
+  "activation_by_signup_week": [
+    {
+      "signup_week": "2026-08-31",
+      "signups": 4,
+      "brewed": 4,
+      "reached_3": 1
+    },
+    {
+      "signup_week": "2026-09-14",
+      "signups": 7,
+      "brewed": 3,
+      "reached_3": 0
+    },
+    {
+      "signup_week": "2026-09-21",
+      "signups": 3,
+      "brewed": 2,
+      "reached_3": 0
+    },
+    {
+      "signup_week": "2026-09-28",
+      "signups": 2,
+      "brewed": 1,
+      "reached_3": 0
+    },
+    {
+      "signup_week": "2026-10-05",
+      "signups": 3,
+      "brewed": 3,
+      "reached_3": 0
+    },
+    {
+      "signup_week": "2026-10-12",
+      "signups": 2,
+      "brewed": 2,
+      "reached_3": 0
+    }
+  ],
+  "lifecycle_audiences": {
+    "never_brewed_2_to_30d": 2,
+    "never_brewed_over_30d": 86,
+    "lapsed_14d": 42,
+    "one_brew_only": 27
+  },
+  "lifecycle_sends": [
+    {
+      "template": "never_brewed",
+      "variant": "recent",
+      "status": "sent",
+      "sends": 6,
+      "sends_older_than_7d": 0,
+      "brewed_within_7d": 0,
+      "unsubscribed_after": 0
+    }
+  ],
+  "email_opt_outs": 0
+}
