@@ -42,3 +42,6 @@ cron slip on a new workflow) — so the 11:07 memo used the Oct 14 snapshot. Fix
 Sunday 23:17 UTC. Fresh 10-19 snapshot: WAB 4 (was 3), MAB 12 (was 8), brews/7d 6, signups 138.
 2026-10-19 · lifecycle · Nudge read at day 5: 6 sent, 0 brewed within window so far, 0 unsubscribed,
 0 failed. Window closes 2026-10-21. Variant older (86 people now) decision pending with Chris.
+2026-10-19 · lifecycle · decision (Chris): send variant older to all 82 emailable recipients now.
+LIFECYCLE_NEVER_BREWED_OLDER=true on Railway; 25 per hourly tick inside the 13–22 UTC window, so
+all 82 go out by ~22:00 UTC today. Next Monday's memo reads the whole group at once.
