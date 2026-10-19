@@ -37,3 +37,8 @@ Store facts confirmed: $4.99/mo, $49.99/yr (US+CA), no intro offer, no lifetime 
 pushed by a one-off cloud session under the Claude GitHub App (the local token can't push workflow
 files). Repo secret MARKETING_DATABASE_URL is set. Scorecard routine now syncs to origin/main first.
 2026-10-19 · scorecard · memo written · marketing/memos/2026-10-19.md
+2026-10-19 · setup · The snapshot Action's first scheduled run fired 16:43 UTC — 6h43m late (GitHub
+cron slip on a new workflow) — so the 11:07 memo used the Oct 14 snapshot. Fix: Action moved to
+Sunday 23:17 UTC. Fresh 10-19 snapshot: WAB 4 (was 3), MAB 12 (was 8), brews/7d 6, signups 138.
+2026-10-19 · lifecycle · Nudge read at day 5: 6 sent, 0 brewed within window so far, 0 unsubscribed,
+0 failed. Window closes 2026-10-21. Variant older (86 people now) decision pending with Chris.
