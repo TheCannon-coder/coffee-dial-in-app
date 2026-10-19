@@ -4,7 +4,7 @@ name: Marketing funnel snapshot
 # (Monday 11:00 UTC) can read numbers from the repo without holding any secret.
 on:
   schedule:
-    - cron: "0 10 * * 1"   # Monday 10:00 UTC — an hour before the Scorecard
+    - cron: "17 23 * * 0"  # Sunday 23:17 UTC — GitHub's cron can slip by hours; this leaves ~12h before the Monday 11:00 Scorecard
   workflow_dispatch:
 
 permissions:
