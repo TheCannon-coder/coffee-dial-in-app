@@ -45,3 +45,6 @@ Sunday 23:17 UTC. Fresh 10-19 snapshot: WAB 4 (was 3), MAB 12 (was 8), brews/7d 
 2026-10-19 · lifecycle · decision (Chris): send variant older to all 82 emailable recipients now.
 LIFECYCLE_NEVER_BREWED_OLDER=true on Railway; 25 per hourly tick inside the 13–22 UTC window, so
 all 82 go out by ~22:00 UTC today. Next Monday's memo reads the whole group at once.
+2026-10-19 · lifecycle · Variant older COMPLETE: 82 sent 18:59–21:54 UTC (25/tick), 0 failed, 0 eligible
+remain. Total nudged to date: 88 (6 recent on 10-14, 82 older on 10-19). Read on 2026-10-26 memo:
+brews within 7 days per variant, unsubscribes.
