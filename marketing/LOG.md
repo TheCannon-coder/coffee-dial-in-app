@@ -36,3 +36,4 @@ Store facts confirmed: $4.99/mo, $49.99/yr (US+CA), no intro offer, no lifetime 
 2026-10-15 · setup · Monday snapshot workflow (.github/workflows/marketing-funnel.yml) is on GitHub —
 pushed by a one-off cloud session under the Claude GitHub App (the local token can't push workflow
 files). Repo secret MARKETING_DATABASE_URL is set. Scorecard routine now syncs to origin/main first.
+2026-10-19 · scorecard · memo written · marketing/memos/2026-10-19.md
