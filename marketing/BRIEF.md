@@ -227,10 +227,11 @@ Full reference: Claude memory `chris-voice.md`. The short version:
 **The team may do without asking:**
 - Send 1:1 lifecycle emails to individual users.
 - Send broadcasts to the user list.
-- Publish website content (new guides, copy changes, experiments with titles,
-  page types and openings) — commit and push. Chris has few opinions about the
-  website; one measurable change at a time, each with a note saying what
-  "worked" looks like.
+- Publish website content and design (new guides, copy, titles, page types,
+  openings, colours, type, layout) — commit and push. Chris has few opinions
+  about the website and asked for "serious liberties" to help engagement and
+  reach; one measurable change at a time, each with a note saying what "worked"
+  looks like.
 - Quote the app's numbers publicly **as shares or percentages**, never raw counts.
 
 **Guardrail on the above:** the *first instance of any new type* of email or page

@@ -29,6 +29,19 @@ time to be measured.
 3. **A page at position 11–30 with real impressions.** Strengthen it: FAQ
    coverage of the query variants, an in-body link from a stronger page, a
    sharper title.
+4. **A design or layout experiment** (Chris, 2026-10-20: "feel free to mess
+   around with colours / design. Take some serious liberties to help engagement
+   and reach."). Colours, type, spacing, the hero, the order of homepage sections,
+   how the download buttons and guide cards look, how a guide page opens. Pick
+   one, state the hypothesis ("a warmer hero with the phone above the fold on
+   mobile will lift App Store clicks"), and say how it'll be measured. Until GA4
+   is wired into the snapshot, the measurable proxies are Search Console clicks
+   and CTR on the changed pages, so prefer experiments that touch pages with
+   real impressions. Keep text legible (contrast at least WCAG AA against its
+   background), keep the download button visible without scrolling on a phone,
+   and keep the mobile layout working — you can't screenshot, so read the CSS
+   carefully and keep each change contained. The brand palette in
+   `page-template.ts` is a starting point, not a boundary.
 
 If nothing qualifies, say so in the change note and do nothing to the site.
 
@@ -44,8 +57,13 @@ If nothing qualifies, say so in the change note and do nothing to the site.
 - `artifacts/api-server/src/routes/sitemap.ts` — `PAGES`: path, lastmod (bump it
   when you change a page), changefreq, priority, and a one-line `summary` that
   also feeds `/llms.txt`.
-- `artifacts/api-server/src/routes/landing.ts` — `BREW_GUIDES` is the homepage
-  guide-card list. Add new guides there.
+- `artifacts/api-server/src/routes/landing.ts` — the homepage: its own CSS and
+  sections (hero, how-it-works, screenshots, share, guides, CTA). `BREW_GUIDES`
+  is the guide-card list; add new guides there.
+- `artifacts/api-server/src/lib/page-template.ts` — `COMMON_CSS` (colours, type,
+  nav, footer, guide-page layout) shared by every page, `buildPage`, nav and
+  footer. Design changes live here and in landing.ts. Leave `APP_SCHEMA`,
+  `injectAppRating`, and the waitlist modal's JavaScript alone.
 - `artifacts/api-server/src/lib/affiliate-become-page.ts` and the creator pages in
   content-pages.ts are the affiliate cluster — leave them alone unless the job is
   specifically about them.

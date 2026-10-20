@@ -64,3 +64,7 @@ Chris has few opinions on the website and welcomes experiments → Content/SEO n
 Post 3 of 2026-10-20 rewritten accordingly. First Social and Content runs otherwise approved as-is.
 2026-10-20 · decision (Chris) · Social skips the 2026-10-21 run; next drafts 2026-10-28 (gate at the top of
 marketing/agents/social.md, self-removing).
+2026-10-20 · decision (Chris) · Website design latitude: "feel free to mess around with colours / design.
+Take some serious liberties to help engagement and reach." Content/SEO may change COMMON_CSS and the
+homepage layout — one measurable change a week, with a stated hypothesis and measurement.
+2026-10-20 · content · /espresso-pulling-too-fast change confirmed live (new title in production).
