@@ -56,3 +56,4 @@ biggest CTR gap (784 impressions, 0.5% CTR at position 6.9); /v60 climbed from ~
 2026-10-20 · setup · Sunday workflow tested end-to-end by a manual run (13:22 UTC): funnel snapshot +
 Search Console pull both succeeded with the GitHub secrets; the Action committed fa26c98 on its own.
 Monday 2026-10-26 memo will have same-week funnel numbers and 28 days of search data.
+2026-10-20 · content · /espresso-pulling-too-fast · title, meta, answer-first lead, +1 FAQ (702 imp, 0.14% CTR, pos 8.3) · branch content/2026-10-20-espresso-too-fast (awaiting review)

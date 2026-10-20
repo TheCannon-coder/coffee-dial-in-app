@@ -443,6 +443,10 @@ const ESPRESSO_FAST_FAQ: Faq[] = [
     a: "Water is finding too little resistance in the puck. The usual causes, in order: grind too coarse, dose too low, a light or uneven tamp, or channelling through a crack in the puck.",
   },
   {
+    q: "My shot is still pulling too fast after I grind finer. What next?",
+    a: "Check that the grinder actually moved: some grinders need a few shots to clear the old setting. Then raise the dose by 0.5 g, make sure the tamp is level, and distribute the grounds evenly before tamping. If the stream looks uneven or sprays from one side, it's channelling, and a finer grind alone won't fix it.",
+  },
+  {
     q: "How long should an espresso shot take?",
     a: "A properly extracted espresso should take 25–35 seconds from when the pump starts. If your shot finishes before 20 seconds, it's under-extracted and will taste sour and thin.",
   },
@@ -458,12 +462,12 @@ const ESPRESSO_FAST_FAQ: Faq[] = [
 
 const espressoFastHtml = page({
   path: "/espresso-pulling-too-fast",
-  title: "Espresso Pulling Too Fast? Here's the Fix | Coffee Brew Coach",
+  title: "Espresso Pulling Too Fast? Grind Finer First | Coffee Brew Coach",
   description:
-    "If your espresso pulls in under 20 seconds it's under-extracted. Here's exactly what to adjust to fix it.",
+    "A shot that finishes in under 20 seconds is under-extracted. Grind finer first, then check dose, tamp and distribution, changing one thing per shot.",
   h1: "Espresso pulling too fast — how to fix it",
   lead:
-    "A fast espresso shot — one that finishes in under 20 seconds — is under-extracted. The coffee will taste sour, thin, and weak. Here's a systematic way to fix it.",
+    "Grind finer. A shot that finishes in under 20 seconds is under-extracted, and the usual cause is a grind that's too coarse. If it still runs fast after that, check the dose, then the tamp and distribution, and change one thing per shot.",
   contentHtml: `
 <h2>What is a fast shot?</h2>
 <p>A properly extracted espresso should take <strong>25–35 seconds</strong> from the moment the pump starts to when you stop the shot. This is measured from when water first contacts the coffee puck (not when coffee starts flowing from the spout — there's typically a 5–8 second delay).</p>
