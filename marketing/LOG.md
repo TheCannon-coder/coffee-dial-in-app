@@ -62,3 +62,5 @@ Monday 2026-10-26 memo will have same-week funnel numbers and 28 days of search 
 Chris has few opinions on the website and welcomes experiments → Content/SEO now publishes direct to main.
 2026-10-20 · decision (Chris) · Social "honest numbers" must be shares/percentages, never raw counts.
 Post 3 of 2026-10-20 rewritten accordingly. First Social and Content runs otherwise approved as-is.
+2026-10-20 · decision (Chris) · Social skips the 2026-10-21 run; next drafts 2026-10-28 (gate at the top of
+marketing/agents/social.md, self-removing).

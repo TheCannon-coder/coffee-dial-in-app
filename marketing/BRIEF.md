@@ -227,7 +227,11 @@ Full reference: Claude memory `chris-voice.md`. The short version:
 **The team may do without asking:**
 - Send 1:1 lifecycle emails to individual users.
 - Send broadcasts to the user list.
-- Publish website content (new guides, copy changes) — commit and push.
+- Publish website content (new guides, copy changes, experiments with titles,
+  page types and openings) — commit and push. Chris has few opinions about the
+  website; one measurable change at a time, each with a note saying what
+  "worked" looks like.
+- Quote the app's numbers publicly **as shares or percentages**, never raw counts.
 
 **Guardrail on the above:** the *first instance of any new type* of email or page
 (a new sequence step, a new page template, a new broadcast format) gets one review
@@ -265,7 +269,7 @@ scheduled Claude Code routines against this repo and append to `marketing/LOG.md
 |---|---|---|---|---|
 | **Scorecard** | Monday 11:00 UTC (snapshot Sunday 23:17) | Funnel snapshot, GSC pull, LOG, memos | One-page memo: what moved, why, the week's one recommendation, decisions waiting | Read-only |
 | **Lifecycle** | Hourly tick in the API server | Postgres | Never-brewed nudge (recent + older variants) — live since 2026-10-14; next templates need copy approval | Sends after type approval |
-| **Content / SEO** | Tuesday 11:00 UTC | GSC pull, memo, site code | One site improvement a week on a `content/…` branch + change note (`marketing/content/`) | Branch + review for the first one; then direct to main |
+| **Content / SEO** | Tuesday 11:00 UTC | GSC pull, memo, site code | One verified site improvement a week, pushed to main, with a change note (`marketing/content/`) | Direct to main (Chris, 2026-10-20: "few opinions on the website, feel free to run experiments") |
 | **Social** | Wednesday 11:00 UTC | Memo, GSC queries, LOG | 5 posts: captions, SVG cards, alt text in `marketing/social/YYYY-MM-DD/` | Drafts only; Chris posts |
 | **Creator outreach** | Thursday 11:00 UTC check; produces every ≥10 days | Affiliate page, earlier rounds | 5 creators + draft notes in `marketing/outreach/` | Drafts only; Chris sends |
 
