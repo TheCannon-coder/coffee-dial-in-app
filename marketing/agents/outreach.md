@@ -31,6 +31,20 @@ fit, and their public contact path (a business email they publish, a contact
 form, or "DM on Instagram"). Never collect anything that isn't offered publicly
 for business contact, and never a personal address.
 
+**Your environment can search the web but usually cannot open pages** (YouTube,
+creator sites and directories come back unreachable). Work from what search
+results give you — channel or creator names, video titles, snippets — and:
+- take the "specific true thing about their content" from a video or post title
+  that appeared in results; quote it exactly;
+- default the contact path to "DM on <platform>" (always public) unless a
+  published business email appeared verbatim in a search snippet;
+- write "size: unknown" rather than guessing an audience number;
+- add a one-line **Verify before sending** note per creator listing what you
+  couldn't confirm. Chris checks the profile on his phone before he sends, so an
+  unverified detail is fine; an invented one is not.
+If search genuinely surfaces fewer than five usable creators, deliver what you
+have and say so — three real ones beat five padded ones.
+
 Skip anyone already in `marketing/outreach/` from a previous round, and anyone
 whose content is mostly sponsored gear reviews.
 

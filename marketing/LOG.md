@@ -68,3 +68,10 @@ marketing/agents/social.md, self-removing).
 Take some serious liberties to help engagement and reach." Content/SEO may change COMMON_CSS and the
 homepage layout — one measurable change a week, with a stated hypothesis and measurement.
 2026-10-20 · content · /espresso-pulling-too-fast change confirmed live (new title in production).
+2026-10-20 · decision (Chris) · The website may change bigger and faster than one change a week, "as long
+as we can rest assured that we're not mixing up causation." Rule: every change belongs to an experiment
+with a scope, one metric, and a read date; scopes don't overlap while open (marketing/content/EXPERIMENTS.md).
+Content/SEO now runs Tuesday + Friday.
+2026-10-20 · outreach · First run produced nothing — correctly: the cloud sandbox can search but can't open
+pages, so it refused to invent follower counts or contacts. outreach.md now works from search snippets,
+defaults contact to a platform DM, and flags what Chris should verify before sending.
