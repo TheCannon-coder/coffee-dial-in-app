@@ -56,17 +56,16 @@ site changes is "let it run."
 `marketing/social/<date>/posts.md` with cards as PNGs. You post them. Nothing
 posts without you.
 
-**Getting them onto your phone (once a week, 3 minutes on the Mac):**
-1. In our Monday session I send you the five captions and the card PNGs as files.
-2. Open **Notes** on the Mac. Make a note called *CBC posts* and paste the five
-   captions in. Notes syncs to your phone on its own.
-3. AirDrop the PNGs to your phone, or drop them in **Photos** (iCloud syncs them).
+**Getting them onto your phone:** every Monday the pack arrives in your inbox
+from hello@coffeebrew.coach — subject "CBC posts — week of …" — with the cards
+attached and all five captions in the body. On the phone: long-press each
+attachment → **Save Image** (it lands in Photos). That's the whole setup.
 
 **Posting one (on the phone):**
 1. Instagram → **+** → **Post** → pick the card (or the screenshot the post names).
 2. **Next** → **Next** (skip filters).
-3. Caption: open Notes, copy that post's caption, paste. Hashtags stay in the
-   caption; they're already there.
+3. Caption: open the email, select that post's caption, copy, paste. Hashtags
+   stay in the caption; they're already there.
 4. **Advanced settings → Write alt text** → paste the alt text from the same
    post. (Takes 20 seconds; it's how blind users and search engines read the image.)
 5. **Share.**
