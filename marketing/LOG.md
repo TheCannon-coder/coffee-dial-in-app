@@ -53,3 +53,6 @@ coffeebrew.coach Domain property) → marketing/scripts/gsc.mjs → marketing/da
 + -summary.json, run by the Sunday Action once the GSC_SERVICE_ACCOUNT_JSON secret is in GitHub.
 First pull (Sep 20 – Oct 17): see marketing/data/gsc/2026-10-20-summary.json. /moka-pot still has the
 biggest CTR gap (784 impressions, 0.5% CTR at position 6.9); /v60 climbed from ~49 to ~21.
+2026-10-20 · setup · Sunday workflow tested end-to-end by a manual run (13:22 UTC): funnel snapshot +
+Search Console pull both succeeded with the GitHub secrets; the Action committed fa26c98 on its own.
+Monday 2026-10-26 memo will have same-week funnel numbers and 28 days of search data.
