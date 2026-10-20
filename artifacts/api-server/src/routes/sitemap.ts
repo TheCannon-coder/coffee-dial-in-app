@@ -23,7 +23,7 @@ const PAGES: Array<{
     summary: "Beginner's guide to making espresso at home — equipment, an 18 g in / 36 g out starting recipe, and adjusting by taste." },
   { path: "/how-to-dial-in-espresso", lastmod: "2026-09-16", changefreq: "monthly", priority: "0.8",
     summary: "Step-by-step espresso dialling-in: grind first, then dose, guided by taste." },
-  { path: "/espresso-pulling-too-fast", lastmod: "2026-09-16", changefreq: "monthly", priority: "0.8",
+  { path: "/espresso-pulling-too-fast", lastmod: "2026-10-20", changefreq: "monthly", priority: "0.8",
     summary: "Why espresso shots run under 20 seconds, the fix order (grind, dose, tamp, distribution), and why a slower shot isn't automatically a better one." },
   { path: "/v60", lastmod: "2026-09-16", changefreq: "monthly", priority: "0.8",
     summary: "V60 brewing guide — 15 g to 250 g recipe, grind size with starting grinder settings, pour technique, and fixes for bitter, sour, or stalled brews." },
