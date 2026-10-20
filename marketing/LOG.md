@@ -48,3 +48,8 @@ all 82 go out by ~22:00 UTC today. Next Monday's memo reads the whole group at o
 2026-10-19 · lifecycle · Variant older COMPLETE: 82 sent 18:59–21:54 UTC (25/tick), 0 failed, 0 eligible
 remain. Total nudged to date: 88 (6 recent on 10-14, 82 older on 10-19). Read on 2026-10-26 memo:
 brews within 7 days per variant, unsubscribes.
+2026-10-20 · setup · Search Console API wired: service account search-console-reader (Restricted on the
+coffeebrew.coach Domain property) → marketing/scripts/gsc.mjs → marketing/data/gsc/<date>-{queries,pages}.csv
++ -summary.json, run by the Sunday Action once the GSC_SERVICE_ACCOUNT_JSON secret is in GitHub.
+First pull (Sep 20 – Oct 17): see marketing/data/gsc/2026-10-20-summary.json. /moka-pot still has the
+biggest CTR gap (784 impressions, 0.5% CTR at position 6.9); /v60 climbed from ~49 to ~21.

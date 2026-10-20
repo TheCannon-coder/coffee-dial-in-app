@@ -86,9 +86,18 @@ const csvCell = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '
 const toCsv = (header, rows) =>
   [header, ...rows.map((r) => [csvCell(r.key), r.clicks, r.impressions, `${(r.ctr * 100).toFixed(2)}%`, r.position.toFixed(2)].join(","))].join("\n") + "\n";
 
-const [queries, pages] = await Promise.all([pull("query"), pull("page")]);
-const totals = (rows) => rows.reduce((t, r) => ({ clicks: t.clicks + r.clicks, impressions: t.impressions + r.impressions }), { clicks: 0, impressions: 0 });
-const tq = totals(queries);
+// Site totals come from a dimension-less query: the query dimension drops
+// anonymised/rare searches, so summing its rows undercounts.
+async function siteTotals() {
+  const body = await api(`/sites/${encodeURIComponent(SITE)}/searchAnalytics/query`, {
+    method: "POST",
+    body: JSON.stringify({ ...range, dataState: "final" }),
+  });
+  const r = (body.rows ?? [])[0] ?? { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+  return { clicks: r.clicks, impressions: r.impressions, ctr: +r.ctr.toFixed(4), position: +r.position.toFixed(1) };
+}
+
+const [queries, pages, tq] = await Promise.all([pull("query"), pull("page"), siteTotals()]);
 
 const today = iso(new Date());
 mkdirSync("marketing/data/gsc", { recursive: true });
@@ -101,7 +110,7 @@ writeFileSync(
       generated_at: new Date().toISOString(),
       site: SITE,
       ...range,
-      totals: { clicks: tq.clicks, impressions: tq.impressions, ctr: tq.impressions ? +(tq.clicks / tq.impressions).toFixed(4) : 0 },
+      totals: tq,
       query_rows: queries.length,
       page_rows: pages.length,
       // Pages people see but don't click: the Scorecard's CTR watch-list.
