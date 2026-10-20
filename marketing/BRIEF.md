@@ -263,23 +263,25 @@ scheduled Claude Code routines against this repo and append to `marketing/LOG.md
 
 | Agent | Cadence | Reads | Produces | Autonomy |
 |---|---|---|---|---|
-| **Scorecard** | Monday 7am | Postgres, GSC, GA4, ASC, LOG | One-page memo: what moved, why, the week's one recommendation, decisions waiting | Read-only |
-| **Lifecycle** | Daily | Postgres, Resend | Triggered 1:1 emails: never-brewed nudge, post-first-brew check-in, "was the fix better?", free-limit → Pro | Sends after type approval |
-| **Content / SEO** | Weekly | GSC, site code | Next guide or page edit, drafted in voice, committed | Publishes after type approval |
-| **Social** | Weekly | LOG, guides, app screenshots | 5 ready-to-post captions + branded graphics in `marketing/social/` | Drafts only; Chris posts |
-| **Creator outreach** | Biweekly | Affiliate page, prospect list | 5 personalized notes to coffee creators | Drafts only; Chris sends |
+| **Scorecard** | Monday 11:00 UTC (snapshot Sunday 23:17) | Funnel snapshot, GSC pull, LOG, memos | One-page memo: what moved, why, the week's one recommendation, decisions waiting | Read-only |
+| **Lifecycle** | Hourly tick in the API server | Postgres | Never-brewed nudge (recent + older variants) — live since 2026-10-14; next templates need copy approval | Sends after type approval |
+| **Content / SEO** | Tuesday 11:00 UTC | GSC pull, memo, site code | One site improvement a week on a `content/…` branch + change note (`marketing/content/`) | Branch + review for the first one; then direct to main |
+| **Social** | Wednesday 11:00 UTC | Memo, GSC queries, LOG | 5 posts: captions, SVG cards, alt text in `marketing/social/YYYY-MM-DD/` | Drafts only; Chris posts |
+| **Creator outreach** | Thursday 11:00 UTC check; produces every ≥10 days | Affiliate page, earlier rounds | 5 creators + draft notes in `marketing/outreach/` | Drafts only; Chris sends |
+
+All agents read `marketing/VOICE.md` before writing anything public.
 
 Paid acquisition has no agent. It gets proposed in the Scorecard memo when there's
 a case for it.
 
-### Build order
-1. **Scorecard** — read-only, zero risk, and everything else depends on measurement.
-   Includes wiring GSC/ASC API access.
-2. **Lifecycle** — the never-brewed nudge first (89 people), then the post-brew
-   check-in. Directly moves the north star.
-3. **Content / SEO** — automate the loop already proven by hand.
-4. **Social** — drafts + graphics for Chris to post.
-5. **Creator outreach** — once there's a lifecycle to send them into.
+### Build order and status
+1. **Scorecard** — live since 2026-10-14. Funnel + Search Console wired.
+2. **Lifecycle** — never-brewed nudge live since 2026-10-14 (88 sent by 10-19).
+   Next templates (post-first-brew check-in, "was the fix better?", free-limit → Pro)
+   need copy approval first.
+3. **Content / SEO** — built 2026-10-20; first run reviewed on a branch.
+4. **Social** — built 2026-10-20.
+5. **Creator outreach** — built 2026-10-20.
 
 ---
 
