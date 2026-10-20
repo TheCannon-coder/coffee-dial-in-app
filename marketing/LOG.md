@@ -75,3 +75,4 @@ Content/SEO now runs Tuesday + Friday.
 2026-10-20 · outreach · First run produced nothing — correctly: the cloud sandbox can search but can't open
 pages, so it refused to invent follower counts or contacts. outreach.md now works from search snippets,
 defaults contact to a platform DM, and flags what Chris should verify before sending.
+2026-10-20 · outreach · 5 drafts · marketing/outreach/2026-10-20.md
