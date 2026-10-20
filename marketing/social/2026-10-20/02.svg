@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <rect width="1080" height="1080" fill="#FAF7F2"/>
+  <circle cx="1010" cy="-40" r="300" fill="none" stroke="#F0EBE3" stroke-width="70"/>
+  <circle cx="1010" cy="-40" r="210" fill="none" stroke="#F0EBE3" stroke-width="34"/>
+  <text x="96" y="970" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="30" fill="#8B6347">Coffee Brew Coach</text>
+  <text x="984" y="970" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#8B6347">coffeebrew.coach</text>
+  <text x="96" y="200" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="4" fill="#C07A30">ESPRESSO</text>
+  <text x="96" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#2C1A0E">Shot running too fast?</text>
+<text x="96" y="355.12" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#2C1A0E">Go finer. Just one</text>
+<text x="96" y="440.24" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#2C1A0E">step.</text>
+  <text x="96" y="565.36" font-family="Helvetica, Arial, sans-serif" font-size="38" fill="#8B6347">Fast and thin means the water found an easy</text>
+<text x="96" y="622.36" font-family="Helvetica, Arial, sans-serif" font-size="38" fill="#8B6347">way through. Make the way harder.</text>
+</svg>
