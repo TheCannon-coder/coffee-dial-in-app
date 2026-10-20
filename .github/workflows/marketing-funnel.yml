@@ -34,11 +34,18 @@ jobs:
           node marketing/scripts/funnel.mjs > "marketing/data/funnel/$(date -u +%F).json"
           node -e 'const d=require("./marketing/data/funnel/'"$(date -u +%F)"'.json"); console.log("weekly active brewers:", d.totals.weekly_active_brewers, "| signups:", d.totals.signups_total)'
 
+      - name: Search Console (last 28 days; skipped until the secret exists)
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GSC_SERVICE_ACCOUNT_JSON" ]; then echo "GSC_SERVICE_ACCOUNT_JSON not set — skipping Search Console"; exit 0; fi
+          node marketing/scripts/gsc.mjs
+
       - name: Commit the snapshot
         run: |
           git config user.name "marketing-bot"
           git config user.email "marketing-bot@users.noreply.github.com"
-          git add marketing/data/funnel
+          git add marketing/data/funnel marketing/data/gsc
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
