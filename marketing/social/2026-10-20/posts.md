@@ -40,13 +40,13 @@ Why this week: "espresso pulling too fast" / "shot pulling too fast" are the top
 Card: 03.svg
 
 Caption:
-Here's a real number. 50 people have logged a brew in the app. 27 of them brewed once. 13 came back for a third.
+Here's an honest number. About half the people who've brewed with the app brewed once. A quarter came back for a third.
 
 I'd love that second number to be bigger, so I'm telling you where we are. The app gives you one thing to change next time, and it only works if there's a next time. If you tried it once and drifted off, that's totally fine. Thank you for trying it 🙏
 
 #homebrewing #coffee #buildinpublic #coffeebrewcoach #coffeecommunity
 
-Alt text: Dark brown card with the label AN HONEST NUMBER and the text "27 of 50 people who've brewed with the app brewed once. 13 came back for a third. We'd like that second number to be bigger."
+Alt text: Dark brown card with the label AN HONEST NUMBER and the text "About half the people who've brewed with the app brewed once. A quarter came back for a third. We'd like that second number to be bigger."
 
 Why this week: honest funnel number (retention) from the 2026-10-20 snapshot; the doubled-word emphasis is used in post 4, not here.
 

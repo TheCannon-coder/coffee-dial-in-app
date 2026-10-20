@@ -18,11 +18,12 @@ Five posts, mixed like this (vary the order week to week):
    "espresso pulling too fast", "V60 grind"). This is the app's whole idea in a
    post, and it's the kind of thing people save.
 2. **A second diagnosis,** different method.
-3. **An honest number.** Something true and specific from the data that a home
-   brewer would find interesting — "about a third of the people who download the
-   app brew within the first week; the rest are waiting for a good moment" — never
-   anything that identifies a person, never revenue, never anything the brief
-   marks private.
+3. **An honest number.** Something true from the data that a home brewer would
+   find interesting, expressed as a **share or ratio, never a raw count** — "about
+   a third of the people who download the app brew within the first week" is
+   fine; "50 people have brewed" is not (Chris, 2026-10-20: percentages keep us
+   honest without showing our cards). Never anything that identifies a person,
+   never revenue, never anything the brief marks private.
 4. **A question to the audience.** Sincere, answerable in a comment: "What's your
    machine doing to you this week?" / "Which did you buy first, the scale or the
    grinder?"

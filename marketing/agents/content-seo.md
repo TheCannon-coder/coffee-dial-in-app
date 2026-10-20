@@ -79,18 +79,25 @@ your change**, fix it or don't push.
 
 ## Deliver
 
-1. A branch named `content/YYYY-MM-DD-<slug>` from the current `origin/main`
-   (`git fetch origin main && git checkout -B content/... origin/main`).
-2. The code change.
+Chris reviewed the first change on 2026-10-20 and gave the website latitude
+("feel free to mess around and run experiments"). You publish directly:
+
+1. Work on `main` (`git fetch origin main && git checkout -B main origin/main`).
+2. The code change — one per week, verified (typecheck and tests must pass; if
+   the sandbox can't install dependencies, say so in the note and still push —
+   Railway's build is the backstop, and a failed deploy keeps the old site up).
 3. A change note at `marketing/content/YYYY-MM-DD-<slug>.md`: which page, what
    the data showed (numbers), what you changed and why, what we expect to see in
    the next 2–3 weeks of Search Console data, and how to tell if it worked.
 4. One line in `marketing/LOG.md`:
-   `YYYY-MM-DD · content · <page> · <what> · branch content/... (awaiting review)`
-5. Commit with a message that leads with the page and the why; push the branch:
-   `git push -u origin content/...`. **Do not push to main.** Do not open anything
-   else.
-6. Final message: the branch name and the change note's summary paragraph.
+   `YYYY-MM-DD · content · <page> · <what> · marketing/content/YYYY-MM-DD-<slug>.md`
+5. Commit with a message that leads with the page and the why, and push to
+   `main` (`git pull --rebase origin main` once if rejected). Pushing deploys the
+   site within a few minutes.
+6. Final message: the change note's summary paragraph.
 
-Chris reviews the first one in his Monday session. After that, the brief's
-publish permission applies and this step changes to direct-to-main.
+Experiments are welcome — a different title pattern, a new page type, a bolder
+answer-first opening — as long as each one is a single measurable change with
+its note saying what "worked" will look like. The brief's rules still bound them:
+voice, credential-not-channel, no promised outcomes, no touching the affiliate
+cluster or anything outside the files listed above.

@@ -58,3 +58,7 @@ Search Console pull both succeeded with the GitHub secrets; the Action committed
 Monday 2026-10-26 memo will have same-week funnel numbers and 28 days of search data.
 2026-10-20 · social · 5 drafts · marketing/social/2026-10-20/
 2026-10-20 · content · /espresso-pulling-too-fast · title, meta, answer-first lead, +1 FAQ (702 imp, 0.14% CTR, pos 8.3) · branch content/2026-10-20-espresso-too-fast (awaiting review)
+2026-10-20 · decision (Chris) · Content change to /espresso-pulling-too-fast reviewed and MERGED (ddbc315);
+Chris has few opinions on the website and welcomes experiments → Content/SEO now publishes direct to main.
+2026-10-20 · decision (Chris) · Social "honest numbers" must be shares/percentages, never raw counts.
+Post 3 of 2026-10-20 rewritten accordingly. First Social and Content runs otherwise approved as-is.

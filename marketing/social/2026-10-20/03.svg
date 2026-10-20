@@ -5,9 +5,9 @@
   <text x="96" y="970" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="30" fill="#A89080">Coffee Brew Coach</text>
   <text x="984" y="970" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#A89080">coffeebrew.coach</text>
   <text x="96" y="200" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="4" fill="#C07A30">AN HONEST NUMBER</text>
-  <text x="96" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#FAF7F2">27 of 50 people who've</text>
-<text x="96" y="355.12" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#FAF7F2">brewed with the app</text>
-<text x="96" y="440.24" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#FAF7F2">brewed once.</text>
-  <text x="96" y="565.36" font-family="Helvetica, Arial, sans-serif" font-size="38" fill="#A89080">13 came back for a third. We'd like that</text>
-<text x="96" y="622.36" font-family="Helvetica, Arial, sans-serif" font-size="38" fill="#A89080">second number to be bigger.</text>
+  <text x="96" y="270" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#FAF7F2">About half the people</text>
+<text x="96" y="341.68" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#FAF7F2">who've brewed with the app</text>
+<text x="96" y="413.36" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#FAF7F2">brewed once.</text>
+  <text x="96" y="525.04" font-family="Helvetica, Arial, sans-serif" font-size="38" fill="#A89080">A quarter came back for a third. We'd like</text>
+<text x="96" y="582.04" font-family="Helvetica, Arial, sans-serif" font-size="38" fill="#A89080">that second number to be bigger.</text>
 </svg>
