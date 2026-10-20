@@ -22,10 +22,13 @@ brief wins.
 2. **Read last week's snapshot** (the previous file in `marketing/data/funnel/`) and
    compute week-over-week changes. If there is no previous file, this is the baseline
    week; say so.
-3. **Read Search Console data if present.** Chris drops exports into
-   `marketing/data/gsc/` as `YYYY-MM-DD-queries.csv` and `YYYY-MM-DD-pages.csv` (the
-   standard GSC export columns). Use the most recent set; note its date range. If the
-   newest set is more than 21 days old, ask for a fresh export in the memo.
+3. **Read Search Console data if present.** The same Sunday Action pulls the last
+   28 days from the Search Console API into `marketing/data/gsc/` as
+   `YYYY-MM-DD-queries.csv`, `YYYY-MM-DD-pages.csv` (the standard export columns)
+   and `YYYY-MM-DD-summary.json` (totals, date range, and a high-impressions /
+   low-CTR page list). Use the most recent set; note its date range. If the newest
+   set is more than 10 days old, say so under "Data problems" — the API pull has
+   failed or the secret is missing.
 4. **Read `marketing/LOG.md`** for what the team did since the last memo — sends,
    publishes, decisions.
 5. **Write the memo** to `marketing/memos/YYYY-MM-DD.md` using the format below.
