@@ -248,12 +248,12 @@ const MOKA_POT_FAQ: Faq[] = [
 
 const mokaPotHtml = page({
   path: "/moka-pot",
-  title: "Moka Pot Coffee Too Bitter? Here's Why | Coffee Brew Coach",
+  title: "Moka Pot Coffee Bitter? Heat, Grind or Timing | Coffee Brew Coach",
   description:
-    "Bitter moka pot coffee comes from three things: too much heat, a grind that's too fine, or leaving it on the stove too long. Here's how to tell which one it is — and what to check if pre-heating the water didn't fix it.",
+    "Bitter moka pot coffee comes from too much heat, a grind that's too fine, or leaving it on the stove too long. How to tell which, and what to try first.",
   h1: "Moka pot coffee too bitter — how to fix it",
   lead:
-    "Bitter moka pot coffee is almost always caused by too much heat, the wrong grind, or letting the coffee sit on the stove too long. All three are easy to fix once you know what to look for.",
+    "Pull the pot off the heat the moment the flow starts to sputter, and grind a notch coarser than espresso. Those two cover most bitter moka pot coffee; heat is the third cause, and the sections below help you tell which one is yours.",
   contentHtml: `
 <h2>Why moka pot coffee gets bitter</h2>
 <p>The moka pot brews by forcing steam pressure through tightly packed coffee grounds at high temperature. This is efficient, but it means over-extraction happens faster than with any other brew method. Bitterness in moka pot coffee almost always traces back to one of three causes:</p>
@@ -744,13 +744,21 @@ const V60_FAQ: Faq[] = [
     q: "Is V60 grind finer or coarser than French press?",
     a: "Finer. French press is a four-minute immersion and needs a coarse grind; the V60 drains in about three minutes and needs a medium grind to extract properly. Using a French press grind in a V60 produces a fast, sour brew.",
   },
+  {
+    q: "How do I make V60 coffee?",
+    a: "Rinse the filter, add 15 g of medium-ground coffee, and pour 45 g of 92–96 °C water to bloom for 30–45 seconds. Pour in slow spirals up to 150 g, then up to 250 g at about 1:15, and let it drain. The whole brew should take 2:30 to 3:30.",
+  },
+  {
+    q: "How much coffee do I use for a V60?",
+    a: "15 g of coffee to 250 g of water is a good starting point (about 1:16.7). For a bigger cup, keep the same ratio: 20 g to 330 g. Change the grind before you change the ratio.",
+  },
 ];
 
 const v60Html = page({
   path: "/v60",
-  title: "How to Brew V60 Coffee | Coffee Brew Coach",
+  title: "How to Brew V60: Grind, Ratio and Pour Steps",
   description:
-    "The complete V60 brewing guide — grind size, ratio, pour technique, and how to fix bitter, sour, or stalled brews.",
+    "Use 15 g of medium-ground coffee to 250 g of water at 92–96 °C, bloom 45 g, and finish in 2:30–3:30. Grind settings and fixes for bitter or sour cups.",
   h1: "How to brew V60 coffee",
   lead:
     "The Hario V60 is the most popular pour-over brewer in specialty coffee — and the least forgiving. Your pour technique and grind do all the work. Here's a recipe that produces a sweet, clear cup, and how to fix it when it goes wrong.",
