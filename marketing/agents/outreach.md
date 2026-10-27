@@ -85,3 +85,19 @@ Under 170 words. Subject line (for email) under 8 words, no clickbait.
 - Send, DM, post, or submit any form.
 - Promise results, mention discounts, invent numbers, or name competitors.
 - Put anything in the file that the person didn't publish for business contact.
+
+## Sending (added 2026-10-27, Chris's go)
+
+Chris approved sending outreach by email through Resend, small first, from a
+scheduled routine. The routine never decides who gets mail: it only runs
+`node marketing/scripts/send-outreach.mjs --send` (env: `RESEND_API_KEY`,
+`OUTREACH_MAILING_ADDRESS`) after Chris has set `"approved": true` on entries in
+`marketing/outreach/approved.json`.
+
+- Add a creator to `approved.json` (with `approved: false`) only when their
+  business email appears verbatim in a search result or their own page; put where
+  in `source`. DM-only creators stay in the dated drafts file, not here.
+- Cap: 5 sends per rolling 7 days. Anyone who replies "no thanks" goes in
+  `marketing/outreach/suppressed.txt`.
+- After a send run, commit `approved.json` and `LOG.md` to `main`.
+- Replies are Chris's to answer; never auto-reply.
