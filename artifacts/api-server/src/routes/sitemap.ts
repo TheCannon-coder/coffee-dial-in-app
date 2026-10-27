@@ -39,7 +39,7 @@ const PAGES: Array<{
     summary: "French press guide — coarse grind, 4-minute steep, and fixes for bitter, weak, or muddy cups." },
   { path: "/moka-pot", lastmod: "2026-10-23", changefreq: "monthly", priority: "0.8",
     summary: "Why moka pot coffee turns bitter — heat, grind, and timing — how to tell which one it is, and what to check when pre-heating the water didn't fix it." },
-  { path: "/cold-brew", lastmod: "2026-07-06", changefreq: "monthly", priority: "0.8",
+  { path: "/cold-brew", lastmod: "2026-10-27", changefreq: "monthly", priority: "0.8",
     summary: "Cold brew ratios (concentrate vs. ready-to-drink), grind size, and steep times." },
   { path: "/drip-machine", lastmod: "2026-07-06", changefreq: "monthly", priority: "0.8",
     summary: "Better drip machine coffee: ratio, water temperature, fresh grinding, and machine cleaning." },

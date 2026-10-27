@@ -298,14 +298,33 @@ ${faqSection(MOKA_POT_FAQ)}`,
 
 /* ─── 4. Cold Brew ───────────────────────────────────────────────────────── */
 
+const COLD_BREW_FAQ: Faq[] = [
+  {
+    q: "What is the best cold brew coffee ratio?",
+    a: "For concentrate, use 1 part coffee to 4–5 parts water by weight (100 g coffee to 400–500 g water) and dilute it 1:1 when you drink it. For ready-to-drink cold brew, use 1:7 to 1:8 (100 g coffee to 700–800 g water) and serve it straight over ice.",
+  },
+  {
+    q: "How much water do I use per cup of coffee for cold brew?",
+    a: "For ready-to-drink cold brew, about 7–8 g of water per gram of coffee, so 40 g of coffee takes about 300 g of water. For concentrate, use 4–5 g of water per gram of coffee, then add equal parts water or milk when you pour.",
+  },
+  {
+    q: "How long should cold brew steep?",
+    a: "18–24 hours in the fridge, or 12–14 hours at room temperature. The fridge is more forgiving. Room temperature extracts faster and can turn sour if it goes too long.",
+  },
+  {
+    q: "What grind size is best for cold brew?",
+    a: "Coarse, like cracked peppercorns or rough sea salt. A long steep magnifies a finer grind into bitter, harsh coffee, so if your cold brew tastes bitter, grind coarser before changing anything else.",
+  },
+];
+
 const coldBrewHtml = page({
   path: "/cold-brew",
-  title: "Cold Brew Coffee Ratio and Brew Time Guide | Coffee Brew Coach",
+  title: "Cold Brew Ratio: 1:4 Concentrate or 1:8 Ready to Drink",
   description:
-    "Get the cold brew ratio, grind size, and steep time right every time. Free coaching from Coffee Brew Coach.",
+    "Cold brew ratio by weight: 1:4–1:5 for concentrate you dilute, 1:7–1:8 for ready-to-drink. Plus grind size, steep time, and fixes for bitter or weak batches.",
   h1: "Cold brew coffee ratio — the complete guide",
   lead:
-    "Cold brew ratio is the most important variable to get right. Too high a ratio and it's bitter and harsh; too low and it's watery and flat. Here's exactly what to use and why.",
+    "Use 1:4 to 1:5 coffee to water by weight for concentrate you dilute, or 1:7 to 1:8 for cold brew you drink straight. Steep 18–24 hours in the fridge with a coarse grind. The rest of this page covers why, and what to change when a batch comes out wrong.",
   contentHtml: `
 <h2>Understanding cold brew ratios</h2>
 <p>Cold brew ratios are expressed as coffee to water by weight. The two common styles are:</p>
@@ -330,7 +349,8 @@ const coldBrewHtml = page({
 <h3>Weak or watery</h3>
 <p>Under-extracted. Increase your coffee dose (try 1:4 instead of 1:6), grind slightly finer (but still coarse), or extend the steep time by 4–6 hours.</p>
 <h3>Sour or vegetal</h3>
-<p>Very under-extracted. The water hasn't had enough contact time or the grind is too coarse. Steep longer or increase your ratio first before adjusting grind.</p>`,
+<p>Very under-extracted. The water hasn't had enough contact time or the grind is too coarse. Steep longer or increase your ratio first before adjusting grind.</p>
+${faqSection(COLD_BREW_FAQ)}`,
   cbcHtml: `<p>Cold brew is simple but easy to get wrong because the 18-hour feedback loop means one bad batch costs you a full day. Coffee Brew Coach helps you log your recipe — ratio, grind setting, steep time, temperature — and when the batch is done, you rate the taste and get one targeted fix for the next one. Over a few batches, you'll dial in a recipe that works consistently with your beans and equipment.</p>`,
   related: [
     { href: "/coffee-grind-size-guide", label: "Coffee grind size guide" },
@@ -1149,6 +1169,7 @@ const STRUCTURED_DATA: Record<string, object | object[]> = {
     ],
   },
   "/espresso-pulling-too-fast": faqSchema(ESPRESSO_FAST_FAQ),
+  "/cold-brew": faqSchema(COLD_BREW_FAQ),
   "/aeropress-too-weak": {
     "@context": "https://schema.org",
     "@type": "FAQPage",
