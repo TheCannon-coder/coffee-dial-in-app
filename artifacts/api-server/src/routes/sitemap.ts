@@ -27,7 +27,7 @@ const PAGES: Array<{
     summary: "Why espresso shots run under 20 seconds, the fix order (grind, dose, tamp, distribution), and why a slower shot isn't automatically a better one." },
   { path: "/v60", lastmod: "2026-10-23", changefreq: "monthly", priority: "0.8",
     summary: "V60 brewing guide — 15 g to 250 g recipe, grind size with starting grinder settings, pour technique, and fixes for bitter, sour, or stalled brews." },
-  { path: "/aeropress", lastmod: "2026-09-16", changefreq: "monthly", priority: "0.8",
+  { path: "/aeropress", lastmod: "2026-10-30", changefreq: "monthly", priority: "0.8",
     summary: "AeroPress guide — standard and inverted methods, 16 g to 220 g recipe, steep times by grind, espresso-style concentrate." },
   { path: "/aeropress-too-weak", lastmod: "2026-07-06", changefreq: "monthly", priority: "0.8",
     summary: "Four causes of weak AeroPress coffee: ratio, grind, steep time, water temperature." },

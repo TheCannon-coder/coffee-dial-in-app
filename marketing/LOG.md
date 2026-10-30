@@ -81,3 +81,4 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-10-26 · scorecard · memo written · marketing/memos/2026-10-26.md
 2026-10-27 · content · /cold-brew · ratio-first title, meta, lead, +4 FAQs · marketing/content/2026-10-27-cold-brew-ratio.md
 2026-10-28 · social · 5 drafts · marketing/social/2026-10-28/
+2026-10-30 · content · /aeropress · recipe-first title/meta/lead, tips section, +3 FAQs · marketing/content/2026-10-30-aeropress-tips.md

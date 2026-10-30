@@ -849,16 +849,28 @@ const AEROPRESS_FAQ: Faq[] = [
     q: "Can you steep AeroPress too long?",
     a: "Yes, but it's forgiving. Going from one to two minutes adds body and sweetness. Past four or five minutes with a medium grind, the cup turns heavy and bitter. If a longer steep isn't fixing a weak cup, the problem is usually ratio or grind rather than time.",
   },
+  {
+    q: "How do I brew AeroPress coffee?",
+    a: "Rinse a paper filter in the cap, add 16 g of medium-ground coffee, pour 220 g of water at 90–92 °C, and stir once. Insert the plunger just inside the rim, steep for 60 seconds, then press slowly over about 30 seconds and stop at the hiss.",
+  },
+  {
+    q: "What's the difference between the standard and inverted AeroPress methods?",
+    a: "Standard brews with the chamber sitting on the mug, so a little coffee can drip through during the steep. Inverted flips the AeroPress upside down so nothing drips, which makes longer steeps easier to repeat. Both make a good cup; inverted just takes a careful flip before you press.",
+  },
+  {
+    q: "What grind size is best for AeroPress?",
+    a: "Medium, like beach sand or sea salt, is the best starting point for a 1–2 minute steep. Go medium-fine with a shorter steep for a concentrate, and coarser only if you're willing to steep for two and a half minutes or more.",
+  },
 ];
 
 const aeropressHtml = page({
   path: "/aeropress",
-  title: "AeroPress Brewing Guide | Coffee Brew Coach",
+  title: "AeroPress Tips: Recipe, Steep Time and Fixes | Coffee Brew Coach",
   description:
-    "How to brew AeroPress coffee — standard and inverted methods, the right grind and ratio, and fixes for weak or bitter cups.",
+    "Brew AeroPress with 16 g of medium coffee, 220 g of water at 90–92 °C, a 1-minute steep and a slow 30-second press. Plus inverted and fixes.",
   h1: "How to brew AeroPress coffee",
   lead:
-    "The AeroPress is the most forgiving and most versatile brewer you can own. It makes everything from a bright filter-style cup to a short espresso-style concentrate — once you stop following the instructions printed on the box.",
+    "Use 16 g of medium-ground coffee, 220 g of water at 90–92 °C, steep for a minute, then press slowly over 30 seconds. That's the whole standard recipe; everything below is how to adjust it when the cup misses.",
   contentHtml: `
 <h2>Why the AeroPress is different</h2>
 <p>The AeroPress combines full immersion (like a French press) with pressure filtering (a gentle push through a paper filter). Immersion makes it forgiving — contact time is fully in your control, with no drainage rate to manage. The paper filter makes it clean — none of the sludge or heaviness of a metal mesh. That combination means almost any grind size can produce a good cup if you match the steep time to it.</p>
@@ -895,6 +907,15 @@ const aeropressHtml = page({
   <li><strong>Coarse grind (your French press setting):</strong> steep 2:30–3:00 — or just grind finer</li>
 </ul>
 <p>Steep time and grind size trade off against each other: the finer the grind, the shorter the steep. Can you steep too long? Yes, but the AeroPress is forgiving — going from one to two minutes adds body and sweetness, while four or five minutes with a medium grind starts to taste heavy and bitter. If a longer steep isn't fixing a weak cup, the problem is usually ratio or grind, not time — see <a href="/aeropress-too-weak">AeroPress coffee too weak</a>.</p>
+
+<h2>Five AeroPress tips that matter most</h2>
+<ul>
+  <li><strong>Weigh the coffee and water.</strong> The scoop varies a lot; a scale makes the cup repeatable.</li>
+  <li><strong>Rinse the filter.</strong> It removes the papery taste and warms the brewer.</li>
+  <li><strong>Change one thing at a time.</strong> Grind, steep time or temperature, never all three.</li>
+  <li><strong>Press slowly and stop at the hiss.</strong> Hard pressing pushes bitterness into the cup.</li>
+  <li><strong>Taste before you tweak.</strong> Sour means extract more; bitter means extract less.</li>
+</ul>
 
 <h2>Common problems</h2>
 <h3>Weak or watery</h3>
@@ -1066,7 +1087,7 @@ const STRUCTURED_DATA: Record<string, object | object[]> = {
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How to brew AeroPress coffee",
-    "description": "How to brew AeroPress coffee — standard and inverted methods, the right grind and ratio, and fixes for weak or bitter cups.",
+    "description": "Brew AeroPress with 16 g of medium coffee, 220 g of water at 90–92 °C, a 1-minute steep and a slow 30-second press.",
     "totalTime": "PT2M",
     "step": [
       { "@type": "HowToStep", "position": 1, "name": "Set up and rinse", "text": "Put a paper filter in the cap, twist it onto the chamber, rinse with hot water, and place on a sturdy mug." },
