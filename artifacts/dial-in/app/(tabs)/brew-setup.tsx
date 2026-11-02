@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useUser } from '@/context/UserContext';
 import { BrewTimer } from '@/components/BrewTimer';
 import { FormField } from '@/components/FormField';
 
@@ -46,10 +47,26 @@ export default function BrewSetupScreen() {
   const [water, setWater] = useState(params.water ?? '');
   const [brewTime, setBrewTime] = useState(params.brewTime ?? '');
   const [waterTemp, setWaterTemp] = useState(params.waterTemp ?? '');
-  const [grinderNotes, setGrinderNotes] = useState(params.grinderNotes ?? '');
+  // Trim carried-forward text — the repeat flow was dragging whitespace-only
+  // grinder notes through brew after brew.
+  const [grinderNotes, setGrinderNotes] = useState((params.grinderNotes ?? '').trim());
   const [brewAlong, setBrewAlong] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
   const [showMethodPicker, setShowMethodPicker] = useState(false);
+
+  // Their lab notebook, open to the right page: when the coffee name matches
+  // a saved coffee, surface what they wrote last time.
+  const { savedCoffees } = useUser();
+  const lastMatch = useMemo(() => {
+    const name = coffeeName.trim().toLowerCase();
+    if (!name) return null;
+    const matches = savedCoffees.filter(c => c.coffeeName.trim().toLowerCase() === name);
+    if (matches.length === 0) return null;
+    return matches.reduce((a, b) => (a.savedAt > b.savedAt ? a : b));
+  }, [coffeeName, savedCoffees]);
+  const lastGrinder = lastMatch?.grinderNotes?.trim();
+  const lastFree = lastMatch?.freeNotes?.trim();
+  const showLastGrinder = !!lastGrinder && lastGrinder !== grinderNotes.trim();
 
   const adjustmentHistory: string[] = params.adjustmentHistory
     ? JSON.parse(params.adjustmentHistory)
@@ -216,6 +233,24 @@ export default function BrewSetupScreen() {
         </View>
         {showTimer && <BrewTimer onUseTime={t => setBrewTime(t)} />}
 
+        {(showLastGrinder || lastFree) && (
+          <View style={[styles.lastNoteCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Feather name="book-open" size={14} color={colors.accent} style={{ marginTop: 2 }} />
+            <View style={{ flex: 1 }}>
+              {showLastGrinder && (
+                <Text style={[styles.lastNoteText, { color: colors.espresso, fontFamily: 'DMSans_500Medium' }]}>
+                  Last time: {lastGrinder}
+                </Text>
+              )}
+              {lastFree ? (
+                <Text style={[styles.lastNoteQuote, { color: colors.mutedForeground, fontFamily: 'DMSans_400Regular' }]}>
+                  "{lastFree}"
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        )}
+
         <FormField label="Grinder setting / notes (optional)">
           <TextInput
             style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso, fontFamily: 'DMSans_400Regular' }]}
@@ -269,6 +304,16 @@ const styles = StyleSheet.create({
   timerToggle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   timerToggleText: { fontSize: 14 },
   textarea: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, minHeight: 80 },
+  lastNoteCard: {
+    flexDirection: 'row',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+  },
+  lastNoteText: { fontSize: 13, lineHeight: 18 },
+  lastNoteQuote: { fontSize: 13, lineHeight: 18, fontStyle: 'italic', marginTop: 2 },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1 },
   nextBtn: { borderRadius: 100, paddingVertical: 16, alignItems: 'center' },
   nextBtnText: { fontSize: 17 },

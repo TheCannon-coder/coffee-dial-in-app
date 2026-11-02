@@ -10,6 +10,8 @@ export interface SavedCoffee {
   brewTime: string;
   waterTemp: string;
   grinderNotes: string;
+  /** "Anything else you noticed?" from the tasting form — their lab notebook. */
+  freeNotes?: string;
   advice: string;
   adjustment: string;
   savedAt: string;
