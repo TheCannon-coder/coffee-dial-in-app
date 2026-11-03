@@ -83,3 +83,4 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-10-28 · social · 5 drafts · marketing/social/2026-10-28/
 2026-10-30 · content · /aeropress · recipe-first title/meta/lead, tips section, +3 FAQs · marketing/content/2026-10-30-aeropress-tips.md
 2026-11-02 · scorecard · memo written · marketing/memos/2026-11-02.md
+2026-11-03 · content · none · no qualifying work (all measurable pages in open experiments) · marketing/content/2026-11-03-no-qualifying-work.md
