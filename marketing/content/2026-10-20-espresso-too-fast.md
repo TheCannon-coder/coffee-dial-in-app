@@ -19,3 +19,6 @@ pnpm install, `tsc -b`, api-server `tsc --noEmit` and `vitest run` (59 tests) al
 
 ## How to tell if it worked
 Re-pull Search Console after Nov 10. Compare page CTR and clicks against 0.14% / 1 click per 28 days, and confirm position stays ≤ 10.
+
+## Result (read 2026-11-10)
+Newest pull (2026-11-09, Oct 10 – Nov 6; about 17 of its 28 days are after the Oct 20 change): 992 impressions, 1 click, 0.10% CTR, position 7.9. Baseline was 702 impressions, 1 click, 0.14%, position 8.3. Impressions rose, position held under 10, clicks did not move. The bar was 5+ clicks per 28 days; it didn't get there. Conclusion: the title, meta and lead rewrite did not lift CTR. The impressions are spread thinly over many long-tail phrasings (the top query has 15), so the page may be showing where few people click, but one click is too few to say more. The scope is free. Not re-touching it today: nothing in the data points to a better snippet than the one we have, and a second guess would be noise. Revisit when a fresh pull shows a click or a query with real volume.
