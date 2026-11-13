@@ -5,7 +5,7 @@
 - Metric: page impressions, clicks, and average position (GSC pages.csv).
 - Baseline: 279 imp, 2 clicks, pos 21.2 (Sep 20 – Oct 17).
 - Read date: 2026-11-13. Worked if position improves to ≤ 15 or clicks per 28 days reach 5+.
-- Result: (blank until read)
+- Result: Read 2026-11-13 (Oct 10–Nov 6 pull, about half post-change): 309 imp, 3 clicks, pos 22.7. Position not better than 21.2, clicks under the 5 bar. Not worked; scope open.
 - Verification: tsc -b, api-server tsc --noEmit, vitest (59 tests) pass.
 
 ## Not done

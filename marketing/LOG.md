@@ -90,3 +90,4 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-11-09 · scorecard · memo written · marketing/memos/2026-11-09.md
 2026-11-10 · content · /espresso-pulling-too-fast · result read: no CTR lift (0.14% → 0.10%, 1 click); no new work qualifies · marketing/content/2026-11-10-no-new-work.md
 2026-11-11 · social · 5 drafts · marketing/social/2026-11-11/
+2026-11-13 · content · /moka-pot, /v60 · results read: neither hit its bar; no new work qualifies · marketing/content/2026-11-13-results-no-new-work.md
