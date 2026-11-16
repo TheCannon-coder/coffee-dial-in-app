@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-11-16T02:47:59.685Z",
+  "site": "sc-domain:coffeebrew.coach",
+  "startDate": "2026-10-17",
+  "endDate": "2026-11-13",
+  "totals": {
+    "clicks": 31,
+    "impressions": 3906,
+    "ctr": 0.0079,
+    "position": 14.1
+  },
+  "query_rows": 191,
+  "page_rows": 18,
+  "high_impressions_low_ctr": [
+    {
+      "page": "https://www.coffeebrew.coach/cold-brew",
+      "impressions": 686,
+      "ctr": 0.0058309037900874635,
+      "position": 23.8
+    },
+    {
+      "page": "https://www.coffeebrew.coach/moka-pot",
+      "impressions": 430,
+      "ctr": 0.004651162790697674,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.coffeebrew.coach/v60",
+      "impressions": 379,
+      "ctr": 0.005277044854881266,
+      "position": 20.6
+    },
+    {
+      "page": "https://www.coffeebrew.coach/espresso-pulling-too-fast",
+      "impressions": 1048,
+      "ctr": 0.0009541984732824427,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.coffeebrew.coach/aeropress",
+      "impressions": 267,
+      "ctr": 0,
+      "position": 27.9
+    }
+  ]
+}
