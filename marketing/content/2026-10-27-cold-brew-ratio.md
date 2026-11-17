@@ -6,7 +6,7 @@
 - Metric: page position, impressions, clicks (GSC pages.csv).
 - Baseline: 258 imp, 1 click, 0.39%, pos 23.2 (Sep 26 – Oct 23).
 - Read date: 2026-11-17. Worked if position improves to ≤ 15 or clicks per 28 days reach 4+.
-- Result: (blank until read)
+- Result (read 2026-11-17): Oct 17 – Nov 13 pull: 686 imp, 4 clicks, 0.58%, pos 23.8. Clicks met the 4+ bar (baseline 1) but position did not improve (23.2 → 23.8). Ratio queries still sit at 35–50 ("cold brew ratio" 66 imp, pos 34.5), though the new FAQ phrasings pick up page-1 impressions ("cold brew ready to drink ratio" pos 4.2, "cold brew ratio and time" 6.2). Partial: more impressions and a few clicks on small counts, no ranking lift on the head terms. Not re-touching today; scope open.
 - Verification: tsc -b, api-server tsc --noEmit, vitest (59 tests) pass.
 
 ## Not done
