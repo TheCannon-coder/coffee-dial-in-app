@@ -6,7 +6,7 @@
 - Metric: page impressions, clicks and average position (GSC pages.csv).
 - Baseline: 182 imp, 0 clicks, pos 39.4 (Sep 26 – Oct 23).
 - Read date: 2026-11-20. Worked if position improves to ≤ 30 or clicks per 28 days reach 2+.
-- Result: (blank until read)
+- Result: Read 2026-11-20 (Oct 17–Nov 13 pull, about 2 of 4 weeks post-change): 267 imp, 0 clicks, 0.00%, pos 27.9. Position bar (≤ 30) met, from 39.4; clicks still 0, so the click bar was not. Partly worked: ranking moved into the 20s, no clicks yet. Scope open.
 - Verification: tsc -b, api-server tsc --noEmit, vitest (59 tests) pass.
 
 ## Not done
