@@ -114,6 +114,16 @@ const lifecycleSends = await sql(`
 `);
 const optOuts = await one(`select count(*)::int as total_opt_outs from users u where u.email_opt_out and not ${FOUNDER}`);
 
+// One-tap "what's held you back?" answers from lifecycle emails. Counts per
+// reason only — comment text goes to Chris's inbox, never into the repo.
+const emailFeedback = await sql(`
+  select f.template, f.reason,
+    count(distinct f.user_id)::int as people,
+    count(*) filter (where f.comment is not null)::int as with_comment
+  from email_feedback f
+  group by 1, 2 order by 1, 3 desc
+`);
+
 console.log(JSON.stringify({
   generated_at: new Date().toISOString(),
   note: "Founder accounts excluded. Aggregates only.",
@@ -123,5 +133,6 @@ console.log(JSON.stringify({
   activation_by_signup_week: cohorts,
   lifecycle_audiences: lifecycle,
   lifecycle_sends: lifecycleSends,
+  email_feedback: emailFeedback,
   email_opt_outs: optOuts.total_opt_outs,
 }, null, 2));

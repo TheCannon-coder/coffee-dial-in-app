@@ -31,6 +31,10 @@ brief wins.
    failed or the secret is missing.
 4. **Read `marketing/LOG.md`** for what the team did since the last memo — sends,
    publishes, decisions.
+   The snapshot's `email_feedback` lists one-tap answers from lifecycle emails
+   ("what's kept you from brewing more?") as people per reason. When it's non-empty,
+   report the reasons under "What moved" — they're direct evidence of what holds
+   users back. Comment text never appears in the snapshot; don't go looking for it.
 5. **Write the memo** to `marketing/memos/YYYY-MM-DD.md` using the format below.
 6. **Append one line** to `marketing/LOG.md`:
    `YYYY-MM-DD · scorecard · memo written · marketing/memos/YYYY-MM-DD.md`

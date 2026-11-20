@@ -96,3 +96,5 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-11-18 · social · 5 drafts · marketing/social/2026-11-18/
 2026-11-19 · outreach · 3 drafts · marketing/outreach/2026-11-19.md
 2026-11-20 · content · /aeropress · result read: position 39.4 → 27.9 (bar met), 0 clicks; no new work qualifies · marketing/content/2026-11-20-results-no-new-work.md
+2026-11-20 · email · brewed-once follow-up built and shipped DARK (needs LIFECYCLE_BREWED_ONCE=true + Chris's copy approval) · marketing/email/brewed-once.md · includes one-tap feedback section → email_feedback table + coffeebrew.coach/feedback (comments relay to Chris's inbox). 19 eligible.
+2026-11-20 · finding · coffeebrew.coach has NO MX records — replies to support@coffeebrew.coach (the reply-to on every lifecycle email) bounce. Any replies to the Oct never-brewed nudge were lost. Fix: Cloudflare Email Routing (Chris).

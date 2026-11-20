@@ -20,3 +20,24 @@ export const lifecycleSendsTable = pgTable(
 );
 
 export type LifecycleSend = typeof lifecycleSendsTable.$inferSelect;
+
+/**
+ * Answers from the one-tap "what's held you back?" links in lifecycle emails.
+ * One row per (user, template, reason) tap; an optional comment arrives on the
+ * follow-up form and is relayed to the founder's inbox.
+ */
+export const emailFeedbackTable = pgTable(
+  "email_feedback",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    template: text("template").notNull(),
+    reason: text("reason").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    commentedAt: timestamp("commented_at"),
+  },
+  (t) => [index("email_feedback_user_template_idx").on(t.userId, t.template)],
+);
+
+export type EmailFeedback = typeof emailFeedbackTable.$inferSelect;

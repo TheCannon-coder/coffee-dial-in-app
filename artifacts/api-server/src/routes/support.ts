@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { FOUNDER_INBOX } from "../lib/email";
 
 const router = Router();
 
@@ -197,7 +198,7 @@ router.get("/api/support", (_req, res) => {
 // In-app contact form → relays to Chris's inbox via Resend so his address
 // never ships inside the app. Reply-to is the user, so replying just works.
 
-const CONTACT_INBOX = "chris@cannoncoffeeco.com";
+const CONTACT_INBOX = FOUNDER_INBOX;
 const recentSenders = new Map<string, number[]>();
 
 router.post("/api/support/contact", async (req, res) => {

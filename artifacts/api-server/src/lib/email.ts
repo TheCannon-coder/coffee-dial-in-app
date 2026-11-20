@@ -2,6 +2,8 @@ import { logger } from "./logger.js";
 
 export const FROM_ADDRESS = "Coffee Brew Coach <hello@coffeebrew.coach>";
 export const REPLY_TO = "support@coffeebrew.coach";
+/** Where user feedback is relayed. Never rendered to users — they see forms, not this address. */
+export const FOUNDER_INBOX = "chris@cannoncoffeeco.com";
 
 export type SendEmailInput = {
   to: string;
