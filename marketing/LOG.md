@@ -99,3 +99,4 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-11-20 · email · brewed-once follow-up built and shipped DARK (needs LIFECYCLE_BREWED_ONCE=true + Chris's copy approval) · marketing/email/brewed-once.md · includes one-tap feedback section → email_feedback table + coffeebrew.coach/feedback (comments relay to Chris's inbox). 19 eligible.
 2026-11-20 · finding · coffeebrew.coach has NO MX records — replies to support@coffeebrew.coach (the reply-to on every lifecycle email) bounce. Any replies to the Oct never-brewed nudge were lost. Fix: Cloudflare Email Routing (Chris).
 2026-11-23 · scorecard · memo written · marketing/memos/2026-11-23.md
+2026-11-24 · content · no new work qualifies (all experiments read; Nov 23 pull shows no new signal) · marketing/content/2026-11-24-no-new-work.md
