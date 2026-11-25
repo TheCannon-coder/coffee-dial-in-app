@@ -100,3 +100,4 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-11-20 · finding · coffeebrew.coach has NO MX records — replies to support@coffeebrew.coach (the reply-to on every lifecycle email) bounce. Any replies to the Oct never-brewed nudge were lost. Fix: Cloudflare Email Routing (Chris).
 2026-11-23 · scorecard · memo written · marketing/memos/2026-11-23.md
 2026-11-24 · content · no new work qualifies (all experiments read; Nov 23 pull shows no new signal) · marketing/content/2026-11-24-no-new-work.md
+2026-11-25 · social · 5 drafts · marketing/social/2026-11-25/
