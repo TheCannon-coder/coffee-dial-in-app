@@ -101,3 +101,4 @@ defaults contact to a platform DM, and flags what Chris should verify before sen
 2026-11-23 · scorecard · memo written · marketing/memos/2026-11-23.md
 2026-11-24 · content · no new work qualifies (all experiments read; Nov 23 pull shows no new signal) · marketing/content/2026-11-24-no-new-work.md
 2026-11-25 · social · 5 drafts · marketing/social/2026-11-25/
+2026-11-27 · content · no new work qualifies (no new GSC pull, no read dates due) · marketing/content/2026-11-27-no-new-work.md
